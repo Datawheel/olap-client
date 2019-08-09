@@ -1,0 +1,15 @@
+.vscode/
+node_modules/
+src/
+tests/
+
+.babelrc
+.editorconfig
+.eslintignore
+.eslintrc
+.gitignore
+.travis.yml
+*.md
+jest.config.js
+rollup.config.js
+tsconfig.json

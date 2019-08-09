@@ -1,0 +1,16 @@
+{
+  "presets": [
+    ["@babel/preset-env", {
+      "targets": {
+        "node": "8",
+        "browsers": ["last 5 version", ">= 5%", "not dead"]
+      }
+    }]
+  ],
+  "plugins": [
+    ["@babel/plugin-transform-runtime", {
+      "corejs": false,
+      "regenerator": true
+    }]
+  ]
+}
