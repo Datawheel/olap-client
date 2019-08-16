@@ -18,8 +18,8 @@ import {
 } from "mondrian-rest-client";
 
 export enum ServerSoftware {
-  Mondrian,
-  Tesseract
+  Mondrian = "mondrian",
+  Tesseract = "tesseract"
 }
 
 export type Aggregation = TesseractAggregation | MondrianAggregation;

@@ -13,19 +13,21 @@ npm install @datawheel/olap-client
 ## Usage
 
 ```js
-import {Client} from '@datawheel/olap-client'
+import {OLAPClient} from '@datawheel/olap-client'
 
-// Constructor only admits an array of server URLs
-const client = new Client([
-  "https://your.mondrian-rest.server/", 
-  "https://a.tesseract-olap.server/"
-]);
+// The instance must be constructed without parameters
+const client = new OLAPClient();
 
-// More URLs can be added later
+// Server URLs are added later using the addServer() method
 client.addServer("https://another.tesseract.olap/server/");
+```
 
-// You can interact with the client the same way as you would
-// with a @datawheel/tesseract-client instance
+The client does a request to the server to distinguish if it's a Tesseract server or a Mondrian server. The client instance will save the server URL only after the request completes.  
+The .addServer() method returns a promise, which will finally resolve to the ServerStatus object of the server, or will reject if the server isn't valid.
+
+You can interact with the client the same way as you would with a @datawheel/tesseract-client instance
+
+```js
 client.cubes().then(cubes => {
   const cube = cubes[0];
   const query = cube.query;
@@ -34,7 +36,7 @@ client.cubes().then(cubes => {
   query.addMeasure("Admissions Total");
   return client.execQuery(query);
 }).then(aggregation => {
-  ...
+  aggregation.data
 })
 ```
 

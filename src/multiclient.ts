@@ -7,6 +7,7 @@ import {
   Member as TesseractMember,
   Query as TesseractQuery
 } from "@datawheel/tesseract-client";
+import {AxiosError} from "axios";
 import {
   Aggregation as MondrianAggregation,
   Client as MondrianClient,
@@ -16,60 +17,40 @@ import {
   Member as MondrianMember,
   Query as MondrianQuery
 } from "mondrian-rest-client";
-import {ServerSoftware, Client, Cube, Aggregation, Member} from "./common";
+import {Aggregation, Client, Cube, Member} from "./common";
 import {ClientError} from "./errors";
 
-interface Metadata {
-  server: ServerSoftware;
-  status?: string;
-  version?: string;
+interface ServerStatus {
+  software: string;
+  status: string;
+  url: string;
+  version: string;
 }
 
 class MultiClient {
   private clients: {[server: string]: Client} = {};
-  private metadata: {[server: string]: Metadata} = {};
-
-  constructor(urls: string | string[]) {
-    ([] as string[]).concat(urls).forEach(this.addServer, this);
-  }
 
   get clientList(): Client[] {
     const clients = this.clients;
     return Object.keys(clients).map(url => clients[url]);
   }
 
-  addServer(serverUrl: string): Promise<void> {
-    const {clients, metadata} = this;
-    let meta: Metadata;
-    let client: Client = new TesseractClient(serverUrl);
-    return client
-      .checkStatus()
-      .then(
-        info => {
-          meta = {
-            version: info.version,
-            status: info.status,
-            server: ServerSoftware.Tesseract
-          };
-        },
-        error => {
-          // "response" in error means the url is valid
-          // but the response wasn't in the 2xx range
-          if (!error.response) {
-            return;
-          }
-          client = new MondrianClient(serverUrl);
-          meta = {
-            version: "1.0.0",
-            status: undefined,
-            server: ServerSoftware.Mondrian
-          };
-        }
-      )
-      .then(() => {
-        clients[serverUrl] = client;
-        metadata[serverUrl] = meta;
-      });
+  addServer(serverUrl: string): Promise<ServerStatus> {
+    const {clients} = this;
+    let client : Client = new TesseractClient(serverUrl);
+    const saveClient = (server: ServerStatus) => {
+      clients[serverUrl] = client;
+      return server;
+    };
+    return client.checkStatus().then(saveClient, (error: AxiosError) => {
+      // "response" in error means the url is valid
+      // but the response wasn't in the 2xx range
+      if (!error.response) {
+        throw error;
+      }
+      client = new MondrianClient(serverUrl);
+      return client.checkStatus().then(saveClient);
+    });
   }
 
   cube(

@@ -37,8 +37,8 @@
     "mondrian-rest-client"
   ],
   "dependencies": {
-    "@datawheel/tesseract-client": "^0.4.0",
-    "mondrian-rest-client": "next"
+    "@datawheel/tesseract-client": "^0.4.1",
+    "mondrian-rest-client": "^2.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.5.5",
@@ -47,10 +47,8 @@
     "@babel/runtime": "^7.5.5",
     "@types/form-urlencoded": "^2.0.1",
     "@types/url-join": "^4.0.0",
-    "babel-jest": "^24.8.0",
     "cross-env": "^5.2.0",
     "eslint": "^6.1.0",
-    "jest": "^24.8.0",
     "rollup": "^1.19.2",
     "rollup-plugin-babel": "^4.3.3",
     "rollup-plugin-cleanup": "^3.1.1",
