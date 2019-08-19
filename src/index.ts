@@ -1,2 +1,1 @@
-export {ServerSoftware} from "./common";
-export {default as Client} from "./multiclient";
+export {MultiClient as Client, ServerSoftware} from "./multiclient";

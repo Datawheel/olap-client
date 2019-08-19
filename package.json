@@ -13,9 +13,9 @@
   "scripts": {
     "build": "cross-env NODE_ENV=production BABEL_ENV=production rollup --config rollup.config.js",
     "dev": "cross-env NODE_ENV=development BABEL_ENV=development rollup --config rollup.config.js --watch",
+    "prepublishOnly": "npm run build",
     "pretest": "cross-env NODE_ENV=test BABEL_ENV=test rollup --config rollup.config.js",
-    "test": "cross-env NODE_ENV=test BABEL_ENV=test jest --config=jest.config.js",
-    "prepublish": "npm run build"
+    "test": "cross-env NODE_ENV=test BABEL_ENV=test jest --config=jest.config.js"
   },
   "author": "Francisco Abarzua <francisco@datawheel.us>",
   "license": "MIT",

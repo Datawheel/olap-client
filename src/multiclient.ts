@@ -5,7 +5,8 @@ import {
   Format as TesseractFormat,
   Level as TesseractLevel,
   Member as TesseractMember,
-  Query as TesseractQuery
+  Query as TesseractQuery,
+  ServerStatus as TesseractServerStatus
 } from "@datawheel/tesseract-client";
 import {AxiosError} from "axios";
 import {
@@ -15,19 +16,24 @@ import {
   Format as MondrianFormat,
   Level as MondrianLevel,
   Member as MondrianMember,
-  Query as MondrianQuery
+  Query as MondrianQuery,
+  ServerStatus as MondrianServerStatus
 } from "mondrian-rest-client";
-import {Aggregation, Client, Cube, Member} from "./common";
 import {ClientError} from "./errors";
 
-interface ServerStatus {
-  software: string;
-  status: string;
-  url: string;
-  version: string;
+export enum ServerSoftware {
+  Mondrian = "mondrian",
+  Tesseract = "tesseract"
 }
 
-class MultiClient {
+interface ServerStatus extends TesseractServerStatus, MondrianServerStatus {}
+
+type Client = TesseractClient | MondrianClient;
+type Aggregation = TesseractAggregation | MondrianAggregation;
+type Cube = TesseractCube | MondrianCube;
+type Member = TesseractMember | MondrianMember;
+
+export class MultiClient {
   private clients: {[server: string]: Client} = {};
 
   get clientList(): Client[] {
@@ -37,7 +43,7 @@ class MultiClient {
 
   addServer(serverUrl: string): Promise<ServerStatus> {
     const {clients} = this;
-    let client : Client = new TesseractClient(serverUrl);
+    let client: Client = new TesseractClient(serverUrl);
     const saveClient = (server: ServerStatus) => {
       clients[serverUrl] = client;
       return server;
@@ -76,12 +82,12 @@ class MultiClient {
 
   execQuery(
     query: TesseractQuery,
-    format?: TesseractFormat.jsonrecords,
+    format?: TesseractFormat,
     method?: string
   ): Promise<TesseractAggregation>;
   execQuery(
     query: MondrianQuery,
-    format?: MondrianFormat.jsonrecords,
+    format?: MondrianFormat,
     method?: string
   ): Promise<MondrianAggregation>;
   execQuery(query: any, format?: any, method?: any): Promise<Aggregation> {
@@ -94,9 +100,9 @@ class MultiClient {
     return client.execQuery(query, format, method);
   }
 
-  private getClientByCube(cube: TesseractCube): TesseractClient | undefined;
-  private getClientByCube(cube: MondrianCube): MondrianClient | undefined;
-  private getClientByCube(cube: any): Client | undefined {
+  private getClientByCube(cube: TesseractCube): TesseractClient;
+  private getClientByCube(cube: MondrianCube): MondrianClient;
+  private getClientByCube(cube: any): Client {
     return this.clients[cube.server];
   }
 
@@ -120,5 +126,3 @@ class MultiClient {
     return client.members(level, getChildren, caption);
   }
 }
-
-export default MultiClient;
