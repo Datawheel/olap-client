@@ -41,22 +41,41 @@ export class MultiClient {
     return Object.keys(clients).map(url => clients[url]);
   }
 
-  addServer(serverUrl: string): Promise<ServerStatus> {
+  addServer(serverUrl: string, server?: string): Promise<ServerStatus> {
     const {clients} = this;
-    let client: Client = new TesseractClient(serverUrl);
+    let client: Client;
     const saveClient = (server: ServerStatus) => {
       clients[serverUrl] = client;
       return server;
     };
-    return client.checkStatus().then(saveClient, (error: AxiosError) => {
-      // "response" in error means the url is valid
-      // but the response wasn't in the 2xx range
-      if (!error.response) {
-        throw error;
-      }
+
+    if (serverUrl in clients) {
+      return clients[serverUrl].checkStatus();
+    }
+    if (server === "tesseract") {
+      client = new TesseractClient(serverUrl);
+      return client.checkStatus().then(saveClient);
+    }
+    else if (server === "mondrian") {
       client = new MondrianClient(serverUrl);
       return client.checkStatus().then(saveClient);
-    });
+    }
+    else {
+      let client: Client = new TesseractClient(serverUrl);
+      return client.checkStatus().then(saveClient, (error: AxiosError) => {
+        // "response" in error means the url is valid
+        // but the response wasn't in the 2xx range
+        if (!error.response) {
+          throw error;
+        }
+        client = new MondrianClient(serverUrl);
+        return client.checkStatus().then(saveClient);
+      });
+    }
+  }
+
+  removeServer(serverUrl: string): void {
+    delete this.clients[serverUrl];
   }
 
   cube(
