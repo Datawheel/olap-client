@@ -61,7 +61,7 @@ export class MultiClient {
       return client.checkStatus().then(saveClient);
     }
     else {
-      let client: Client = new TesseractClient(serverUrl);
+      client = new TesseractClient(serverUrl);
       return client.checkStatus().then(saveClient, (error: AxiosError) => {
         // "response" in error means the url is valid
         // but the response wasn't in the 2xx range
