@@ -1,147 +1,180 @@
-import {
-  Aggregation as TesseractAggregation,
-  Client as TesseractClient,
-  Cube as TesseractCube,
-  Format as TesseractFormat,
-  Level as TesseractLevel,
-  Member as TesseractMember,
-  Query as TesseractQuery,
-  ServerStatus as TesseractServerStatus
-} from "@datawheel/tesseract-client";
-import {AxiosError} from "axios";
-import {
-  Aggregation as MondrianAggregation,
-  Client as MondrianClient,
-  Cube as MondrianCube,
-  Format as MondrianFormat,
-  Level as MondrianLevel,
-  Member as MondrianMember,
-  Query as MondrianQuery,
-  ServerStatus as MondrianServerStatus
-} from "mondrian-rest-client";
+import Cube from "./cube";
 import {ClientError} from "./errors";
+import {
+  AdaptedCube,
+  Aggregation,
+  IClient,
+  IDataSource,
+  LevelDescriptor,
+  ServerStatus
+} from "./interfaces";
+import Level from "./level";
+import Member from "./member";
+import {Query} from "./query";
+import {levelFinderFactory} from "./utils";
 
-export enum ServerSoftware {
-  Mondrian = "mondrian",
-  Tesseract = "tesseract"
-}
+export class MultiClient implements IClient {
+  private cubeCache: {[key: string]: Promise<Cube[]>} = {};
+  private cubesCache: Promise<Cube[]> | undefined = undefined;
+  private datasources: {[url: string]: IDataSource | undefined};
 
-interface ServerStatus extends TesseractServerStatus, MondrianServerStatus {}
-
-type Client = TesseractClient | MondrianClient;
-type Aggregation = TesseractAggregation | MondrianAggregation;
-type Cube = TesseractCube | MondrianCube;
-type Member = TesseractMember | MondrianMember;
-
-export class MultiClient {
-  private clients: {[server: string]: Client} = {};
-
-  get clientList(): Client[] {
-    const clients = this.clients;
-    return Object.keys(clients).map(url => clients[url]);
+  constructor(...datasources: IDataSource[]) {
+    this.addDataSource(...datasources);
   }
 
-  addServer(serverUrl: string, server?: string): Promise<ServerStatus> {
-    const {clients} = this;
-    let client: Client;
-    const saveClient = (server: ServerStatus) => {
-      clients[serverUrl] = client;
-      return server;
-    };
-
-    if (serverUrl in clients) {
-      return clients[serverUrl].checkStatus();
+  get dataSourceList(): IDataSource[] {
+    const datasources = Object.values(this.datasources).filter(Boolean) as IDataSource[];
+    if (datasources.length === 0) {
+      throw new ClientError(`This Client instance has no DataSource configured.
+Verify the initialization procedure, there might be a race condition.`);
     }
-    if (server === "tesseract") {
-      client = new TesseractClient(serverUrl);
-      return client.checkStatus().then(saveClient);
-    }
-    else if (server === "mondrian") {
-      client = new MondrianClient(serverUrl);
-      return client.checkStatus().then(saveClient);
-    }
-    else {
-      let client: Client = new TesseractClient(serverUrl);
-      return client.checkStatus().then(saveClient, (error: AxiosError) => {
-        // "response" in error means the url is valid
-        // but the response wasn't in the 2xx range
-        if (!error.response) {
-          throw error;
-        }
-        client = new MondrianClient(serverUrl);
-        return client.checkStatus().then(saveClient);
-      });
-    }
+    return datasources;
   }
 
-  removeServer(serverUrl: string): void {
-    delete this.clients[serverUrl];
-  }
-
-  cube(
-    cubeName: string,
-    sorterFn: (matches: Cube[], clients: Client[]) => Cube
-  ): Promise<Cube> {
-    const clients = this.clientList;
-    return this.cubes().then(cubes => {
-      const matches = cubes.filter(cube => cube.name === cubeName);
-      if (!sorterFn && matches.length > 1) {
-        throw new ClientError(cubeName);
+  addDataSource(...datasources: IDataSource[]) {
+    if (datasources.length > 0) {
+      for (let datasource of datasources) {
+        this.datasources[datasource.serverUrl] = datasource;
       }
-      return matches.length === 1 ? matches[0] : sorterFn(matches, clients);
+      this.cubeCache = {};
+      this.cubesCache = undefined;
+    }
+  }
+
+  private cacheCube(cube: Cube): Promise<Cube> {
+    const promise = this.cubeCache[cube.name] || Promise.resolve([]);
+    return promise.then(cubes => {
+      const cubeUri = cube.toString();
+      const finalCubes = cubes.some(c => c.toString() === cubeUri)
+        ? cubes
+        : cubes.concat(cube);
+      this.cubeCache[cube.name] = Promise.resolve(finalCubes);
+      return cube;
     });
   }
 
-  cubes(): Promise<Cube[]> {
-    const promiseCubeList = this.clientList.map(client => client.cubes());
-    return Promise.all<Cube[]>(promiseCubeList).then((cubeList: Cube[][]) =>
-      ([] as Cube[]).concat(...cubeList)
-    );
+  checkStatus(): Promise<ServerStatus[]> {
+    const promises = this.dataSourceList.map(datasource => datasource.checkStatus());
+    return Promise.all(promises);
   }
 
-  execQuery(
-    query: TesseractQuery,
-    format?: TesseractFormat,
-    method?: string
-  ): Promise<TesseractAggregation>;
-  execQuery(
-    query: MondrianQuery,
-    format?: MondrianFormat,
-    method?: string
-  ): Promise<MondrianAggregation>;
-  execQuery(query: any, format?: any, method?: any): Promise<Aggregation> {
-    const client = this.getClientByCube(query.cube);
-    if (!client) {
-      throw new ClientError(
-        `Query object ${query} is not associated to a cube of the clients.`
+  execQuery(query: Query, endpoint?: string): Promise<Aggregation> {
+    const datasource = this.datasources[query.cube.server];
+    if (!datasource) {
+      const error = new ClientError(
+        `No DataSource matched the parent Cube of your Query object.`
       );
+      return Promise.reject(error);
     }
-    return client.execQuery(query, format, method);
+    return datasource.execQuery(query, endpoint);
   }
 
-  private getClientByCube(cube: TesseractCube): TesseractClient;
-  private getClientByCube(cube: MondrianCube): MondrianClient;
-  private getClientByCube(cube: any): Client {
-    return this.clients[cube.server];
-  }
+  getCube(cubeName: string, selectorFn?: (cubes: Cube[]) => Cube): Promise<Cube> {
+    const promise =
+      this.cubeCache[cubeName] ||
+      Promise.resolve(this.dataSourceList).then(datasources => {
+        const promises = datasources.map(datasource =>
+          datasource.fetchCube(cubeName).then((acube: AdaptedCube) => {
+            const cube = new Cube(acube, datasource);
+            return this.cacheCube(cube);
+          }, () => undefined)
+        );
+        return Promise.all(promises).then(values => values.filter(Boolean) as Cube[]);
+      });
 
-  members(
-    level: TesseractLevel,
-    getChildren?: boolean,
-    caption?: string
-  ): Promise<TesseractMember[]>;
-  members(
-    level: MondrianLevel,
-    getChildren?: boolean,
-    caption?: string
-  ): Promise<MondrianMember[]>;
-  members(level: any, getChildren?: boolean, caption?: string): Promise<Member[]> {
-    const client = this.getClientByCube(level.cube);
-    if (!client) {
+    this.cubeCache[cubeName] = promise;
+
+    return promise.then((cubes: Cube[]) => {
+      if (cubes.length === 1) {
+        return cubes[0];
+      }
+      if (selectorFn) {
+        return selectorFn(cubes);
+      }
       throw new ClientError(
-        `Level object ${level} is not associated to a cube of the clients.`
+        `There's a cube named ${cubeName} in more than one datasource.
+To prevent this error, pass a selectorFn parameter to the MultiClient#getCube method.`
       );
+    });
+  }
+
+  getCubes(): Promise<Cube[]> {
+    const promise =
+      this.cubesCache ||
+      Promise.resolve(this.dataSourceList).then(datasources => {
+        const promises = datasources.map(datasource =>
+          datasource.fetchCubes().then((acubes: AdaptedCube[]) => {
+            const promises = acubes.map(acube => {
+              const cube = new Cube(acube, datasource);
+              return this.cacheCube(cube);
+            });
+            return Promise.all(promises);
+          })
+        );
+        return Promise.all(promises).then(cubesList =>
+          ([] as Cube[]).concat(...cubesList)
+        );
+      });
+    this.cubesCache = promise;
+    return promise;
+  }
+
+  private getLevel(identifier: Level | LevelDescriptor): Promise<Level> {
+    if (Level.isLevel(identifier)) {
+      return Promise.resolve(identifier);
     }
-    return client.members(level, getChildren, caption);
+    const levelFinder = levelFinderFactory(identifier);
+    return identifier.cube
+      ? this.getCube(identifier.cube).then(levelFinder)
+      : this.getCubes().then(cubes => {
+          for (let cube of cubes) {
+            try {
+              return levelFinder(cube);
+            } catch (e) {
+              continue;
+            }
+          }
+          throw new ClientError(
+            `No level matched the descriptor ${JSON.stringify(identifier)}`
+          );
+        });
+  }
+
+  getMember(
+    levelRef: Level | LevelDescriptor,
+    key: string | number,
+    options: any
+  ): Promise<Member> {
+    return this.getLevel(levelRef).then(level => {
+      const server = level.cube.server;
+      const datasource = this.datasources[server];
+      if (!datasource) {
+        throw new ClientError(
+          `No DataSource matched the parent Cube of matching Level:
+LevelDescriptor: ${JSON.stringify(levelRef)}
+Level: ${level}`
+        );
+      }
+      return datasource
+        .fetchMember(level.descriptor, key, options)
+        .then(member => new Member(member, level));
+    });
+  }
+
+  getMembers(levelRef: Level | LevelDescriptor, options: any): Promise<Member[]> {
+    return this.getLevel(levelRef).then(level => {
+      const server = level.cube.server;
+      const datasource = this.datasources[server];
+      if (!datasource) {
+        throw new ClientError(
+          `No DataSource matched the parent Cube of matching Level:
+LevelDescriptor: ${JSON.stringify(levelRef)}
+Level: ${level}`
+        );
+      }
+      return datasource
+        .fetchMembers(level.descriptor, options)
+        .then(members => members.map(member => new Member(member, level)));
+    });
   }
 }
