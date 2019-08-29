@@ -1,5 +1,6 @@
 import Cube from "./cube";
 import {AggregatorType, DimensionType} from "./enums";
+import Level from "./level";
 import Member from "./member";
 import {Query} from "./query";
 
@@ -75,14 +76,14 @@ export interface IAnnotated {
 
 export interface IClient {
   execQuery(query: Query, endpoint?: string): Promise<Aggregation>;
-  getCube(cubeName: string, selectorFn?: (cube: Cube[]) => Cube): Promise<Cube>;
+  getCube(cubeName: string, selectorFn?: (cubes: Cube[]) => Cube): Promise<Cube>;
   getCubes(): Promise<Cube[]>;
   getMember(
-    parent: LevelDescriptor,
+    parent: Level | LevelDescriptor,
     key: string | number,
     options?: any
   ): Promise<Member>;
-  getMembers(parent: LevelDescriptor, options?: any): Promise<Member[]>;
+  getMembers(parent: Level | LevelDescriptor, options?: any): Promise<Member[]>;
 }
 
 export interface IDataSource {
@@ -91,11 +92,11 @@ export interface IDataSource {
   fetchCube(cubeName: string): Promise<AdaptedCube>;
   fetchCubes(): Promise<AdaptedCube[]>;
   fetchMember(
-    parent: LevelDescriptor,
+    parent: Level | LevelDescriptor,
     key: string | number,
     options?: any
   ): Promise<AdaptedMember>;
-  fetchMembers(parent: LevelDescriptor, options?: any): Promise<AdaptedMember[]>;
+  fetchMembers(parent: Level | LevelDescriptor, options?: any): Promise<AdaptedMember[]>;
   serverOnline: boolean;
   serverSoftware: string;
   serverVersion: string;

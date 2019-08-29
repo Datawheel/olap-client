@@ -73,79 +73,170 @@ Both `Client` and `MultiClient` instances follow the `IClient` interface. `Clien
 
 ### interface `IClient`
 
-#### `IClient#getCubes()`
+#### `IClient#getCubes`
+
+```ts
+getCubes(): Promise<Cube[]>
+```
 
 Returns a promise that resolves to a `Cube` array.  
 In a `MultiClient` instance, the cubes from all the subscribed datasources are concatenated.
 
-#### `IClient#getCube(cubeName: string, selectorFn?: (cubes: Cube[]) => Cube)`
+#### `IClient#getCube`
+
+```ts
+getCube(cubeName: string, selectorFn?: (cubes: Cube[]) => Cube): Promise<Cube>
+```
 
 Returns a promise that resolves to a single `Cube` instance, whose `.name` is equal to the `cubeName` parameter.  
 In a `MultiClient` instance, if there's more than one cube with the same `cubeName`, a `selectorFn` function can be used to pick the right cube.
 
-#### `IClient#getMembers(levelDescriptor, options)`
+#### `IClient#getMembers`
 
-Returns a promise that resolves to a list of the members available for the level referenced. `levelDescriptor` can be a `Level` instance, or an object that tries to describe how to find a `Level` in a DataSource. For more information on this object, check [Interfaces > LevelDescriptor](#LevelDescriptor).
+```ts
+getMembers(levelRef: Level | LevelDescriptor, options?: any): Promise<Member[]>
+```
 
-#### `IClient#getMember(levelDescriptor, key, options)`
+Returns a promise that resolves to a list of the members available for the level referenced.  
+`levelRef` can be a `Level` instance, or an object describing how to find a `Level` in a DataSource. For more information on this object, see the specification of the [LevelDescriptor interface](#interface-leveldescriptor).  
+the properties `options` 
 
-#### `IClient#execQuery(query)`
+#### `IClient#getMember`
 
-Execute a query in all the available datasources.  
+```ts
+getMember(levelRef: Level | LevelDescriptor, key: string | number, options?: any): Promise<Member>
+```
+
+Returns a promise that resolves to a member for the level referenced, specified by its `key`.
+
+#### `IClient#execQuery`
+
+```ts
+execQuery(query: Query, endpoint?: string): Promise<Aggregation>
+```
+
+Execute a query in all the available datasources. The returned object implements the [Aggregation interface](#interface-aggregation).  
 The `query` parameter must be a `Query` instance, usually obtained from a `Cube` instance.
 
 ### class `Client`
 
-#### `Client#checkStatus()`
+#### `Client#checkStatus`
 
-Returns an object with information about the server. For now, only supports detailed info about Tesseract OLAP, but tries its best with Mondrian REST anyway.
+```ts
+checkStatus(): Promise<ServerStatus>
+```
 
-#### `Client#setDataSource(datasource: DataSource)`
+Returns an [object with information](#interface-serverstatus) about the server. For now, only supports detailed info about Tesseract OLAP, but tries its best with Mondrian REST anyway.
+
+#### `Client#setDataSource`
+
+```ts
+setDataSource(datasource: IDataSource): void
+```
 
 Sets the datasource the client instance will work with.
 The `datasource` parameter must be an object compatible with the `IDataSource` interface.
 
-#### `Client.dataSourceFromURL(serverUrl: string)`
+#### `Client.dataSourceFromURL`
+
+```ts
+static dataSourceFromURL(url: string): Promise<IDataSource>
+```
 
 Tries to guess the type of server from a request to the `serverUrl`. The parameter must be a string.  
 Since a request must be done beforehand, this static method returns a `Promise` that resolves to a object compatible with the `IDataSource` interface.
 
-#### `Client.fromURL(serverUrl: string)`
+#### `Client.fromURL`
+
+```ts
+static fromURL(url: string): Promise<Client>
+```
 
 Using the result from `Client.dataSourceFromURL(serverUrl)`, generates a `new Client(datasource)` instance.
 
 ### class `MultiClient`
 
-#### `MultiClient#addDataSource(...datasources: DataSource[])`
+#### `MultiClient#addDataSource`
+
+```ts
+addDataSource(...datasources: IDataSource[]): void
+```
 
 Adds datasources to the client internal directory. 
 The `datasources` must be objects compatible with the `IDataSource` interface.
 
-#### `MultiClient#checkStatus()`
+#### `MultiClient#checkStatus`
 
-Returns an array of objects with information about each datasource server. Returns the same structure of response as `Client#checkStatus`.
+```ts
+checkStatus(): Promise<ServerStatus[]>
+```
 
-#### `MultiClient.dataSourcesFromURL(...serverUrls: string[])`
+Returns an array of [objects with information](#interface-serverstatus) about each datasource server. These objects have the same structure of response as `Client#checkStatus`.
 
-Does a request to each `serverUrl`, tries to guess the type of server and generates a datasource, and each datasource is added to a single `MultiClient` instance.  
+#### `MultiClient.dataSourcesFromURL`
+
+```ts
+static dataSourcesFromURL(...serverUrls: string[]): Promise<IDataSource[]>
+```
+
+Does a request to each url in `serverUrls`, tries to guess the type of server, and returns the respective datasource.  
+This method returns a `Promise` that resolves to an array of `IDataSource`.
+
+#### `MultiClient.fromURL`
+
+```ts
+static fromURL(...serverUrls: string[]): Promise<MultiClient>
+```
+
+From the result from `MultiClient.dataSourcesFromURL(...serverUrls)`, generates a single `new MultiClient(...datasources)` instance.  
 This method returns a `Promise` that resolves to a `MultiClient` instance.
-
-#### `MultiClient.fromURL(...serverUrls: string[])`
-
-From the result from `MultiClient.dataSourcesFromURL(...serverUrls)`, generates a `new MultiClient(...datasources)` instance.
 
 ## Other interfaces
 
-### LevelDescriptor
+#### interface `Aggregation`
 
-A LevelDescriptor is an ordinary object with enough info to differentiate a Level in a list of DataSources. Depending on the circumstances (e.g. some name is shared in more than one object) some Level might need more information on a LevelDescriptor to find the correct object.
+```ts
+interface Aggregation<T = any> {
+    data: T;
+    query: Query;
+    status?: number;
+    url?: string;
+}
+```
 
-A LevelDescriptor has the following structure:
-- `LevelDescriptor.level` (string, required) = Level name
-- `LevelDescriptor.hierarchy`: (string) = Parent hierarchy name
-- `LevelDescriptor.dimension`: (string) = Parent dimension name
-- `LevelDescriptor.cube`: (string) = Parent cube name
-- `LevelDescriptor.server`: (string) = Parent data source server url
+The result of executing a Query is represented by an object implementing the `Aggregation` interface.
+The type of the `data` property depends on the `format` set on the Query: 
+- `Format.jsonrecords` returns an array of tidy data objects
+- All other `Format`s return the raw data returned by the server
+
+#### interface `LevelDescriptor`
+
+```ts
+interface LevelDescriptor {
+    server?: string; // Server URL
+    cube?: string; // Cube name
+    dimension?: string; // Dimension name
+    hierarchy?: string; // Hierarchy name
+    level: string; // Level name, required
+}
+```
+
+A LevelDescriptor is an ordinary object with enough info to differentiate a Level in a list of DataSources. Depending on the circumstances (e.g. some name is shared in more than one object) some Levels might need more information on a LevelDescriptor to be differentiated. All the properties are the `name`s of the parents, except for `server` that maps to the URL of the DataSource. Level is the only required at all times.
+It is suggested to fill the properties with as much information as possible to prevent getting a different level.
+
+#### interface `ServerStatus`
+
+```ts
+interface ServerStatus {
+    software: string;
+    online: boolean;
+    url: string;
+    version: string;
+}
+```
+
+Contains information about the current state of the server.  
+Due to server implementation, `version` isn't available from `MondrianDataSource`.
 
 ## Example
 
