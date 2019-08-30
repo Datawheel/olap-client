@@ -136,7 +136,8 @@ export class TesseractDataSource implements IDataSource {
     key: string | number,
     options: any = {}
   ): Promise<AdaptedMember> {
-    // throw new ClientError("Tesseract OLAP servers don't support retrieving one member.");
+    // Tesseract OLAP servers don't support retrieving one member.
+    // We're going to get all of them, and return only the right one.
     return this.fetchMembers(parent, options).then(members => {
       const member = members.find((member: AdaptedMember) => member.key == key);
       if (member) {

@@ -40,8 +40,8 @@ export interface AdaptedMeasure extends IAnnotated, IFullNamed, ISerializable {
 export interface AdaptedMember extends IFullNamed, ISerializable {
   readonly _type: "member";
   readonly allMember?: boolean;
-  readonly ancestors?: AdaptedMember[];
-  readonly children?: AdaptedMember[];
+  readonly ancestors: AdaptedMember[];
+  readonly children: AdaptedMember[];
   readonly depth?: number;
   readonly drillable?: boolean;
   readonly key: string | number;

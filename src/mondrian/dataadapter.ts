@@ -132,12 +132,12 @@ export function memberAdapterFactory(meta: any): (json: MondrianMember) => Adapt
   return (json: MondrianMember) => {
     return {
       _type: "member",
-      allMember: json["all_member?"],
+      // allMember: json["all_member?"],
       ancestors: ensureArray(json.ancestors).map(memberAdapterFactory(meta)),
       caption: json.caption,
       children: ensureArray(json.children).map(memberAdapterFactory(meta)),
       depth: json.depth,
-      drillable: json["drillable?"],
+      // drillable: json["drillable?"],
       fullName: json.full_name,
       key: json.key,
       name: json.name,

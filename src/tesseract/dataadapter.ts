@@ -136,11 +136,17 @@ export function memberAdapterFactory(
   meta: any
 ): (json: TesseractMember) => AdaptedMember {
   return (json: TesseractMember) => {
+    const splitFullName = [meta.level_name, json.ID];
+    const fullName = joinFullName(splitFullName);
     return {
       _type: "member",
+      ancestors: [],
+      caption: json.Label || `${json.ID}`,
+      children: [],
+      fullName: fullName,
       key: json.ID,
       name: json.Label || `${json.ID}`,
-      caption: json.Label || `${json.ID}`,
+      splitFullName: splitFullName,
       uri: urljoin(
         meta.server_uri,
         `members?level=${encodeURIComponent(meta.level_name)}`
