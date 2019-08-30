@@ -16,7 +16,7 @@ const sourcemap = inDevelopment ? "inline" : false;
 const LICENSE_HEADER =
 `${pkg.name} ${pkg.version} (${pkg.homepage})
 rev ${execSync('git rev-parse --short HEAD')}
-Copyright 2019 Datawheel, LLC
+Copyright (c) Datawheel, LLC
 Licensed under MIT`;
 
 /** @return {import("rollup").RollupOptions} */
