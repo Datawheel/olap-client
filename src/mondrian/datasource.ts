@@ -16,11 +16,6 @@ import {cubeAdapterFactory, memberAdapterFactory} from "./dataadapter";
 import {MondrianCube, MondrianMember} from "./schema";
 import {queryBuilder} from "./utils";
 
-interface MondrianServerStatus {
-  status: string;
-  mondrian_rest: string;
-}
-
 export class MondrianDataSource implements IDataSource {
   serverOnline: boolean;
   serverSoftware: string = "mondrian-rest";
@@ -35,11 +30,12 @@ export class MondrianDataSource implements IDataSource {
   }
 
   checkStatus(): Promise<ServerStatus> {
-    return Axios.get<MondrianServerStatus>(this.serverUrl).then(
-      (response: AxiosResponse<MondrianServerStatus>) => {
-        const {status, mondrian_rest} = response.data;
-        this.serverOnline = status === "ok";
-        this.serverVersion = mondrian_rest;
+    const url = urljoin(this.serverUrl, "cubes");
+    return Axios.get(url).then(
+      () => {
+        // mondrian-rest doesn't have a status endpoint
+        this.serverOnline = true;
+        this.serverVersion = "1.0.4";
         return {
           software: this.serverSoftware,
           online: this.serverOnline,
