@@ -18,9 +18,11 @@ import {queryBuilder} from "./utils";
 
 export class MondrianDataSource implements IDataSource {
   serverOnline: boolean;
-  serverSoftware: string = "mondrian-rest";
+  serverSoftware: string = MondrianDataSource.softwareName;
   serverVersion: string = "";
   serverUrl: string = "/";
+
+  static softwareName = "mondrian-rest";
 
   constructor(serverUrl: string) {
     if (!serverUrl) {

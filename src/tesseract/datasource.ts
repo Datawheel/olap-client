@@ -23,9 +23,11 @@ interface TesseractServerStatus {
 
 export class TesseractDataSource implements IDataSource {
   serverOnline: boolean;
-  serverSoftware: string = "tesseract-olap";
+  serverSoftware: string = TesseractDataSource.softwareName;
   serverVersion: string = "";
   serverUrl: string = "/";
+
+  static softwareName = "tesseract-olap";
 
   constructor(serverUrl: string) {
     if (!serverUrl) {
