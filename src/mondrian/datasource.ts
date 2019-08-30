@@ -1,4 +1,4 @@
-import Axios, {AxiosError, AxiosResponse} from "axios";
+import Axios, {AxiosError} from "axios";
 import formUrlEncoded from "form-urlencoded";
 import urljoin from "url-join";
 import {Format} from "../enums";

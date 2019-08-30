@@ -143,7 +143,7 @@ To prevent this error, pass a selectorFn parameter to the MultiClient#getCube me
   getMember(
     levelRef: Level | LevelDescriptor,
     key: string | number,
-    options: any
+    options?: any
   ): Promise<Member> {
     return this.getLevel(levelRef).then(level => {
       const server = level.cube.server;
@@ -161,7 +161,7 @@ Level: ${level}`
     });
   }
 
-  getMembers(levelRef: Level | LevelDescriptor, options: any): Promise<Member[]> {
+  getMembers(levelRef: Level | LevelDescriptor, options?: any): Promise<Member[]> {
     return this.getLevel(levelRef).then(level => {
       const server = level.cube.server;
       const datasource = this.datasources[server];

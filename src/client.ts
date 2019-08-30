@@ -131,7 +131,7 @@ Verify the initialization procedure, there might be a race condition.`);
   getMember(
     levelRef: Level | LevelDescriptor,
     key: string | number,
-    options: any
+    options?: any
   ): Promise<Member> {
     return this.getLevel(levelRef).then(level => {
       if (!this.datasource) {
@@ -146,7 +146,7 @@ Verify the initialization procedure, there might be a race condition.`
     });
   }
 
-  getMembers(levelRef: Level | LevelDescriptor, options: any): Promise<Member[]> {
+  getMembers(levelRef: Level | LevelDescriptor, options?: any): Promise<Member[]> {
     return this.getLevel(levelRef).then(level => {
       if (!this.datasource) {
         throw new ClientError(
