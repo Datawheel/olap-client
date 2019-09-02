@@ -1,4 +1,3 @@
-import babel from "rollup-plugin-babel";
 import cleanup from "rollup-plugin-cleanup";
 import commonjs from "rollup-plugin-commonjs";
 import resolve from "rollup-plugin-node-resolve";
@@ -46,9 +45,6 @@ export default commandLineArgs => {
       resolve({
         extensions: [".mjs", ".js", ".jsx", ".ts", ".tsx"],
         preferBuiltins: true
-      }),
-      babel({
-        exclude: "node_modules/**"
       }),
       typescript({
         clean: true,
