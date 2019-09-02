@@ -69,18 +69,15 @@ export function queryBuilder(
 }
 
 export function rangeify(list: number[]) {
-  const groups: {
-    [diff: string]: number[];
-  } = list.sort().reduce((groups: any[], item: number, i: number) => {
+  const groups: {[diff: string]: number[]} = {};
+  list.sort().forEach((item: number, i: number) => {
     const diff = item - i;
     groups[diff] = groups[diff] || [];
     groups[diff].push(item);
-    return groups;
-  }, {});
-  return Object.keys(groups).map(diff => {
-    const group = groups[diff];
-    return group.length > 1 ? [group[0], group[group.length - 1]] : group[0];
   });
+  return Object.values(groups).map(
+    group => (group.length > 1 ? [group[0], group[group.length - 1]] : group[0])
+  );
 }
 
 export function splitFullName(fullname: string): string[] | undefined {
