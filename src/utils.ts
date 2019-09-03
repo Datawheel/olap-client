@@ -57,6 +57,20 @@ export function nameMapperFactory<P>(context: P) {
   };
 }
 
+export function arrayMapper<T>(
+  list: T[],
+  property: keyof T,
+  targetMap: {[key: string]: T[]} = {}
+) {
+  for (let item of list) {
+    const key = `${item[property]}`;
+    const target = targetMap[key] || [];
+    target.push(item);
+    targetMap[key] = target;
+  }
+  return targetMap;
+}
+
 export function pushUnique<T>(target: T[], item: T) {
   return target.indexOf(item) === -1 ? target.push(item) : target.length;
 }

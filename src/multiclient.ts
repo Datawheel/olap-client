@@ -14,7 +14,7 @@ import Member from "./member";
 import {MondrianDataSource} from "./mondrian/datasource";
 import {Query} from "./query";
 import {TesseractDataSource} from "./tesseract/datasource";
-import {levelFinderFactory} from "./utils";
+import {arrayMapper, levelFinderFactory} from "./utils";
 
 class MultiClient implements IClient {
   private cubeCache: {[key: string]: Promise<Cube[]>} = {};
@@ -61,30 +61,27 @@ Verify the initialization procedure, there might be a race condition.`);
   }
 
   addDataSource(...datasources: IDataSource[]) {
-    if (datasources.length > 0) {
-      let taintedCache = false;
-      for (let datasource of datasources) {
-        if (!this.datasources[datasource.serverUrl]) {
-          this.datasources[datasource.serverUrl] = datasource;
-          taintedCache = true;
-        }
+    let taintedCache = false;
+
+    let n = datasources.length;
+    while (n--) {
+      const datasource = datasources[n];
+      if (!this.datasources[datasource.serverUrl]) {
+        this.datasources[datasource.serverUrl] = datasource;
+        taintedCache = true;
       }
-      if (taintedCache) {
-        this.cubeCache = {};
-        this.cubesCache = undefined;
-      }
+    }
+
+    if (taintedCache) {
+      this.cubeCache = {};
+      this.cubesCache = undefined;
     }
   }
 
-  private cacheCube(cube: Cube): Promise<Cube> {
-    const promise = this.cubeCache[cube.name] || Promise.resolve([]);
-    return promise.then(cubes => {
-      const cubeUri = cube.toString();
-      const finalCubes = cubes.some(c => c.toString() === cubeUri)
-        ? cubes
-        : cubes.concat(cube);
-      this.cubeCache[cube.name] = Promise.resolve(finalCubes);
-      return cube;
+  private cacheCube(cubes: Cube[]): void {
+    const cubeMap = arrayMapper(cubes, "name");
+    Object.keys(cubeMap).forEach(cubeName => {
+      this.cubeCache[cubeName] = Promise.resolve(cubeMap[cubeName]);
     });
   }
 
@@ -109,12 +106,15 @@ Verify the initialization procedure, there might be a race condition.`);
       this.cubeCache[cubeName] ||
       Promise.resolve(this.dataSourceList).then(datasources => {
         const promises = datasources.map(datasource =>
-          datasource.fetchCube(cubeName).then((acube: AdaptedCube) => {
-            const cube = new Cube(acube, datasource);
-            return this.cacheCube(cube);
-          }, () => undefined)
+          datasource
+            .fetchCube(cubeName)
+            .then((acube: AdaptedCube) => new Cube(acube, datasource), () => undefined)
         );
-        return Promise.all(promises).then(values => values.filter(Boolean) as Cube[]);
+        return Promise.all(promises).then(values => {
+          const cubes = values.filter(Boolean) as Cube[];
+          this.cacheCube(cubes);
+          return cubes;
+        });
       });
 
     this.cubeCache[cubeName] = promise;
@@ -139,16 +139,15 @@ To prevent this error, pass a selectorFn parameter to the MultiClient#getCube me
       Promise.resolve(this.dataSourceList).then(datasources => {
         const promises = datasources.map(datasource =>
           datasource.fetchCubes().then((acubes: AdaptedCube[]) => {
-            const promises = acubes.map(acube => {
-              const cube = new Cube(acube, datasource);
-              return this.cacheCube(cube);
-            });
+            const promises = acubes.map(acube => new Cube(acube, datasource));
             return Promise.all(promises);
           })
         );
-        return Promise.all(promises).then(cubesList =>
-          ([] as Cube[]).concat(...cubesList)
-        );
+        return Promise.all(promises).then(cubesList => {
+          const cubes = ([] as Cube[]).concat(...cubesList);
+          this.cacheCube(cubes);
+          return cubes;
+        });
       });
     this.cubesCache = promise;
     return promise;
@@ -162,9 +161,10 @@ To prevent this error, pass a selectorFn parameter to the MultiClient#getCube me
     return identifier.cube
       ? this.getCube(identifier.cube).then(levelFinder)
       : this.getCubes().then(cubes => {
-          for (let cube of cubes) {
+          let n = cubes.length;
+          while (n--) {
             try {
-              return levelFinder(cube);
+              return levelFinder(cubes[n]);
             } catch (e) {
               continue;
             }
