@@ -19,7 +19,7 @@ import {levelFinderFactory} from "./utils";
 class MultiClient implements IClient {
   private cubeCache: {[key: string]: Promise<Cube[]>} = {};
   private cubesCache: Promise<Cube[]> | undefined = undefined;
-  private datasources: {[url: string]: IDataSource | undefined};
+  private datasources: {[url: string]: IDataSource | undefined} = {};
 
   static dataSourcesFromURL(...urls: string[]): Promise<IDataSource[]> {
     const promises = urls.map(url =>
