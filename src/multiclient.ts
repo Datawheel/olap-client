@@ -1,5 +1,6 @@
+import Axios, {AxiosError, AxiosResponse} from "axios";
 import Cube from "./cube";
-import {ClientError} from "./errors";
+import {ClientError, ServerError} from "./errors";
 import {
   AdaptedCube,
   Aggregation,
@@ -10,13 +11,41 @@ import {
 } from "./interfaces";
 import Level from "./level";
 import Member from "./member";
+import {MondrianDataSource} from "./mondrian/datasource";
 import {Query} from "./query";
+import {TesseractDataSource} from "./tesseract/datasource";
 import {levelFinderFactory} from "./utils";
 
 class MultiClient implements IClient {
   private cubeCache: {[key: string]: Promise<Cube[]>} = {};
   private cubesCache: Promise<Cube[]> | undefined = undefined;
   private datasources: {[url: string]: IDataSource | undefined};
+
+  static dataSourcesFromURL(...urls: string[]): Promise<IDataSource[]> {
+    const promises = urls.map(url =>
+      Axios.get(url).then(
+        (response: AxiosResponse) => {
+          if (response.status === 200 && "tesseract_version" in response.data) {
+            return new TesseractDataSource(url);
+          }
+          throw new ServerError(response, `URL is not a known OLAP server: ${url}`);
+        },
+        (error: AxiosError) => {
+          if (error.response && error.response.status === 404) {
+            return new MondrianDataSource(url);
+          }
+          throw error;
+        }
+      )
+    );
+    return Promise.all(promises);
+  }
+
+  static fromURL(...urls: string[]): Promise<MultiClient> {
+    return MultiClient.dataSourcesFromURL(...urls).then(
+      datasources => new MultiClient(...datasources)
+    );
+  }
 
   constructor(...datasources: IDataSource[]) {
     this.addDataSource(...datasources);
@@ -33,11 +62,17 @@ Verify the initialization procedure, there might be a race condition.`);
 
   addDataSource(...datasources: IDataSource[]) {
     if (datasources.length > 0) {
+      let taintedCache = false;
       for (let datasource of datasources) {
-        this.datasources[datasource.serverUrl] = datasource;
+        if (!this.datasources[datasource.serverUrl]) {
+          this.datasources[datasource.serverUrl] = datasource;
+          taintedCache = true;
+        }
       }
-      this.cubeCache = {};
-      this.cubesCache = undefined;
+      if (taintedCache) {
+        this.cubeCache = {};
+        this.cubesCache = undefined;
+      }
     }
   }
 
