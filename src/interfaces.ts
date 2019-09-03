@@ -13,6 +13,7 @@ export interface AdaptedCube extends IAnnotated, IFullNamed, ISerializable {
 
 export interface AdaptedDimension extends IAnnotated, IFullNamed, ISerializable {
   readonly _type: "dimension";
+  readonly cube: string;
   readonly defaultHierarchy: string;
   readonly dimensionType: DimensionType;
   readonly hierarchies: AdaptedHierarchy[];
@@ -20,14 +21,18 @@ export interface AdaptedDimension extends IAnnotated, IFullNamed, ISerializable 
 
 export interface AdaptedHierarchy extends IAnnotated, IFullNamed, ISerializable {
   readonly _type: "hierarchy";
-  readonly allMemberName?: string;
+  readonly cube: string;
+  readonly dimension: string;
   readonly levels: AdaptedLevel[];
 }
 
 export interface AdaptedLevel extends IAnnotated, IFullNamed, ISerializable {
   readonly _type: "level";
   readonly caption: string;
+  readonly cube: string;
   readonly depth: number;
+  readonly dimension: string;
+  readonly hierarchy: string;
   readonly properties: AdaptedProperty[];
   readonly uniqueName?: string;
 }
@@ -35,23 +40,26 @@ export interface AdaptedLevel extends IAnnotated, IFullNamed, ISerializable {
 export interface AdaptedMeasure extends IAnnotated, IFullNamed, ISerializable {
   readonly _type: "measure";
   readonly aggregatorType: AggregatorType;
+  readonly cube: string;
 }
 
 export interface AdaptedMember extends IFullNamed, ISerializable {
   readonly _type: "member";
-  readonly allMember?: boolean;
   readonly ancestors: AdaptedMember[];
   readonly children: AdaptedMember[];
   readonly depth?: number;
-  readonly drillable?: boolean;
   readonly key: string | number;
+  readonly level: string;
   readonly numChildren?: number;
   readonly parentName?: string;
 }
 
 export interface AdaptedNamedSet extends IAnnotated, INamed, ISerializable {
   readonly _type: "namedset";
-  readonly level: [string, string, string];
+  readonly cube: string;
+  readonly dimension: string;
+  readonly hierarchy: string;
+  readonly level: string;
 }
 
 export interface AdaptedProperty {
@@ -106,7 +114,6 @@ export interface IDataSource {
 export interface IFullNamed extends INamed {
   readonly caption?: string;
   readonly fullName?: string;
-  readonly splitFullName?: string[];
 }
 
 export interface INamed {

@@ -36,10 +36,6 @@ export class FullNamed {
   get name(): string {
     return this._source.name;
   }
-
-  get fullNameSplit(): string[] {
-    return this._source.splitFullName || [this._source.name];
-  }
 }
 
 export class Serializable<T extends ISerializable> {

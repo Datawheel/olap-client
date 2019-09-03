@@ -28,7 +28,7 @@ export function cubeAdapterFactory(
 ): (json: TesseractCube) => AdaptedCube {
   return (json: TesseractCube) => {
     const cube_uri = urljoin(meta.server_uri, "cubes", encodeURIComponent(json.name));
-    const contextMeta = {...meta, cube_uri};
+    const contextMeta = {...meta, cube_name: json.name, cube_uri};
     return {
       _type: "cube",
       annotations: json.annotations,
@@ -56,6 +56,7 @@ function dimensionAdapterFactory(
     return {
       _type: "dimension",
       annotations: json.annotations,
+      cube: meta.cube_name,
       defaultHierarchy: json.default_hierarchy || json.hierarchies[0].name,
       dimensionType: switchCase<DimensionType>(
         DimensionType,
@@ -65,7 +66,6 @@ function dimensionAdapterFactory(
       fullName: joinFullName(dimension_fullname),
       hierarchies: json.hierarchies.map(hierarchyAdapterFactory(contextMeta)),
       name: json.name,
-      splitFullName: dimension_fullname,
       uri: dimension_uri
     };
   };
@@ -86,10 +86,11 @@ function hierarchyAdapterFactory(
     return {
       _type: "hierarchy",
       annotations: json.annotations,
+      cube: meta.cube_name,
+      dimension: meta.dimension_name,
       fullName: joinFullName(hierarchy_fullname),
       levels: json.levels.map(levelAdapterFactory(contextMeta)),
       name: json.name,
-      splitFullName: hierarchy_fullname,
       uri: hierarchy_uri
     };
   };
@@ -105,11 +106,13 @@ function levelAdapterFactory(
       _type: "level",
       annotations: json.annotations,
       caption: json.name,
+      cube: meta.cube_name,
       depth: depth + 1,
+      dimension: meta.dimension_name,
       fullName: joinFullName(level_fullname),
+      hierarchy: meta.hierarchy_name,
       name: json.name,
       properties: json.properties,
-      splitFullName: level_fullname,
       uri: urljoin(meta.hierarchy_uri, "levels", encodeURIComponent(json.name))
     };
   };
@@ -126,6 +129,7 @@ function measureAdapterFactory(meta: any): (json: TesseractMeasure) => AdaptedMe
       ),
       annotations: json.annotations,
       caption: json.name,
+      cube: meta.cube_name,
       name: json.name,
       uri: urljoin(meta.cube_uri, "measures", encodeURIComponent(json.name))
     };
@@ -136,17 +140,15 @@ export function memberAdapterFactory(
   meta: any
 ): (json: TesseractMember) => AdaptedMember {
   return (json: TesseractMember) => {
-    const splitFullName = [meta.level_name, json.ID];
-    const fullName = joinFullName(splitFullName);
     return {
       _type: "member",
       ancestors: [],
       caption: json.Label || `${json.ID}`,
       children: [],
-      fullName: fullName,
+      fullName: joinFullName([meta.level_name, json.ID]),
       key: json.ID,
+      level: meta.level_name,
       name: json.Label || `${json.ID}`,
-      splitFullName: splitFullName,
       uri: urljoin(
         meta.server_uri,
         `members?level=${encodeURIComponent(meta.level_name)}`

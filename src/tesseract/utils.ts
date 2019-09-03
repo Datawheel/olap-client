@@ -66,7 +66,7 @@ export function aggregateQueryBuilder(
     measures: undefinedIfEmpty(query.getParam("measures"), (m: Measure) => m.name),
     parents: Boolean(options.parents),
     properties: undefinedIfEmpty(query.getParam("properties"), (p: QueryProperty) =>
-      joinFullName(p.level.fullNameSplit.concat(p.name))
+      joinFullName([p.level.dimension.name, p.level.hierarchy.name, p.level.name, p.name])
     ),
     rate: undefined,
     rca: undefinedIfIncomplete(
