@@ -13,7 +13,7 @@ import Member from "./member";
 import {Query} from "./query";
 import {levelFinderFactory} from "./utils";
 
-export class MultiClient implements IClient {
+class MultiClient implements IClient {
   private cubeCache: {[key: string]: Promise<Cube[]>} = {};
   private cubesCache: Promise<Cube[]> | undefined = undefined;
   private datasources: {[url: string]: IDataSource | undefined};
@@ -178,3 +178,5 @@ Level: ${level}`
     });
   }
 }
+
+export default MultiClient;

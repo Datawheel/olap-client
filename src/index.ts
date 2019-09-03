@@ -21,6 +21,7 @@ export {default as Level} from "./level";
 export {default as Measure} from "./measure";
 export {default as Member} from "./member";
 export {MondrianDataSource} from "./mondrian/datasource";
+export {default as MultiClient} from "./multiclient";
 export {default as NamedSet} from "./namedset";
 export {Drillable, DrillableReference, LevelReference, Query} from "./query";
 export {TesseractDataSource} from "./tesseract/datasource";
