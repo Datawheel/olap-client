@@ -122,8 +122,9 @@ export class TesseractDataSource implements IDataSource {
       locale: options.locale || undefined
     };
     const memberAdapter = memberAdapterFactory({
-      cube_name: parent.cube,
-      level_name: parent.level,
+      cube_name: params.cube,
+      level_name: params.level,
+      locale: (params.locale || ``).toUpperCase(),
       server_uri: this.serverUrl
     });
     return Axios.get<{data: TesseractMember[]}>(url, {params}).then(response =>

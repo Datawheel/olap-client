@@ -140,15 +140,16 @@ export function memberAdapterFactory(
   meta: any
 ): (json: TesseractMember) => AdaptedMember {
   return (json: TesseractMember) => {
+    const label = json[`${meta.locale} Label`] || json.Label || `${json.ID}`;
     return {
       _type: "member",
       ancestors: [],
-      caption: json.Label || `${json.ID}`,
+      caption: label,
       children: [],
       fullName: joinFullName([meta.level_name, json.ID]),
       key: json.ID,
       level: meta.level_name,
-      name: json.Label || `${json.ID}`,
+      name: label,
       uri: urljoin(
         meta.server_uri,
         `members?level=${encodeURIComponent(meta.level_name)}`
