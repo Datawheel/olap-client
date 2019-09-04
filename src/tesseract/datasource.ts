@@ -8,9 +8,9 @@ import {
   AdaptedMember,
   Aggregation,
   IDataSource,
-  LevelDescriptor,
   ServerStatus
 } from "../interfaces";
+import Level from "../level";
 import {Query} from "../query";
 import {cubeAdapterFactory, memberAdapterFactory} from "./dataadapter";
 import {TesseractCube, TesseractEndpointCubes, TesseractMember} from "./schema";
@@ -110,15 +110,11 @@ export class TesseractDataSource implements IDataSource {
     });
   }
 
-  fetchMembers(parent: LevelDescriptor, options: any = {}): Promise<AdaptedMember[]> {
-    if (!parent || !parent.cube || !parent.level) {
-      const descriptor = JSON.stringify(parent);
-      throw new ClientError(`Level descriptor must specify cube, level: ${descriptor}`);
-    }
+  fetchMembers(parent: Level, options: any = {}): Promise<AdaptedMember[]> {
     const url = urljoin(this.serverUrl, `members`);
     const params = {
-      cube: parent.cube,
-      level: parent.level,
+      cube: parent.cube.name,
+      level: parent.name,
       locale: options.locale || undefined
     };
     const memberAdapter = memberAdapterFactory({
@@ -133,7 +129,7 @@ export class TesseractDataSource implements IDataSource {
   }
 
   fetchMember(
-    parent: LevelDescriptor,
+    parent: Level,
     key: string | number,
     options: any = {}
   ): Promise<AdaptedMember> {

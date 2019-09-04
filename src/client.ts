@@ -141,7 +141,7 @@ Verify the initialization procedure, there might be a race condition.`
         );
       }
       return this.datasource
-        .fetchMember(level.descriptor, key, options)
+        .fetchMember(level, key, options)
         .then(member => new Member(member, level));
     });
   }
@@ -155,7 +155,7 @@ Verify the initialization procedure, there might be a race condition.`
         );
       }
       return this.datasource
-        .fetchMembers(level.descriptor, options)
+        .fetchMembers(level, options)
         .then(members => members.map(member => new Member(member, level)));
     });
   }

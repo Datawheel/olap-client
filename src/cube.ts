@@ -6,7 +6,7 @@ import Level from "./level";
 import Measure from "./measure";
 import {Annotated, FullNamed, Serializable} from "./mixins";
 import NamedSet from "./namedset";
-import {Query} from "./query";
+import {Query, LevelReference} from "./query";
 import {applyMixins, levelFinderFactory, nameMapperFactory} from "./utils";
 
 interface Cube extends Annotated, FullNamed, Serializable<AdaptedCube> {}
@@ -90,7 +90,7 @@ class Cube {
     return dimension;
   }
 
-  getLevel(identifier: string | Level | LevelDescriptor): Level {
+  getLevel(identifier: LevelReference): Level {
     const descriptor =
       typeof identifier === "string"
         ? {level: identifier} as LevelDescriptor

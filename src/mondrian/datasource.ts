@@ -8,9 +8,9 @@ import {
   AdaptedMember,
   Aggregation,
   IDataSource,
-  LevelDescriptor,
   ServerStatus
 } from "../interfaces";
+import Level from "../level";
 import {Query} from "../query";
 import {cubeAdapterFactory, memberAdapterFactory} from "./dataadapter";
 import {MondrianCube, MondrianMember} from "./schema";
@@ -98,63 +98,27 @@ export class MondrianDataSource implements IDataSource {
    * @see [Source code](https://github.com/jazzido/mondrian-rest/blob/public/lib/mondrian_rest/api.rb#L220)
    */
   fetchMember(
-    parent: LevelDescriptor,
+    parent: Level,
     key: number | string,
     options: any = {}
   ): Promise<AdaptedMember> {
-    if (!parent || !parent.cube || !parent.dimension || !parent.level) {
-      const descriptor = JSON.stringify(parent);
-      throw new ClientError(
-        `Level descriptor must specify cube, dimension, level: ${descriptor}`
-      );
-    }
-    const url = urljoin(
-      this.serverUrl,
-      "cubes",
-      parent.cube,
-      "dimensions",
-      parent.dimension,
-      "levels",
-      parent.level,
-      "members",
-      `${key}`
-    );
+    const {dimension, name} = parent;
+    const url = urljoin(dimension.toString(), "levels", name, "members", `${key}`);
     const params = {
       children: Boolean(options.children),
       caption: options.caption,
       member_properties: options.member_properties
     };
-    const memberAdapter = memberAdapterFactory({server_uri: this.serverUrl});
+    const memberAdapter = memberAdapterFactory({
+      server_uri: this.serverUrl
+    });
     return Axios.get<MondrianMember>(url, {params}).then(response =>
       memberAdapter(response.data)
     );
   }
 
-  fetchMembers(parent: LevelDescriptor, options: any = {}): Promise<AdaptedMember[]> {
-    if (
-      !parent ||
-      !parent.cube ||
-      !parent.dimension ||
-      !parent.hierarchy ||
-      !parent.level
-    ) {
-      const descriptor = JSON.stringify(parent);
-      throw new ClientError(
-        `Level descriptor must specify cube, dimension, hierarchy, level: ${descriptor}`
-      );
-    }
-    const url = urljoin(
-      this.serverUrl,
-      "cubes",
-      parent.cube,
-      "dimensions",
-      parent.dimension,
-      "hierarchies",
-      parent.hierarchy,
-      "levels",
-      parent.level,
-      "members"
-    );
+  fetchMembers(parent: Level, options: any = {}): Promise<AdaptedMember[]> {
+    const url = urljoin(parent.toString(), "members");
     const params = {
       children: Boolean(options.children),
       caption: options.caption,

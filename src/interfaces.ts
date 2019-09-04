@@ -99,12 +99,8 @@ export interface IDataSource {
   execQuery(query: Query, endpoint?: string): Promise<Aggregation>;
   fetchCube(cubeName: string): Promise<AdaptedCube>;
   fetchCubes(): Promise<AdaptedCube[]>;
-  fetchMember(
-    parent: Level | LevelDescriptor,
-    key: string | number,
-    options?: any
-  ): Promise<AdaptedMember>;
-  fetchMembers(parent: Level | LevelDescriptor, options?: any): Promise<AdaptedMember[]>;
+  fetchMember(parent: Level, key: string | number, options?: any): Promise<AdaptedMember>;
+  fetchMembers(parent: Level, options?: any): Promise<AdaptedMember[]>;
   serverOnline: boolean;
   serverSoftware: string;
   serverVersion: string;
