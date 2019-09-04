@@ -110,7 +110,7 @@ export class MondrianDataSource implements IDataSource {
       member_properties: options.member_properties
     };
     const memberAdapter = memberAdapterFactory({
-      server_uri: this.serverUrl
+      level_uri: parent.toString()
     });
     return Axios.get<MondrianMember>(url, {params}).then(response =>
       memberAdapter(response.data)
@@ -124,7 +124,9 @@ export class MondrianDataSource implements IDataSource {
       caption: options.caption,
       member_properties: options.member_properties
     };
-    const memberAdapter = memberAdapterFactory({server_uri: this.serverUrl});
+    const memberAdapter = memberAdapterFactory({
+      level_uri: parent.toString()
+    });
     return Axios.get<{members: MondrianMember[]}>(url, {params}).then(response =>
       response.data.members.map(memberAdapter)
     );

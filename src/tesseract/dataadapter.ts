@@ -19,12 +19,24 @@ import {
 } from "./schema";
 import {joinFullName} from "./utils";
 
-interface CubeAdapterMeta {
+interface TesseractAdapterMeta {
+  cube_name: string;
+  cube_uri: string;
+  dimension_fullname: string[];
+  dimension_name: string;
+  dimension_uri: string;
+  hierarchy_fullname: string[];
+  hierarchy_name: string;
+  hierarchy_uri: string;
+  level_fullname: string[];
+  level_name: string;
+  level_uri: string;
+  locale: string;
   server_uri: string;
 }
 
 export function cubeAdapterFactory(
-  meta: CubeAdapterMeta
+  meta: Pick<TesseractAdapterMeta, "server_uri">
 ): (json: TesseractCube) => AdaptedCube {
   return (json: TesseractCube) => {
     const cube_uri = urljoin(meta.server_uri, "cubes", encodeURIComponent(json.name));
@@ -42,7 +54,7 @@ export function cubeAdapterFactory(
 }
 
 function dimensionAdapterFactory(
-  meta: any
+  meta: Pick<TesseractAdapterMeta, "cube_name" | "cube_uri">
 ): (json: TesseractDimension) => AdaptedDimension {
   return (json: TesseractDimension) => {
     const dimension_name = json.name;
@@ -72,7 +84,10 @@ function dimensionAdapterFactory(
 }
 
 function hierarchyAdapterFactory(
-  meta: any
+  meta: Pick<
+    TesseractAdapterMeta,
+    "cube_name" | "dimension_fullname" | "dimension_name" | "dimension_uri"
+  >
 ): (json: TesseractHierarchy) => AdaptedHierarchy {
   return (json: TesseractHierarchy) => {
     const hierarchy_name = json.name;
@@ -97,7 +112,14 @@ function hierarchyAdapterFactory(
 }
 
 function levelAdapterFactory(
-  meta: any
+  meta: Pick<
+    TesseractAdapterMeta,
+    | "cube_name"
+    | "dimension_name"
+    | "hierarchy_fullname"
+    | "hierarchy_name"
+    | "hierarchy_uri"
+  >
 ): (json: TesseractLevel, depth: number) => AdaptedLevel {
   return (json: TesseractLevel, depth: number) => {
     const level_name = json.name;
@@ -118,7 +140,9 @@ function levelAdapterFactory(
   };
 }
 
-function measureAdapterFactory(meta: any): (json: TesseractMeasure) => AdaptedMeasure {
+function measureAdapterFactory(
+  meta: Pick<TesseractAdapterMeta, "cube_name" | "cube_uri">
+): (json: TesseractMeasure) => AdaptedMeasure {
   return (json: TesseractMeasure) => {
     return {
       _type: "measure",
@@ -137,7 +161,7 @@ function measureAdapterFactory(meta: any): (json: TesseractMeasure) => AdaptedMe
 }
 
 export function memberAdapterFactory(
-  meta: any
+  meta: Pick<TesseractAdapterMeta, "level_name" | "locale" | "server_uri">
 ): (json: TesseractMember) => AdaptedMember {
   return (json: TesseractMember) => {
     const label = json[`${meta.locale} Label`] || json.Label || `${json.ID}`;
@@ -146,7 +170,7 @@ export function memberAdapterFactory(
       ancestors: [],
       caption: label,
       children: [],
-      fullName: joinFullName([meta.level_name, json.ID]),
+      fullName: joinFullName([meta.level_name, `${json.ID}`]),
       key: json.ID,
       level: meta.level_name,
       name: label,

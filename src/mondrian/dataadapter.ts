@@ -21,12 +21,24 @@ import {
   MondrianNamedSet
 } from "./schema";
 
-interface CubeAdapterMeta {
+interface MondrianAdapterMeta {
+  cube_name: string;
+  cube_uri: string;
+  dimension_fullname: string[];
+  dimension_name: string;
+  dimension_uri: string;
+  hierarchy_fullname: string[];
+  hierarchy_name: string;
+  hierarchy_uri: string;
+  level_fullname: string[];
+  level_name: string;
+  level_uri: string;
+  locale: string;
   server_uri: string;
 }
 
 export function cubeAdapterFactory(
-  meta: CubeAdapterMeta
+  meta: Pick<MondrianAdapterMeta, "server_uri">
 ): (json: MondrianCube) => AdaptedCube {
   return (json: MondrianCube) => {
     const cube_uri = urljoin(meta.server_uri, "cubes", encodeURIComponent(json.name));
@@ -44,7 +56,7 @@ export function cubeAdapterFactory(
 }
 
 function dimensionAdapterFactory(
-  meta: any
+  meta: Pick<MondrianAdapterMeta, "cube_name" | "cube_uri">
 ): (json: MondrianDimension) => AdaptedDimension {
   return (json: MondrianDimension) => {
     const dimension_uri = urljoin(
@@ -71,7 +83,7 @@ function dimensionAdapterFactory(
 }
 
 function hierarchyAdapterFactory(
-  meta: any
+  meta: Pick<MondrianAdapterMeta, "cube_name" | "dimension_name" | "dimension_uri">
 ): (json: MondrianHierarchy) => AdaptedHierarchy {
   return (json: MondrianHierarchy) => {
     const hierarchy_uri = urljoin(
@@ -93,7 +105,12 @@ function hierarchyAdapterFactory(
   };
 }
 
-function levelAdapterFactory(meta: any): (json: MondrianLevel) => AdaptedLevel {
+function levelAdapterFactory(
+  meta: Pick<
+    MondrianAdapterMeta,
+    "cube_name" | "dimension_name" | "hierarchy_name" | "hierarchy_uri"
+  >
+): (json: MondrianLevel) => AdaptedLevel {
   return (json: MondrianLevel) => {
     return {
       _type: "level",
@@ -111,7 +128,9 @@ function levelAdapterFactory(meta: any): (json: MondrianLevel) => AdaptedLevel {
   };
 }
 
-function measureAdapterFactory(meta: any): (json: MondrianMeasure) => AdaptedMeasure {
+function measureAdapterFactory(
+  meta: Pick<MondrianAdapterMeta, "cube_name" | "cube_uri">
+): (json: MondrianMeasure) => AdaptedMeasure {
   return (json: MondrianMeasure) => {
     return {
       _type: "measure",
@@ -126,7 +145,9 @@ function measureAdapterFactory(meta: any): (json: MondrianMeasure) => AdaptedMea
   };
 }
 
-export function memberAdapterFactory(meta: any): (json: MondrianMember) => AdaptedMember {
+export function memberAdapterFactory(
+  meta: Pick<MondrianAdapterMeta, "level_uri">
+): (json: MondrianMember) => AdaptedMember {
   return (json: MondrianMember) => {
     return {
       _type: "member",
@@ -143,9 +164,7 @@ export function memberAdapterFactory(meta: any): (json: MondrianMember) => Adapt
       numChildren: json.num_children,
       parentName: json.parent_name,
       uri: urljoin(
-        meta.hierarchy_uri,
-        "levels",
-        encodeURIComponent(json.level_name),
+        meta.level_uri,
         "members",
         `${json.key}`
       )
@@ -153,7 +172,9 @@ export function memberAdapterFactory(meta: any): (json: MondrianMember) => Adapt
   };
 }
 
-function namedSetAdapterFactory(meta: any): (json: MondrianNamedSet) => AdaptedNamedSet {
+function namedSetAdapterFactory(
+  meta: Pick<MondrianAdapterMeta, "cube_name" | "cube_uri">
+): (json: MondrianNamedSet) => AdaptedNamedSet {
   return (json: MondrianNamedSet) => {
     return {
       _type: "namedset",
