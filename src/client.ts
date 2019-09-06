@@ -17,9 +17,9 @@ import {TesseractDataSource} from "./tesseract/datasource";
 import {levelFinderFactory} from "./utils";
 
 export class Client implements IClient {
-  private cubeCache: {[key: string]: Promise<Cube>} = {};
-  private cubesCache: Promise<Cube[]> | undefined = undefined;
-  private datasource: IDataSource | undefined;
+  private _cubeCache: {[key: string]: Promise<Cube>} = {};
+  private _cubesCache: Promise<Cube[]> | undefined = undefined;
+  private _ds: IDataSource | undefined;
 
   static dataSourceFromURL(url: string): Promise<IDataSource> {
     return Axios.get(url).then(
@@ -47,63 +47,49 @@ export class Client implements IClient {
   }
 
   private cacheCube(cube: Cube): Cube {
-    this.cubeCache[cube.name] = Promise.resolve(cube);
+    this._cubeCache[cube.name] = Promise.resolve(cube);
     return cube;
   }
 
   checkStatus(): Promise<ServerStatus> {
-    if (!this.datasource) {
-      const error = new ClientError(`This Client instance has no DataSource configured.
-Verify the initialization procedure, there might be a race condition.`);
-      return Promise.reject(error);
-    }
-
     return this.datasource.checkStatus();
   }
 
-  execQuery(query: Query, endpoint?: string): Promise<Aggregation> {
-    if (!this.datasource) {
-      const error = new ClientError(`This Client instance has no DataSource configured.
+  private get datasource(): IDataSource {
+    if (!this._ds) {
+      throw new ClientError(`This Client instance has no DataSource configured.
 Verify the initialization procedure, there might be a race condition.`);
-      return Promise.reject(error);
     }
+    return this._ds;
+  }
 
+  execQuery(query: Query, endpoint?: string): Promise<Aggregation> {
     return this.datasource.execQuery(query, endpoint);
   }
 
   getCube(cubeName: string): Promise<Cube> {
-    if (!this.datasource) {
-      const error = new ClientError(`This Client instance has no DataSource configured.
-Verify the initialization procedure, there might be a race condition.`);
-      return Promise.reject(error);
-    }
-
+    const datasource = this.datasource;
     const promise =
-      this.cubeCache[cubeName] ||
-      this.datasource.fetchCube(cubeName).then((acube: AdaptedCube) => {
-        const cube = new Cube(acube, this.datasource);
+      this._cubeCache[cubeName] ||
+      datasource.fetchCube(cubeName).then((acube: AdaptedCube) => {
+        const cube = new Cube(acube, datasource);
         return this.cacheCube(cube);
       });
-    this.cubeCache[cubeName] = promise;
+    this._cubeCache[cubeName] = promise;
     return promise;
   }
 
   getCubes(): Promise<Cube[]> {
-    if (!this.datasource) {
-      const error = new ClientError(`This Client instance has no DataSource configured.
-Verify the initialization procedure, there might be a race condition.`);
-      return Promise.reject(error);
-    }
-
+    const datasource = this.datasource;
     const promise =
-      this.cubesCache ||
-      this.datasource.fetchCubes().then((acubes: AdaptedCube[]) =>
+      this._cubesCache ||
+      datasource.fetchCubes().then((acubes: AdaptedCube[]) =>
         acubes.map(acube => {
-          const cube = new Cube(acube, this.datasource);
+          const cube = new Cube(acube, datasource);
           return this.cacheCube(cube);
         })
       );
-    this.cubesCache = promise;
+    this._cubesCache = promise;
     return promise;
   }
 
@@ -133,38 +119,24 @@ Verify the initialization procedure, there might be a race condition.`);
     key: string | number,
     options?: any
   ): Promise<Member> {
-    return this.getLevel(levelRef).then(level => {
-      if (!this.datasource) {
-        throw new ClientError(
-          `This Client instance has no DataSource configured.
-Verify the initialization procedure, there might be a race condition.`
+    return this.getLevel(levelRef).then(level =>
+      this.datasource.fetchMember(level, key, options).then(member => new Member(member, level))
         );
       }
-      return this.datasource
-        .fetchMember(level, key, options)
-        .then(member => new Member(member, level));
-    });
-  }
 
   getMembers(levelRef: Level | LevelDescriptor, options?: any): Promise<Member[]> {
-    return this.getLevel(levelRef).then(level => {
-      if (!this.datasource) {
-        throw new ClientError(
-          `This Client instance has no DataSource configured.
-Verify the initialization procedure, there might be a race condition.`
+    return this.getLevel(levelRef).then(level =>
+      this.datasource
+        .fetchMembers(level, options)
+        .then(members => members.map(member => new Member(member, level)))
         );
       }
-      return this.datasource
-        .fetchMembers(level, options)
-        .then(members => members.map(member => new Member(member, level)));
-    });
-  }
 
   setDataSource(datasource: IDataSource): void {
-    if (datasource !== this.datasource) {
-      this.datasource = datasource;
-      this.cubeCache = {};
-      this.cubesCache = undefined;
+    if (datasource !== this._ds) {
+      this._ds = datasource;
+      this._cubeCache = {};
+      this._cubesCache = undefined;
     }
   }
 }

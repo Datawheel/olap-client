@@ -17,8 +17,8 @@ import {TesseractDataSource} from "./tesseract/datasource";
 import {arrayMapper, levelFinderFactory} from "./utils";
 
 class MultiClient implements IClient {
-  private cubeCache: {[key: string]: Promise<Cube[]>} = {};
-  private cubesCache: Promise<Cube[]> | undefined = undefined;
+  private _cubeCache: {[key: string]: Promise<Cube[]>} = {};
+  private _cubesCache: Promise<Cube[]> | undefined = undefined;
   private datasources: {[url: string]: IDataSource | undefined} = {};
 
   static dataSourcesFromURL(...urls: string[]): Promise<IDataSource[]> {
@@ -51,15 +51,6 @@ class MultiClient implements IClient {
     this.addDataSource(...datasources);
   }
 
-  get dataSourceList(): IDataSource[] {
-    const datasources = Object.values(this.datasources).filter(Boolean) as IDataSource[];
-    if (datasources.length === 0) {
-      throw new ClientError(`This Client instance has no DataSource configured.
-Verify the initialization procedure, there might be a race condition.`);
-    }
-    return datasources;
-  }
-
   addDataSource(...datasources: IDataSource[]) {
     let taintedCache = false;
 
@@ -73,21 +64,30 @@ Verify the initialization procedure, there might be a race condition.`);
     }
 
     if (taintedCache) {
-      this.cubeCache = {};
-      this.cubesCache = undefined;
+      this._cubeCache = {};
+      this._cubesCache = undefined;
     }
   }
 
   private cacheCube(cubes: Cube[]): void {
     const cubeMap = arrayMapper(cubes, "name");
     Object.keys(cubeMap).forEach(cubeName => {
-      this.cubeCache[cubeName] = Promise.resolve(cubeMap[cubeName]);
+      this._cubeCache[cubeName] = Promise.resolve(cubeMap[cubeName]);
     });
   }
 
   checkStatus(): Promise<ServerStatus[]> {
     const promises = this.dataSourceList.map(datasource => datasource.checkStatus());
     return Promise.all(promises);
+  }
+
+  get dataSourceList(): IDataSource[] {
+    const datasources = Object.values(this.datasources).filter(Boolean) as IDataSource[];
+    if (datasources.length === 0) {
+      throw new ClientError(`This Client instance has no DataSource configured.
+Verify the initialization procedure, there might be a race condition.`);
+    }
+    return datasources;
   }
 
   execQuery(query: Query, endpoint?: string): Promise<Aggregation> {
@@ -103,7 +103,7 @@ Verify the initialization procedure, there might be a race condition.`);
 
   getCube(cubeName: string, selectorFn?: (cubes: Cube[]) => Cube): Promise<Cube> {
     const promise =
-      this.cubeCache[cubeName] ||
+      this._cubeCache[cubeName] ||
       Promise.resolve(this.dataSourceList).then(datasources => {
         const promises = datasources.map(datasource =>
           datasource
@@ -117,7 +117,7 @@ Verify the initialization procedure, there might be a race condition.`);
         });
       });
 
-    this.cubeCache[cubeName] = promise;
+    this._cubeCache[cubeName] = promise;
 
     return promise.then((cubes: Cube[]) => {
       if (cubes.length === 1) {
@@ -135,7 +135,7 @@ To prevent this error, pass a selectorFn parameter to the MultiClient#getCube me
 
   getCubes(): Promise<Cube[]> {
     const promise =
-      this.cubesCache ||
+      this._cubesCache ||
       Promise.resolve(this.dataSourceList).then(datasources => {
         const promises = datasources.map(datasource =>
           datasource.fetchCubes().then((acubes: AdaptedCube[]) => {
@@ -149,7 +149,7 @@ To prevent this error, pass a selectorFn parameter to the MultiClient#getCube me
           return cubes;
         });
       });
-    this.cubesCache = promise;
+    this._cubesCache = promise;
     return promise;
   }
 
