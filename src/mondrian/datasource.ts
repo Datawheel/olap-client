@@ -103,30 +103,46 @@ export class MondrianDataSource implements IDataSource {
     options: any = {}
   ): Promise<AdaptedMember> {
     const {dimension, name} = parent;
-    const url = urljoin(dimension.toString(), "levels", name, "members", `${key}`);
-    const params = {
-      children: Boolean(options.children),
-      caption: options.caption,
-      member_properties: options.member_properties
-    };
     const memberAdapter = memberAdapterFactory({
       level_uri: parent.toString()
     });
+
+    const captions: string[] = [].concat(options.caption).filter(Boolean);
+    if (options.locale) {
+      const localeKey = `${options.locale.slice(0, 2)}_caption`;
+      const localeCaption = parent.annotations[localeKey];
+      localeCaption && captions.push(localeCaption);
+    }
+
+    const url = urljoin(dimension.toString(), "levels", name, "members", `${key}`);
+    const params = {
+      caption: captions.length ? captions : undefined,
+      children: Boolean(options.children),
+      member_properties: options.member_properties
+    };
     return Axios.get<MondrianMember>(url, {params}).then(response =>
       memberAdapter(response.data)
     );
   }
 
   fetchMembers(parent: Level, options: any = {}): Promise<AdaptedMember[]> {
-    const url = urljoin(parent.toString(), "members");
-    const params = {
-      children: Boolean(options.children),
-      caption: options.caption,
-      member_properties: options.member_properties
-    };
     const memberAdapter = memberAdapterFactory({
       level_uri: parent.toString()
     });
+
+    const captions: string[] = [].concat(options.caption).filter(Boolean);
+    if (options.locale) {
+      const localeKey = `${options.locale.slice(0, 2)}_caption`;
+      const localeCaption = parent.annotations[localeKey];
+      localeCaption && captions.push(localeCaption);
+    }
+
+    const url = urljoin(parent.toString(), "members");
+    const params = {
+      caption: captions.length ? captions : undefined,
+      children: Boolean(options.children),
+      member_properties: options.member_properties
+    };
     return Axios.get<{members: MondrianMember[]}>(url, {params}).then(response =>
       response.data.members.map(memberAdapter)
     );
