@@ -1,5 +1,6 @@
 import Measure from "../measure";
 import {Drillable, Query, QueryFilter, QueryProperty} from "../query";
+import {undefinedHelpers} from "../utils";
 
 export function joinFullName(nameParts: string[]): string {
   return nameParts.map((token: string) => `[${token}]`).join(".");
@@ -21,20 +22,13 @@ export function parseCut(cut: string): [string, string[]] {
   return [drillable, members];
 }
 
-export function queryBuilder(
-  query: Query
-): {[key: string]: string[] | string | number | boolean | undefined} {
-  const undefinedIfEmpty = <T, U>(
-    array: T[],
-    mapFn: (a: T, b: number, c: T[]) => U
-  ): U[] | undefined => (array.length ? array.map(mapFn) : undefined);
-  const undefinedIfZero = (value: number): number | undefined =>
-    value > 0 ? value : undefined;
+export function queryBuilder(query: Query): MondrianAggregateURLSearchParams {
+  const {undefinedIfEmpty, undefinedIfKeyless, undefinedIfZero} = undefinedHelpers();
 
   const options = query.getParam("options");
-  const mondrianQuery = {
+  return {
     caption: query.getParam("captions"),
-    cut: [] as string[],
+    cut: undefinedIfKeyless(query.getParam("cuts"), stringifyCut),
     debug: options.debug,
     distinct: options.distinct,
     drilldown: undefinedIfEmpty(
@@ -58,14 +52,6 @@ export function queryBuilder(
     ),
     sparse: options.sparse
   };
-
-  const cuts = query.getParam("cuts");
-  Object.keys(cuts).forEach(fullname => {
-    const cut = stringifyCut(fullname, cuts[fullname]);
-    cut && mondrianQuery.cut.push(cut);
-  });
-
-  return mondrianQuery;
 }
 
 export function rangeify(list: number[]) {
@@ -84,7 +70,10 @@ export function splitFullName(fullname: string): string[] | undefined {
   return fullname ? `${fullname}`.replace(/^\[|\]$/g, "").split(/\]\.\[?/) : undefined;
 }
 
-export function stringifyCut(drillable: string, members: string[] = []) {
+export function stringifyCut(
+  drillable: string,
+  members: string[] = []
+): string | undefined {
   const cut = members.map((member: string) => `${drillable}.&[${member}]`).join(",");
   return members.length === 0 ? undefined : members.length > 1 ? `{${cut}}` : cut;
 }

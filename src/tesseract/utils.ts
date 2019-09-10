@@ -1,3 +1,4 @@
+import {ClientError} from "../errors";
 import Level from "../level";
 import Measure from "../measure";
 import {
@@ -9,29 +10,7 @@ import {
   QueryRCA,
   QueryTopk
 } from "../query";
-
-function undefinedHelpers() {
-  const undefinedIfEmpty = <T, U>(
-    array: T[],
-    mapFn: (a: T, b: number, c: T[]) => U
-  ): U[] | undefined => (array.length ? array.map(mapFn) : undefined);
-
-  const undefinedIfIncomplete = <T extends any, U>(
-    value: T,
-    transformFn: (a: Required<T>) => U
-  ): U | undefined => {
-    try {
-      return transformFn(value as Required<T>);
-    } catch (e) {
-      return undefined;
-    }
-  };
-
-  const undefinedIfZero = (value: number): number | undefined =>
-    value !== 0 ? value : undefined;
-
-  return {undefinedIfEmpty, undefinedIfIncomplete, undefinedIfZero};
-}
+import {undefinedHelpers} from "../utils";
 
 export function joinFullName(nameParts: string[]): string {
   return nameParts.some((token: string) => token.indexOf(".") > -1)
@@ -39,20 +18,31 @@ export function joinFullName(nameParts: string[]): string {
     : nameParts.join(".");
 }
 
-export function aggregateQueryBuilder(
-  query: Query
-): {[key: string]: string[] | string | number | boolean | undefined} {
-  const {undefinedIfEmpty, undefinedIfIncomplete, undefinedIfZero} = undefinedHelpers();
+export function aggregateQueryBuilder(query: Query): TesseractAggregateURLSearchParams {
+  const {
+    undefinedIfEmpty,
+    undefinedIfIncomplete,
+    undefinedIfKeyless,
+    undefinedIfZero
+  } = undefinedHelpers();
+
+  const drilldowns = undefinedIfEmpty(
+    query.getParam("drilldowns"),
+    (d: Drillable) => d.fullName
+  );
+  const measures = undefinedIfEmpty(query.getParam("measures"), (m: Measure) => m.name);
+
+  if (!drilldowns || !measures) {
+    const lost = [!drilldowns && "drilldowns", !measures && "measures"].filter(Boolean);
+    throw new ClientError(`Invalid Query: missing ${lost.join(" and ")}`);
+  }
 
   const options = query.getParam("options");
-  const tesseractQuery = {
+  return {
     captions: query.getParam("captions"),
-    cut: [] as string[],
+    cuts: undefinedIfKeyless(query.getParam("cuts"), stringifyCut),
     debug: options.debug ? true : undefined,
-    drilldowns: undefinedIfEmpty(
-      query.getParam("drilldowns"),
-      (d: Drillable) => d.fullName
-    ),
+    drilldowns,
     exclude_default_members: undefined,
     filters: undefinedIfEmpty(
       query.getParam("filters"),
@@ -63,7 +53,7 @@ export function aggregateQueryBuilder(
       (g: Required<QueryGrowth>) => `${g.level.fullName},${g.measure.name}`
     ),
     limit: undefinedIfZero(query.getParam("limit")),
-    measures: undefinedIfEmpty(query.getParam("measures"), (m: Measure) => m.name),
+    measures,
     parents: Boolean(options.parents),
     properties: undefinedIfEmpty(query.getParam("properties"), (p: QueryProperty) =>
       joinFullName([p.level.dimension.name, p.level.hierarchy.name, p.level.name, p.name])
@@ -83,17 +73,6 @@ export function aggregateQueryBuilder(
         `${t.amount},${t.level.fullName},${t.measure.name},${t.order}`
     )
   };
-
-  const cuts = query.getParam("cuts");
-  Object.keys(cuts).forEach(drillableFullname => {
-    const fullnameSplit = splitFullName(drillableFullname);
-    if (fullnameSplit) {
-      const cut = stringifyCut(fullnameSplit, cuts[drillableFullname]);
-      cut && tesseractQuery.cut.push(cut);
-    }
-  });
-
-  return tesseractQuery;
 }
 
 export function logicLayerQueryBuilder(
@@ -145,10 +124,11 @@ export function splitFullName(fullname: string): string[] | undefined {
 }
 
 export function stringifyCut(
-  drillable: string[],
+  drillable: string,
   members: string[] = []
 ): string | undefined {
-  return members.length > 0
-    ? joinFullName(drillable.concat(members.join(",")))
+  const drillableSplit = splitFullName(drillable);
+  return drillableSplit && members.length > 0
+    ? joinFullName(drillableSplit.concat(members.join(",")))
     : undefined;
 }

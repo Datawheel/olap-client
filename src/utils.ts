@@ -78,3 +78,36 @@ export function pushUnique<T>(target: T[], item: T) {
 export function switchCase<T>(cases: any, key: string, defaultCase: T): T {
   return cases.hasOwnProperty(key) ? cases[key] : defaultCase;
 }
+
+export function undefinedHelpers() {
+  const undefinedIfEmpty = <T, U>(
+    array: T[],
+    mapFn: (a: T, b: number, c: T[]) => U
+  ): U[] | undefined => (array.length ? array.map(mapFn) : undefined);
+
+  const undefinedIfIncomplete = <T extends any, U>(
+    value: T,
+    transformFn: (a: Required<T>) => U
+  ): U | undefined => {
+    try {
+      return transformFn(value as Required<T>);
+    } catch (e) {
+      return undefined;
+    }
+  };
+
+  const undefinedIfKeyless = <T, U>(
+    obj: T,
+    mapFn: (key: keyof T, value: T[keyof T]) => U | undefined
+  ): U[] | undefined => {
+    const list = Object.keys(obj)
+      .map(key => mapFn(key as keyof T, obj[key]))
+      .filter(item => item != null) as U[];
+    return list.length ? list : undefined;
+  };
+
+  const undefinedIfZero = (value: number): number | undefined =>
+    value !== 0 ? value : undefined;
+
+  return {undefinedIfEmpty, undefinedIfIncomplete, undefinedIfKeyless, undefinedIfZero};
+}
