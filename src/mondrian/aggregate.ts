@@ -1,3 +1,4 @@
+import Level from "../level";
 import Measure from "../measure";
 import {Drillable, Query, QueryFilter, QueryProperty} from "../query";
 import {undefinedHelpers} from "../utils";
@@ -6,9 +7,22 @@ import {stringifyCut} from "./utils";
 export function aggregateQueryBuilder(query: Query): MondrianAggregateURLSearchParams {
   const {undefinedIfEmpty, undefinedIfKeyless, undefinedIfZero} = undefinedHelpers();
 
+  const captions = query.getParam("captions");
+
+  const locale = query.getParam("locale").slice(0, 2);
+  const localeTester = new RegExp(`^${locale}\\s|\\s${locale}$`, "i");
+  query.getParam("drilldowns").forEach(dd => {
+    if (Level.isLevel(dd)) {
+      const localeProp = dd.properties.find(prop => localeTester.test(prop.name));
+      if (localeProp) {
+        captions.push(dd.fullName.concat(".", localeProp.name));
+      }
+    }
+  });
+
   const options = query.getParam("options");
   return {
-    caption: query.getParam("captions"),
+    caption: captions,
     cut: undefinedIfKeyless(query.getParam("cuts"), stringifyCut),
     debug: options.debug,
     distinct: options.distinct,
