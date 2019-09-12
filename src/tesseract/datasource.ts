@@ -12,9 +12,10 @@ import {
 } from "../interfaces";
 import Level from "../level";
 import {Query} from "../query";
+import {aggregateQueryBuilder} from "./aggregate";
 import {cubeAdapterFactory, memberAdapterFactory} from "./dataadapter";
+import {logicLayerQueryBuilder} from "./logiclayer";
 import {TesseractCube, TesseractEndpointCubes, TesseractMember} from "./schema";
-import {aggregateQueryBuilder, logicLayerQueryBuilder} from "./utils";
 
 interface TesseractServerStatus {
   status: string;

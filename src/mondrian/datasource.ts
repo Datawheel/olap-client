@@ -12,9 +12,10 @@ import {
 } from "../interfaces";
 import Level from "../level";
 import {Query} from "../query";
+import {ensureArray} from "../utils";
+import {aggregateQueryBuilder} from "./aggregate";
 import {cubeAdapterFactory, memberAdapterFactory} from "./dataadapter";
 import {MondrianCube, MondrianMember} from "./schema";
-import {queryBuilder} from "./utils";
 
 export class MondrianDataSource implements IDataSource {
   serverOnline: boolean;
@@ -60,7 +61,7 @@ export class MondrianDataSource implements IDataSource {
   }
 
   private execQueryAggregate(query: Query): Promise<Aggregation> {
-    const params = queryBuilder(query);
+    const params = aggregateQueryBuilder(query);
     const format = query.getParam("format");
     const url = urljoin(query.cube.toString(), `aggregate.${format}`);
     return Axios.get(url, {params}).then(response => {
@@ -107,7 +108,7 @@ export class MondrianDataSource implements IDataSource {
       level_uri: parent.toString()
     });
 
-    const captions: string[] = [].concat(options.caption).filter(Boolean);
+    const captions: string[] = ensureArray(options.caption);
     if (options.locale) {
       const localeKey = `${options.locale.slice(0, 2)}_caption`;
       const localeCaption = parent.annotations[localeKey];
@@ -130,7 +131,7 @@ export class MondrianDataSource implements IDataSource {
       level_uri: parent.toString()
     });
 
-    const captions: string[] = [].concat(options.caption).filter(Boolean);
+    const captions: string[] = ensureArray(options.caption);
     if (options.locale) {
       const localeKey = `${options.locale.slice(0, 2)}_caption`;
       const localeCaption = parent.annotations[localeKey];
@@ -150,7 +151,7 @@ export class MondrianDataSource implements IDataSource {
 
   static urlAggregate(query: Query): string {
     const format = query.getParam("format");
-    const paramObject = queryBuilder(query);
+    const paramObject = aggregateQueryBuilder(query);
     const parameters = formUrlEncoded(paramObject, {
       ignorenull: true,
       skipIndex: true,
