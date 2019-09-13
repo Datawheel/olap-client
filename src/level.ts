@@ -75,6 +75,6 @@ class Level {
   }
 }
 
-applyMixins(Level, [FullNamed, Serializable]);
+applyMixins(Level, [Annotated, FullNamed, Serializable]);
 
 export default Level;
