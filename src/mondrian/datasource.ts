@@ -12,7 +12,6 @@ import {
 } from "../interfaces";
 import Level from "../level";
 import {Query} from "../query";
-import {ensureArray} from "../utils";
 import {aggregateQueryBuilder} from "./aggregate";
 import {cubeAdapterFactory, memberAdapterFactory} from "./dataadapter";
 import {MondrianCube, MondrianMember} from "./schema";
@@ -108,16 +107,18 @@ export class MondrianDataSource implements IDataSource {
       level_uri: parent.toString()
     });
 
-    const captions: string[] = ensureArray(options.caption);
+    let caption: string = options.caption;
     if (options.locale) {
-      const localeKey = `${options.locale.slice(0, 2)}_caption`;
-      const localeCaption = parent.annotations[localeKey];
-      localeCaption && captions.push(localeCaption);
+      const localeCode = options.locale.slice(0, 2);
+      caption =
+        parent.annotations[`${localeCode}_caption`] ||
+        parent.annotations[`caption_${localeCode}`] ||
+        caption;
     }
 
     const url = urljoin(dimension.toString(), "levels", name, "members", `${key}`);
     const params = {
-      caption: captions.length ? captions : undefined,
+      caption: caption || undefined,
       children: Boolean(options.children),
       member_properties: options.member_properties
     };
@@ -131,16 +132,18 @@ export class MondrianDataSource implements IDataSource {
       level_uri: parent.toString()
     });
 
-    const captions: string[] = ensureArray(options.caption);
+    let caption: string = options.caption;
     if (options.locale) {
-      const localeKey = `${options.locale.slice(0, 2)}_caption`;
-      const localeCaption = parent.annotations[localeKey];
-      localeCaption && captions.push(localeCaption);
+      const localeCode = options.locale.slice(0, 2);
+      caption =
+        parent.annotations[`${localeCode}_caption`] ||
+        parent.annotations[`caption_${localeCode}`] ||
+        caption;
     }
 
     const url = urljoin(parent.toString(), "members");
     const params = {
-      caption: captions.length ? captions : undefined,
+      caption: caption || undefined,
       children: Boolean(options.children),
       member_properties: options.member_properties
     };
