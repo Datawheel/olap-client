@@ -21,32 +21,46 @@ const datasource = new MondrianDataSource("https://your.mondrian-rest.server/");
 
 // ...and pass it as the parameter to initialize your client
 const client = new Client(datasource);
+```
 
-// The constructor parameter is optional
-// You can also set/reset the datasource afterwards
-const otherDatasource = new TesseractDataSource("https://another.tesseract-olap.server/olap/");
-client.setDataSource(otherDatasource);
+The constructor parameter is optional. You can also set/reset the datasource afterwards:
 
-// If you don't know beforehand, use the Client.fromURL(url) static method
-// It will do some requests to try and guess the type of datasource
+```js
+const client = new Client();
 
-// .then chaining
+// ...
+
+const datasource = new TesseractDataSource("https://another.tesseract-olap.server/olap/");
+client.setDataSource(datasource);
+```
+
+If you don't know beforehand, use the Client.fromURL(url) static method.
+It will do some requests to try and guess the type of datasource.
+
+```js
+// Using Promise chaining
 let unknownClient;
 Client.fromURL("https://unknown.server/olap/").then(client => {
   unknownClient = client;
 });
-// async/await
-const unknownClient = await Client.fromURL("https://unknown.server/olap/");
 
-// If you really need the client object directly, you can initialize the instance and
-// add the DataSource later
+// Using async/await
+const unknownClient = await Client.fromURL("https://unknown.server/olap/");
+```
+
+If you really need the client object directly, you can initialize the instance and add the DataSource later:
+
+```js
 const client = new Client();
+
+// ...
+
 Client.dataSourceFromURL("https://unknown.server/olap/").then(datasource => {
   client.setDataSource(datasource);
 });
-// Notice if a method of an `IClient` instance without a configured DataSource is called,
-// it will return a Promise rejected with a ClientError.
 ```
+
+Notice if you try to interact with a method of an `IClient` instance without a configured DataSource, it will throw an error.
 
 ## MultiClient initialization
 
@@ -59,11 +73,17 @@ const client = new MultiClient();
 // To add a datasource, use the #addDataSource() method instead of #setDataSource()
 const datasource = new TesseractDataSource("https://your.mondrian-rest.server/");
 client.addDataSource(datasource);
+```
 
-// You can pass multiple datasources to the #addDataSource() method
+You can pass multiple datasources to the `MultiClient#addDataSource()` method:
+
+```js
 client.addDataSource(datasourceA, datasourceB, datasourceC);
+```
 
-// Likewise to Client, if you don't know beforehand, you can let the client guess
+And likewise Client, if you don't know beforehand, you can let the client guess the type of datasource:
+
+```js
 const unknownClient = MultiClient.fromURL("https://unknown.server/olap/", "https://another.server/", ...);
 ```
 
@@ -193,7 +213,7 @@ This method returns a `Promise` that resolves to a `MultiClient` instance.
 
 ## Other interfaces
 
-#### interface `Aggregation`
+### interface `Aggregation`
 
 ```ts
 interface Aggregation<T = any> {
@@ -209,7 +229,7 @@ The type of the `data` property depends on the `format` set on the Query:
 - `Format.jsonrecords` returns an array of tidy data objects
 - All other `Format`s return the raw data returned by the server
 
-#### interface `LevelDescriptor`
+### interface `LevelDescriptor`
 
 ```ts
 interface LevelDescriptor {
@@ -224,7 +244,7 @@ interface LevelDescriptor {
 A LevelDescriptor is an ordinary object with enough info to differentiate a Level in a list of DataSources. Depending on the circumstances (e.g. some name is shared in more than one object) some Levels might need more information on a LevelDescriptor to be differentiated. All the properties are the `name`s of the parents, except for `server` that maps to the URL of the DataSource. Level is the only required at all times.
 It is suggested to fill the properties with as much information as possible to prevent getting a different level.
 
-#### interface `ServerStatus`
+### interface `ServerStatus`
 
 ```ts
 interface ServerStatus {
@@ -237,6 +257,27 @@ interface ServerStatus {
 
 Contains information about the current state of the server.  
 Due to server implementation, `version` isn't available from `MondrianDataSource`.
+
+### interface `IDataSource`
+
+This package integrates the `TesseractDataSource` and `MondrianDataSource` classes, but the clients can work with any object that implements the `IDataSource` interface correctly:
+
+```ts
+interface IDataSource {
+  serverOnline: boolean;
+  serverSoftware: string;
+  serverVersion: string;
+  serverUrl: string;
+  checkStatus(): Promise<ServerStatus>;
+  execQuery(query: Query, endpoint?: string): Promise<Aggregation>;
+  fetchCube(cubeName: string): Promise<AdaptedCube>;
+  fetchCubes(): Promise<AdaptedCube[]>;
+  fetchMember(parent: Level, key: string | number, options?: any): Promise<AdaptedMember>;
+  fetchMembers(parent: Level, options?: any): Promise<AdaptedMember[]>;
+}
+```
+
+Check the [source code](src/interfaces.ts) to see the requirements of the `AdaptedObjects` interfaces and how the current data sources are implemented.
 
 ## Example
 

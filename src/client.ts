@@ -120,17 +120,19 @@ Verify the initialization procedure, there might be a race condition.`);
     options?: any
   ): Promise<Member> {
     return this.getLevel(levelRef).then(level =>
-      this.datasource.fetchMember(level, key, options).then(member => new Member(member, level))
-        );
-      }
+      this.datasource
+        .fetchMember(level, key, options)
+        .then(member => new Member(member, level))
+    );
+  }
 
   getMembers(levelRef: Level | LevelDescriptor, options?: any): Promise<Member[]> {
     return this.getLevel(levelRef).then(level =>
       this.datasource
         .fetchMembers(level, options)
         .then(members => members.map(member => new Member(member, level)))
-        );
-      }
+    );
+  }
 
   setDataSource(datasource: IDataSource): void {
     if (datasource !== this._ds) {
