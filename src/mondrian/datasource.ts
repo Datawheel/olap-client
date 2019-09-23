@@ -63,9 +63,14 @@ export class MondrianDataSource implements IDataSource {
     const params = aggregateQueryBuilder(query);
     const format = query.getParam("format");
     const url = urljoin(query.cube.toString(), `aggregate.${format}`);
+    const searchParams = formUrlEncoded(params, {
+      ignorenull: true,
+      skipIndex: true,
+      sorted: true
+    });
     return Axios.get(url, {params}).then(response => {
       const data = format === Format.jsonrecords ? response.data.data : response.data;
-      return {data, query, status: response.status, url: `${response.config.url}`};
+      return {data, query, status: response.status, url: `${url}?${searchParams}`};
     });
   }
 

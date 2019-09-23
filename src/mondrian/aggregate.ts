@@ -12,6 +12,7 @@ export function aggregateQueryBuilder(query: Query): MondrianAggregateURLSearchP
   const locale = query.getParam("locale").slice(0, 2);
   const localeTester = new RegExp(`^${locale}\\s|\\s${locale}$`, "i");
   query.getParam("drilldowns").forEach(dd => {
+    // the future implementation of namedset will require this
     if (Level.isLevel(dd)) {
       const localeProp = dd.properties.find(prop => localeTester.test(prop.name));
       if (localeProp) {
@@ -22,7 +23,7 @@ export function aggregateQueryBuilder(query: Query): MondrianAggregateURLSearchP
 
   const options = query.getParam("options");
   return {
-    caption: captions,
+    caption: undefinedIfEmpty(captions),
     cut: undefinedIfKeyless(query.getParam("cuts"), stringifyCut),
     debug: options.debug,
     distinct: options.distinct,

@@ -33,7 +33,7 @@ export function aggregateQueryBuilder(query: Query): TesseractAggregateURLSearch
 
   const options = query.getParam("options");
   return {
-    captions: query.getParam("captions"),
+    captions: undefinedIfEmpty(query.getParam("captions")),
     cuts: undefinedIfKeyless(query.getParam("cuts"), stringifyCut),
     debug: options.debug ? true : undefined,
     drilldowns,

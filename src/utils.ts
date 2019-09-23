@@ -80,10 +80,14 @@ export function switchCase<T>(cases: any, key: string, defaultCase: T): T {
 }
 
 export function undefinedHelpers() {
-  const undefinedIfEmpty = <T, U>(
+  function undefinedIfEmpty<T>(array: T[]): T[] | undefined;
+  function undefinedIfEmpty<T, U>(
     array: T[],
     mapFn: (a: T, b: number, c: T[]) => U
-  ): U[] | undefined => (array.length ? array.map(mapFn) : undefined);
+  ): U[] | undefined;
+  function undefinedIfEmpty(array: any[], mapFn?: (...args: any[]) => any): any {
+    return array.length ? (mapFn ? array.map(mapFn) : array) : undefined;
+  }
 
   const undefinedIfIncomplete = <T extends any, U>(
     value: T,
