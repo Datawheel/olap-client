@@ -1,6 +1,9 @@
+import {ClientError} from "../errors";
+import Level from "../level";
+import Measure from "../measure";
 import {
-  Query,
   Drillable,
+  Query,
   QueryFilter,
   QueryGrowth,
   QueryProperty,
@@ -8,9 +11,7 @@ import {
   QueryTopk
 } from "../query";
 import {undefinedHelpers} from "../utils";
-import Measure from "../measure";
-import {ClientError} from "../errors";
-import {stringifyCut, joinFullName} from "./utils";
+import {joinFullName, stringifyCut} from "./utils";
 
 export function aggregateQueryBuilder(query: Query): TesseractAggregateURLSearchParams {
   const {
@@ -19,6 +20,22 @@ export function aggregateQueryBuilder(query: Query): TesseractAggregateURLSearch
     undefinedIfKeyless,
     undefinedIfZero
   } = undefinedHelpers();
+
+  const captions = query.getParam("captions");
+
+  const locale = query.getParam("locale").slice(0, 2);
+  if (locale) {
+    const localeTester = new RegExp(`^${locale}\\s|\\s${locale}$`, "i");
+    query.getParam("drilldowns").forEach(dd => {
+      // the future implementation of namedset will require this
+      if (Level.isLevel(dd)) {
+        const localeProp = dd.properties.find(prop => localeTester.test(prop.name));
+        if (localeProp) {
+          captions.push(dd.fullName.concat(".", localeProp.name));
+        }
+      }
+    });
+  }
 
   const drilldowns = undefinedIfEmpty(
     query.getParam("drilldowns"),
@@ -33,7 +50,7 @@ export function aggregateQueryBuilder(query: Query): TesseractAggregateURLSearch
 
   const options = query.getParam("options");
   return {
-    captions: undefinedIfEmpty(query.getParam("captions")),
+    captions: undefinedIfEmpty(captions),
     cuts: undefinedIfKeyless(query.getParam("cuts"), stringifyCut),
     debug: options.debug ? true : undefined,
     drilldowns,

@@ -60,7 +60,7 @@ export class Query {
   private format: Format = Format.jsonrecords;
   private growth: QueryGrowth = {};
   private limit: number = 0;
-  private locale: string = "en";
+  private locale: string = "";
   private measures: Measure[] = [];
   private offset: number = 0;
   private options: QueryOptions = {
