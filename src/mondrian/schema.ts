@@ -66,3 +66,5 @@ export interface MondrianNamedSet {
   level: string;
   name: string;
 }
+
+export type MondrianProperty = string;

@@ -18,7 +18,8 @@ import {
   MondrianLevel,
   MondrianMeasure,
   MondrianMember,
-  MondrianNamedSet
+  MondrianNamedSet,
+  MondrianProperty
 } from "./schema";
 
 interface MondrianAdapterMeta {
@@ -112,6 +113,12 @@ function levelAdapterFactory(
   >
 ): (json: MondrianLevel) => AdaptedLevel {
   return (json: MondrianLevel) => {
+    const level_uri = urljoin(
+      meta.hierarchy_uri,
+      "levels",
+      encodeURIComponent(json.name)
+    );
+    const contextMeta = {...meta, level_name: json.name, level_uri};
     return {
       _type: "level",
       annotations: json.annotations,
@@ -122,8 +129,8 @@ function levelAdapterFactory(
       fullName: json.full_name,
       hierarchy: meta.hierarchy_name,
       name: json.name,
-      properties: json.properties.map(propertyAdapterFactory),
-      uri: urljoin(meta.hierarchy_uri, "levels", encodeURIComponent(json.name))
+      properties: json.properties.map(propertyAdapterFactory(contextMeta)),
+      uri: level_uri
     };
   };
 }
@@ -163,11 +170,7 @@ export function memberAdapterFactory(
       name: json.name,
       numChildren: json.num_children,
       parentName: json.parent_name,
-      uri: urljoin(
-        meta.level_uri,
-        "members",
-        `${json.key}`
-      )
+      uri: urljoin(meta.level_uri, "members", `${json.key}`)
     };
   };
 }
@@ -189,6 +192,22 @@ function namedSetAdapterFactory(
   };
 }
 
-function propertyAdapterFactory(name: string): AdaptedProperty {
-  return {annotations: {}, name};
+function propertyAdapterFactory(
+  meta: Pick<
+    MondrianAdapterMeta,
+    "cube_name" | "dimension_name" | "hierarchy_name" | "level_name" | "level_uri"
+  >
+): (name: MondrianProperty) => AdaptedProperty {
+  return (name: MondrianProperty) => {
+    return {
+      _type: "property",
+      annotations: {},
+      cube: meta.cube_name,
+      dimension: meta.dimension_name,
+      hierarchy: meta.hierarchy_name,
+      level: meta.level_name,
+      name,
+      uri: urljoin(meta.level_uri, "properties", encodeURIComponent(name))
+    };
+  };
 }

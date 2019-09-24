@@ -62,9 +62,13 @@ export interface AdaptedNamedSet extends IAnnotated, INamed, ISerializable {
   readonly level: string;
 }
 
-export interface AdaptedProperty {
+export interface AdaptedProperty extends INamed {
+  readonly _type: "property";
   readonly annotations: Annotations;
-  readonly name: string;
+  readonly cube: string;
+  readonly dimension: string;
+  readonly hierarchy: string;
+  readonly level: string;
 }
 
 export interface Aggregation<T = any> {

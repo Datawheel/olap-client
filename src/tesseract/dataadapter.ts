@@ -6,16 +6,18 @@ import {
   AdaptedHierarchy,
   AdaptedLevel,
   AdaptedMeasure,
-  AdaptedMember
+  AdaptedMember,
+  AdaptedProperty
 } from "../interfaces";
-import {switchCase} from "../utils";
+import {ensureArray, switchCase} from "../utils";
 import {
   TesseractCube,
   TesseractDimension,
   TesseractHierarchy,
   TesseractLevel,
   TesseractMeasure,
-  TesseractMember
+  TesseractMember,
+  TesseractProperty
 } from "./schema";
 import {joinFullName} from "./utils";
 
@@ -124,6 +126,12 @@ function levelAdapterFactory(
   return (json: TesseractLevel, depth: number) => {
     const level_name = json.name;
     const level_fullname = meta.hierarchy_fullname.concat(level_name);
+    const level_uri = urljoin(
+      meta.hierarchy_uri,
+      "levels",
+      encodeURIComponent(json.name)
+    );
+    const contextMeta = {...meta, level_name, level_uri};
     return {
       _type: "level",
       annotations: json.annotations,
@@ -134,8 +142,8 @@ function levelAdapterFactory(
       fullName: joinFullName(level_fullname),
       hierarchy: meta.hierarchy_name,
       name: json.name,
-      properties: json.properties,
-      uri: urljoin(meta.hierarchy_uri, "levels", encodeURIComponent(json.name))
+      properties: ensureArray(json.properties).map(propertyAdapterFactory(contextMeta)),
+      uri: level_uri
     };
   };
 }
@@ -178,6 +186,26 @@ export function memberAdapterFactory(
         meta.server_uri,
         `members?level=${encodeURIComponent(meta.level_name)}`
       )
+    };
+  };
+}
+
+function propertyAdapterFactory(
+  meta: Pick<
+    TesseractAdapterMeta,
+    "cube_name" | "dimension_name" | "hierarchy_name" | "level_name" | "level_uri"
+  >
+): (json: TesseractProperty) => AdaptedProperty {
+  return (json: TesseractProperty) => {
+    return {
+      _type: "property",
+      annotations: json.annotations,
+      cube: meta.cube_name,
+      dimension: meta.dimension_name,
+      hierarchy: meta.hierarchy_name,
+      level: meta.level_name,
+      name: json.name,
+      uri: urljoin(meta.level_uri, "properties", encodeURIComponent(json.name))
     };
   };
 }
