@@ -1,6 +1,6 @@
-import Axios, {AxiosError, AxiosResponse} from "axios";
+import {Client} from "./client";
 import Cube from "./cube";
-import {ClientError, ServerError} from "./errors";
+import {ClientError} from "./errors";
 import {
   AdaptedCube,
   Aggregation,
@@ -11,9 +11,7 @@ import {
 } from "./interfaces";
 import Level from "./level";
 import Member from "./member";
-import {MondrianDataSource} from "./mondrian/datasource";
 import {Query} from "./query";
-import {TesseractDataSource} from "./tesseract/datasource";
 import {arrayMapper, levelFinderFactory} from "./utils";
 
 class MultiClient implements IClient {
@@ -22,22 +20,7 @@ class MultiClient implements IClient {
   private datasources: {[url: string]: IDataSource | undefined} = {};
 
   static dataSourcesFromURL(...urls: string[]): Promise<IDataSource[]> {
-    const promises = urls.map(url =>
-      Axios.get(url).then(
-        (response: AxiosResponse) => {
-          if (response.status === 200 && "tesseract_version" in response.data) {
-            return new TesseractDataSource(url);
-          }
-          throw new ServerError(response, `URL is not a known OLAP server: ${url}`);
-        },
-        (error: AxiosError) => {
-          if (error.response && error.response.status === 404) {
-            return new MondrianDataSource(url);
-          }
-          throw error;
-        }
-      )
-    );
+    const promises = urls.map(Client.dataSourceFromURL);
     return Promise.all(promises);
   }
 
