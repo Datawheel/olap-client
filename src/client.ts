@@ -1,4 +1,5 @@
 import Axios, {AxiosError, AxiosResponse} from "axios";
+import urljoin from "url-join";
 import Cube from "./cube";
 import {ClientError, ServerError} from "./errors";
 import {
@@ -22,17 +23,18 @@ export class Client implements IClient {
   private _ds: IDataSource | undefined;
 
   static dataSourceFromURL(url: string): Promise<IDataSource> {
-    return Axios.get(url).then(
+    const cubesUrl = urljoin(url, "cubes");
+    return Axios.get(cubesUrl).then(
       (response: AxiosResponse) => {
-        if (response.status === 200 && "tesseract_version" in response.data) {
-          return new TesseractDataSource(url);
+        if (response.status === 200 && "cubes" in response.data) {
+          return "name" in response.data
+            ? new TesseractDataSource(url)
+            : new MondrianDataSource(url);
         }
         throw new ServerError(response, `URL is not a known OLAP server: ${url}`);
       },
       (error: AxiosError) => {
-        if (error.response && error.response.status === 404) {
-          return new MondrianDataSource(url);
-        }
+        error.message += `\nURL is not a known OLAP server: ${url}`;
         throw error;
       }
     );
