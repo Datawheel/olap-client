@@ -35,6 +35,8 @@ export function aggregateQueryBuilder(query: Query): MondrianAggregateURLSearchP
     throw new ClientError(`Invalid Query: missing ${lost.join(" and ")}`);
   }
 
+  const orderParam = query.getParam("orderProperty");
+
   const options = query.getParam("options");
   return {
     caption: undefinedIfEmpty(captions),
@@ -51,7 +53,9 @@ export function aggregateQueryBuilder(query: Query): MondrianAggregateURLSearchP
     nonempty: options.nonempty,
     offset: undefinedIfZero(query.getParam("offset")),
     order_desc: query.getParam("orderDescendent") ? true : undefined,
-    order: query.getParam("orderProperty"),
+    order: orderParam
+      ? orderParam.indexOf(".") > -1 ? orderParam : `[Measures].[${orderParam}]`
+      : undefined,
     parents: options.parents,
     properties: undefinedIfEmpty(
       query.getParam("properties"),
