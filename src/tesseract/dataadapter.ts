@@ -143,6 +143,7 @@ function levelAdapterFactory(
       hierarchy: meta.hierarchy_name,
       name: json.name,
       properties: ensureArray(json.properties).map(propertyAdapterFactory(contextMeta)),
+      uniqueName: json.unique_name,
       uri: level_uri
     };
   };

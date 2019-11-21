@@ -39,6 +39,7 @@ export interface TesseractLevel {
   annotations: Annotations;
   name: string;
   properties: TesseractProperty[];
+  unique_name?: string;
 }
 
 export interface TesseractMember {
