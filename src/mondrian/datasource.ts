@@ -1,4 +1,5 @@
 import Axios, {AxiosError} from "axios";
+import formUrlDecoded from "form-urldecoded";
 import formUrlEncoded from "form-urlencoded";
 import urljoin from "url-join";
 import {Format} from "../enums";
@@ -8,12 +9,15 @@ import {
   AdaptedMember,
   Aggregation,
   IDataSource,
+  ParseURLOptions,
   ServerStatus
 } from "../interfaces";
 import Level from "../level";
 import {Query} from "../query";
-import {aggregateQueryBuilder} from "./aggregate";
+import {applyParseUrlRules} from "../utils";
+import {aggregateQueryBuilder, aggregateQueryParser} from "./aggregate";
 import {cubeAdapterFactory, memberAdapterFactory} from "./dataadapter";
+import {MondrianAggregateURLSearchParams} from "./interfaces";
 import {MondrianCube, MondrianMember} from "./schema";
 
 export class MondrianDataSource implements IDataSource {
@@ -155,6 +159,25 @@ export class MondrianDataSource implements IDataSource {
     return Axios.get<{members: MondrianMember[]}>(url, {params}).then(response =>
       response.data.members.map(memberAdapter)
     );
+  }
+
+  static parseQueryURL(query: Query, url: string, options: Partial<ParseURLOptions>) {
+    const searchIndex = url.indexOf("?");
+    const searchParams = url.slice(searchIndex + 1);
+    const qp: MondrianAggregateURLSearchParams = formUrlDecoded(searchParams);
+
+    const formatMatch = url.match(/^.+\/aggregate(\.[a-z]+)\?.+$/);
+    if (formatMatch) {
+      qp["format"] = formatMatch[1].slice(1);
+    }
+
+    const qpFinal = applyParseUrlRules(qp, options);
+
+    if (url.indexOf("/aggregate") > -1) {
+      return aggregateQueryParser(query, qpFinal);
+    }
+
+    throw new ClientError(`Provided URL is not a valid Mondrian REST query URL: ${url}`);
   }
 
   static urlAggregate(query: Query): string {

@@ -1,6 +1,6 @@
 import Cube from "./cube";
 import {ClientError} from "./errors";
-import {INamed, LevelDescriptor} from "./interfaces";
+import {INamed, LevelDescriptor, ParseURLOptions} from "./interfaces";
 import Level from "./level";
 
 export function applyMixins(derivedCtor: any, baseCtors: any[]) {
@@ -14,6 +14,37 @@ export function applyMixins(derivedCtor: any, baseCtors: any[]) {
       }
     });
   });
+}
+
+export function applyParseUrlRules<T>(
+  qp: T,
+  options: Partial<ParseURLOptions>
+): Partial<T> {
+  const {exclude, include, filter} = options;
+
+  const always = () => true;
+  let tester = typeof filter === "function" ? filter : always;
+
+  if (exclude || include) {
+    const included = Array.isArray(include)
+      ? (key: string) =>
+          include.reduce((result, pattern) => result && key === pattern, true)
+      : always;
+    const notExcluded = Array.isArray(exclude)
+      ? (key: string) =>
+          exclude.reduce((result, pattern) => result && key !== pattern, true)
+      : always;
+
+    tester = key => included(key) && notExcluded(key);
+  }
+
+  const qpFinal: Partial<T> = {};
+  Object.keys(qp).forEach(key => {
+    const value = qp[key];
+    tester(key, value) && Object.defineProperty(qpFinal, key, {enumerable: true, value});
+  });
+
+  return qpFinal;
 }
 
 export function ensureArray<T>(value: T[] | T | undefined | null): T[] {

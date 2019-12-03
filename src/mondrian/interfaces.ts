@@ -1,4 +1,13 @@
-interface MondrianAggregateURLSearchParams {
+export enum MondrianFilterOperator {
+  eq = "=",
+  gt = ">",
+  gte = ">=",
+  lt = "<",
+  lte = "<=",
+  neq = "<>"
+}
+
+export interface MondrianAggregateURLSearchParams {
   caption?    : string[];
   cut?        : string[];
   debug?      : boolean;

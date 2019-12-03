@@ -8,12 +8,19 @@ export enum AggregatorType {
 }
 
 export enum Comparison {
-  eq = "=",
-  gt = ">",
-  gte = ">=",
-  lt = "<",
-  lte = "<=",
-  neq = "<>"
+  "!=" = "neq",
+  "<" = "lt",
+  "<=" = "lte",
+  "<>" = "neq",
+  "=" = "eq",
+  ">" = "gt",
+  ">=" = "gte",
+  eq = "eq",
+  gt = "gt",
+  gte = "gte",
+  lt = "lt",
+  lte = "lte",
+  neq = "neq"
 }
 
 export enum DimensionType {

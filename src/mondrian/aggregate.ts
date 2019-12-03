@@ -1,9 +1,11 @@
+import {Comparison} from "../enums";
+import {ClientError} from "../errors";
 import Level from "../level";
 import Measure from "../measure";
 import {Drillable, Query, QueryFilter, QueryProperty} from "../query";
-import {undefinedHelpers} from "../utils";
-import {stringifyCut} from "./utils";
-import {ClientError} from "../errors";
+import {ensureArray, undefinedHelpers} from "../utils";
+import {MondrianAggregateURLSearchParams} from "./interfaces";
+import {joinFullName, parseCut, stringifyCut} from "./utils";
 
 export function aggregateQueryBuilder(query: Query): MondrianAggregateURLSearchParams {
   const {undefinedIfEmpty, undefinedIfKeyless, undefinedIfZero} = undefinedHelpers();
@@ -54,7 +56,7 @@ export function aggregateQueryBuilder(query: Query): MondrianAggregateURLSearchP
     offset: undefinedIfZero(query.getParam("offset")),
     order_desc: query.getParam("orderDescendent") ? true : undefined,
     order: orderParam
-      ? orderParam.indexOf(".") > -1 ? orderParam : `[Measures].[${orderParam}]`
+      ? orderParam.indexOf(".") > -1 ? orderParam : joinFullName(["Measures", orderParam])
       : undefined,
     parents: options.parents,
     properties: undefinedIfEmpty(
@@ -63,4 +65,65 @@ export function aggregateQueryBuilder(query: Query): MondrianAggregateURLSearchP
     ),
     sparse: options.sparse
   };
+}
+
+export function aggregateQueryParser(
+  query: Query,
+  params: MondrianAggregateURLSearchParams
+): Query {
+  const cube = query.cube;
+
+  const levels: Record<string, Level> = {};
+  for (let level of cube.levelIterator) {
+    levels[level.fullName] = level;
+  }
+
+  ensureArray(params.caption).forEach(item => {
+    const propIndex = item.lastIndexOf(".");
+    const levelFullName = item.slice(0, propIndex);
+    const property = item.slice(propIndex + 1);
+    const level = levels[levelFullName];
+    level && query.addCaption(level, property);
+  });
+
+  ensureArray(params.cut).forEach(item => {
+    const cut = parseCut(item);
+    query.addCut(...cut);
+  });
+
+  ensureArray(params.drilldown).forEach(item => {
+    const level = levels[item];
+    level && query.addDrilldown(level);
+  });
+
+  ensureArray(params.filter).forEach(item => {
+    const [measureName, operator, value] = item.split(" ");
+    const comparison = Comparison[operator];
+    const measure = cube.measuresByName[measureName];
+    measure && query.addFilter(measure, comparison, Number.parseFloat(value));
+  });
+
+  ensureArray(params.measures).forEach(item => {
+    const measure = cube.measuresByName[item];
+    measure && query.addMeasure(measure);
+  });
+
+  // TODO
+  // ensureArray(params.properties).forEach(item => {});
+
+  if (params.limit != null) {
+    query.setPagination(params.limit, params.offset);
+  }
+
+  if (params.order) {
+    query.setSorting(params.order, !!params.order_desc);
+  }
+
+  typeof params.debug === "boolean" && query.setOption("debug", params.debug);
+  typeof params.distinct === "boolean" && query.setOption("distinct", params.distinct);
+  typeof params.nonempty === "boolean" && query.setOption("nonempty", params.nonempty);
+  typeof params.parents === "boolean" && query.setOption("parents", params.parents);
+  typeof params.sparse === "boolean" && query.setOption("sparse", params.sparse);
+
+  return query;
 }

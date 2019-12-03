@@ -2,10 +2,12 @@ import formUrlEncoded from "form-urlencoded";
 import Cube from "./cube";
 import {Comparison, Format, Order} from "./enums";
 import {ClientError} from "./errors";
-import {LevelDescriptor} from "./interfaces";
+import {LevelDescriptor, ParseURLOptions} from "./interfaces";
 import Level from "./level";
 import Measure from "./measure";
+import {MondrianDataSource} from "./mondrian/datasource";
 import NamedSet from "./namedset";
+import {TesseractDataSource} from "./tesseract/datasource";
 import {pushUnique} from "./utils";
 
 export type LevelReference = string | LevelDescriptor | Level;
@@ -65,10 +67,10 @@ export class Query {
   private offset: number = 0;
   private options: QueryOptions = {
     debug: undefined,
-    distinct: false,
-    nonempty: true,
-    parents: false,
-    sparse: true
+    distinct: undefined,
+    nonempty: undefined,
+    parents: undefined,
+    sparse: undefined
   };
   private orderDescendent: boolean;
   private orderProperty: string;
@@ -157,6 +159,30 @@ export class Query {
       );
     }
     return `${level.fullName}.${propertyName}`;
+  }
+
+  parseURL(url: string, options: Partial<ParseURLOptions> = {}): this {
+    const {server, serverSoftware} = this.cube;
+
+    if (url.indexOf(server) !== 0) {
+      throw new ClientError(
+        `Provided URL "${url}" doesn't match with the parent server for the cube: ${server}.`
+      );
+    }
+
+    const searchIndex = url.indexOf("?");
+    if (searchIndex === -1) {
+      throw new ClientError(`Provided URL doesn't have query parameters: ${url}`);
+    }
+
+    if (serverSoftware === TesseractDataSource.softwareName) {
+      TesseractDataSource.parseQueryURL(this, url, options);
+    }
+    else if (serverSoftware === MondrianDataSource.softwareName) {
+      MondrianDataSource.parseQueryURL(this, url, options);
+    }
+
+    return this;
   }
 
   setFormat(format: Format): this {
@@ -254,13 +280,13 @@ export class Query {
       captions: this.captions.slice(),
       cube: cube.name,
       cuts: {...this.cuts},
-      drilldowns: this.drilldowns.slice(),
+      drilldowns: this.drilldowns.map(item => item.fullName),
       filters: this.filters.slice(),
       format: this.format,
       growth: {...this.growth},
       limit: this.limit,
       locale: this.locale,
-      measures: this.measures.slice(),
+      measures: this.measures.map(item => item.name),
       offset: this.offset,
       order_desc: this.orderDescendent,
       order_prop: this.orderProperty,

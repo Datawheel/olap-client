@@ -69,6 +69,13 @@ class Cube {
     return this._parent.serverUrl;
   }
 
+  get serverSoftware(): string {
+    if (!this._parent) {
+      throw new ClientError(`Cube ${this} doesn't have an associated server url.`);
+    }
+    return this._parent.serverSoftware;
+  }
+
   get standardDimensions(): Dimension[] {
     return this.findDimensionsByType(DimensionType.Standard);
   }

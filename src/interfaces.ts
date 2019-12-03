@@ -138,3 +138,9 @@ export interface ServerStatus {
   url: string;
   version: string;
 }
+
+export interface ParseURLOptions {
+  exclude: string[];
+  include: string[];
+  filter: (key: string, value: string | boolean | string[]) => boolean;
+}

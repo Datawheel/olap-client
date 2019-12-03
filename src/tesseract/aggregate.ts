@@ -1,3 +1,4 @@
+import {Comparison, Order} from "../enums";
 import {ClientError} from "../errors";
 import Level from "../level";
 import Measure from "../measure";
@@ -10,10 +11,13 @@ import {
   QueryRCA,
   QueryTopk
 } from "../query";
-import {undefinedHelpers} from "../utils";
-import {joinFullName, stringifyCut} from "./utils";
+import {ensureArray, undefinedHelpers} from "../utils";
+import {TesseractAggregateURLSearchParams} from "./interfaces";
+import {joinFullName, parseCut, stringifyCut} from "./utils";
 
-export function aggregateQueryBuilder(query: Query): TesseractAggregateURLSearchParams {
+export function aggregateQueryBuilder(
+  query: Query
+): Partial<TesseractAggregateURLSearchParams> {
   const {
     undefinedIfEmpty,
     undefinedIfIncomplete,
@@ -75,7 +79,7 @@ export function aggregateQueryBuilder(query: Query): TesseractAggregateURLSearch
       (r: Required<QueryRCA>) =>
         `${r.level1.fullName},${r.level2.fullName},${r.measure.name}`
     ),
-    sort: undefined,
+    sort: query.getParam("orderProperty"),
     sparse: Boolean(options.sparse),
     top_where: undefined,
     top: undefinedIfIncomplete(
@@ -84,4 +88,92 @@ export function aggregateQueryBuilder(query: Query): TesseractAggregateURLSearch
         `${t.amount},${t.level.fullName},${t.measure.name},${t.order}`
     )
   };
+}
+
+export function aggregateQueryParser(
+  query: Query,
+  params: TesseractAggregateURLSearchParams
+): Query {
+  const cube = query.cube;
+
+  const levels: Record<string, Level> = {};
+  for (let level of cube.levelIterator) {
+    levels[level.fullName] = level;
+  }
+
+  ensureArray(params.captions).forEach(item => {
+    const propIndex = item.lastIndexOf(".");
+    const levelFullName = item.slice(0, propIndex);
+    const property = item.slice(propIndex + 1);
+    const level = levels[levelFullName];
+    level && query.addCaption(level, property);
+  });
+
+  ensureArray(params.cuts).forEach(item => {
+    const cut = parseCut(item);
+    query.addCut(...cut);
+  });
+
+  ensureArray(params.drilldowns).forEach(item => {
+    const level = levels[item];
+    level && query.addDrilldown(level);
+  });
+
+  ensureArray(params.filters).forEach(item => {
+    const [measureName, operator, value] = item.split(" ");
+    const comparison = Comparison[operator];
+    const measure = cube.measuresByName[measureName];
+    measure && query.addFilter(measure, comparison, Number.parseFloat(value));
+  });
+
+  ensureArray(params.measures).forEach(item => {
+    const measure = cube.measuresByName[item];
+    measure && query.addMeasure(measure);
+  });
+
+  // TODO
+  // ensureArray(params.properties).forEach(item => {});
+
+  if (params.growth) {
+    const [levelFullName, measureName] = params.growth.split(",");
+    const level = levels[levelFullName];
+    const measure = cube.measuresByName[measureName];
+    level && measure && query.setGrowth(level, measure);
+  }
+
+  if (params.rca) {
+    const [level1FullName, level2FullName, measureName] = params.rca.split(",");
+    const level1 = levels[level1FullName];
+    const level2 = levels[level2FullName];
+    const measure = cube.measuresByName[measureName];
+    level1 && level2 && measure && query.setRCA(level1, level2, measure);
+  }
+
+  if (params.top) {
+    const [amountRaw, levelFullName, measureName, order] = params.top.split(",");
+    const amount = Number.parseInt(amountRaw);
+    const level = levels[levelFullName];
+    const measure = cube.measuresByName[measureName];
+    amount && level && measure && query.setTop(amount, level, measure, Order[order]);
+  }
+
+  if (params.limit != null) {
+    query.setPagination(params.limit);
+  }
+
+  if (params.sort) {
+    query.setSorting(params.sort, true);
+  }
+
+  typeof params.debug === "boolean" && query.setOption("debug", params.debug);
+  typeof params.distinct === "boolean" && query.setOption("distinct", params.distinct);
+  typeof params.nonempty === "boolean" && query.setOption("nonempty", params.nonempty);
+  typeof params.parents === "boolean" && query.setOption("parents", params.parents);
+  typeof params.sparse === "boolean" && query.setOption("sparse", params.sparse);
+
+  // exclude_default_members: boolean;
+  // rate:       string;
+  // top_where:  string;
+
+  return query;
 }

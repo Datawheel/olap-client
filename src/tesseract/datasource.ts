@@ -1,4 +1,5 @@
 import Axios, {AxiosError} from "axios";
+import formUrlDecoded from "form-urldecoded";
 import formUrlEncoded from "form-urlencoded";
 import urljoin from "url-join";
 import {Format} from "../enums";
@@ -8,13 +9,19 @@ import {
   AdaptedMember,
   Aggregation,
   IDataSource,
+  ParseURLOptions,
   ServerStatus
 } from "../interfaces";
 import Level from "../level";
 import {Query} from "../query";
-import {aggregateQueryBuilder} from "./aggregate";
+import {applyParseUrlRules} from "../utils";
+import {aggregateQueryBuilder, aggregateQueryParser} from "./aggregate";
 import {cubeAdapterFactory, memberAdapterFactory} from "./dataadapter";
-import {logicLayerQueryBuilder} from "./logiclayer";
+import {
+  TesseractAggregateURLSearchParams,
+  TesseractLogicLayerURLSearchParams
+} from "./interfaces";
+import {logicLayerQueryBuilder, logicLayerQueryParser} from "./logiclayer";
 import {TesseractCube, TesseractEndpointCubes, TesseractMember} from "./schema";
 
 interface TesseractServerStatus {
@@ -154,6 +161,39 @@ export class TesseractDataSource implements IDataSource {
         `Requested member doesn't exist: descriptor ${JSON.stringify(parent)}, key ${key}`
       );
     });
+  }
+
+  static parseQueryURL(
+    query: Query,
+    url: string,
+    options: Partial<ParseURLOptions>
+  ): Query {
+    const searchIndex = url.indexOf("?");
+    const searchParams = url.slice(searchIndex + 1);
+    const qp = formUrlDecoded(searchParams);
+
+    const formatMatch = url.match(/^.+\/aggregate(\.[a-z]+)\?.+$/);
+    if (formatMatch) {
+      qp["format"] = formatMatch[1].slice(1);
+    }
+
+    const qpFinal = applyParseUrlRules(qp, options);
+
+    if (url.indexOf("/aggregate") > -1) {
+      return aggregateQueryParser(query, qpFinal as TesseractAggregateURLSearchParams);
+    }
+    if (url.indexOf("/data") > -1) {
+      if (qp.cube !== query.cube.name) {
+        throw new ClientError(
+          `URL and Query object belong to different cubes
+Query cube: ${query.cube.name}
+URL cube: ${qp.cube}`
+        );
+      }
+      return logicLayerQueryParser(query, qpFinal as TesseractLogicLayerURLSearchParams);
+    }
+
+    throw new ClientError(`Provided URL is not a valid Mondrian REST query URL: ${url}`);
   }
 
   static urlAggregate(query: Query): string {

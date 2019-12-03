@@ -10,6 +10,14 @@ export function splitFullName(fullname?: string): string[] | undefined {
   return fullname.indexOf("].[") > -1 ? fullname.split(/\]\.\[?/) : fullname.split(".");
 }
 
+export function parseCut(cut: string): [string, string[]] {
+  const nameParts = splitFullName(cut) || [];
+  const memberList = nameParts.pop() || "";
+  const drillable = joinFullName(nameParts);
+  const members = memberList.split(",");
+  return [drillable, members];
+}
+
 export function stringifyCut(
   drillable: string,
   members: string[] = []
