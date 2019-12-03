@@ -5,7 +5,7 @@ import {undefinedHelpers} from "../utils";
 
 export function logicLayerQueryBuilder(
   query: Query
-): {[key: string]: string[] | string | number | boolean | undefined} {
+): Record<string, string[] | string | number | boolean | undefined> {
   const {undefinedIfEmpty, undefinedIfIncomplete} = undefinedHelpers();
 
   const cube = query.cube;
@@ -25,20 +25,21 @@ export function logicLayerQueryBuilder(
     parents: Boolean(options.parents),
     sparse: Boolean(options.sparse),
     growth: undefinedIfIncomplete(query.getParam("growth"), (g: Required<QueryGrowth>) =>
-      [g.level.fullName, g.measure.name].join(",")
+      [g.level.uniqueName, g.measure.name].join(",")
     ),
     rca: undefinedIfIncomplete(query.getParam("rca"), (r: Required<QueryRCA>) =>
-      [r.level1.fullName, r.level2.fullName, r.measure.name].join(",")
+      [r.level1.uniqueName, r.level2.uniqueName, r.measure.name].join(",")
     ),
     top: undefinedIfIncomplete(query.getParam("topk"), (t: Required<QueryTopk>) =>
-      [t.amount, t.level.fullName, t.measure.name, t.order].join(",")
+      [t.amount, t.level.uniqueName, t.measure.name, t.order].join(",")
     )
   };
 
   const cuts = query.getParam("cuts");
   for (let level of cube.levelIterator) {
-    if (cuts.hasOwnProperty(level.fullName)) {
-      tesseractQuery[level.uniqueName] = cuts[level.fullName].join(",");
+    const cutKey = level.fullName;
+    if (cuts.hasOwnProperty(cutKey)) {
+      tesseractQuery[level.uniqueName] = cuts[cutKey].join(",");
     }
   }
 

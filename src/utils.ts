@@ -16,8 +16,8 @@ export function applyMixins(derivedCtor: any, baseCtors: any[]) {
   });
 }
 
-export function ensureArray(value: any): any[] {
-  return value == null ? [] : [].concat(value);
+export function ensureArray<T>(value: T[] | T | undefined | null): T[] {
+  return value == null ? [] : ([] as T[]).concat(value);
 }
 
 export function levelFinderFactory(descriptor: LevelDescriptor): (cube: Cube) => Level {
@@ -25,7 +25,7 @@ export function levelFinderFactory(descriptor: LevelDescriptor): (cube: Cube) =>
   return (cube: Cube): Level => {
     if (!cubeName || cube.name === cubeName) {
       for (let level of cube.levelIterator) {
-        if (level.name === levelName) {
+        if (level.uniqueName === levelName || level.name === levelName) {
           const sameHie = hierarchy ? hierarchy === level.hierarchy.name : true;
           const sameDim = dimension ? dimension === level.dimension.name : true;
           if (sameDim && sameHie) {

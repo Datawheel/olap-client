@@ -185,7 +185,7 @@ export class Query {
     return this;
   }
 
-  setPagination(limit: number, offset: number): this {
+  setPagination(limit: number, offset?: number): this {
     if (limit > 0) {
       this.limit = limit;
       this.offset = offset || 0;

@@ -30,7 +30,7 @@ export function rangeify(list: number[]) {
   );
 }
 
-export function splitFullName(fullname: string): string[] | undefined {
+export function splitFullName(fullname?: string): string[] | undefined {
   return fullname ? `${fullname}`.replace(/^\[|\]$/g, "").split(/\]\.\[?/) : undefined;
 }
 
