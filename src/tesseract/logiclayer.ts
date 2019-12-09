@@ -18,6 +18,11 @@ export function logicLayerQueryBuilder(
   );
   const measures = undefinedIfEmpty(query.getParam("measures"), (m: Measure) => m.name);
 
+  const sortOrder = query.getParam("orderDescendent") ? "desc" : "asc";
+  const sort = query.getParam("orderProperty")
+    ? `${query.getParam("orderProperty")}.${sortOrder}`
+    : undefined;
+
   const tesseractQuery = {
     cube: cube.name,
     debug: options.debug ? true : undefined,
@@ -26,6 +31,7 @@ export function logicLayerQueryBuilder(
     measures: measures ? measures.join(",") : undefined,
     parents: options.parents,
     sparse: options.sparse,
+    sort,
     growth: undefinedIfIncomplete(query.getParam("growth"), (g: Required<QueryGrowth>) =>
       [g.level.uniqueName, g.measure.name].join(",")
     ),

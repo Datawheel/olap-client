@@ -52,6 +52,11 @@ export function aggregateQueryBuilder(
     throw new ClientError(`Invalid Query: missing ${lost.join(" and ")}`);
   }
 
+  const sortOrder = query.getParam("orderDescendent") ? "desc" : "asc";
+  const sort = query.getParam("orderProperty")
+    ? `${query.getParam("orderProperty")}.${sortOrder}`
+    : undefined;
+
   const options = query.getParam("options");
   return {
     captions: undefinedIfEmpty(captions),
@@ -79,7 +84,7 @@ export function aggregateQueryBuilder(
       (r: Required<QueryRCA>) =>
         `${r.level1.fullName},${r.level2.fullName},${r.measure.name}`
     ),
-    sort: query.getParam("orderProperty"),
+    sort,
     sparse: Boolean(options.sparse),
     top_where: undefined,
     top: undefinedIfIncomplete(
