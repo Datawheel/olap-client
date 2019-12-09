@@ -107,8 +107,9 @@ export interface IDataSource {
   fetchMembers(parent: Level, options?: any): Promise<AdaptedMember[]>;
   serverOnline: boolean;
   serverSoftware: string;
-  serverVersion: string;
   serverUrl: string;
+  serverVersion: string;
+  stringifyQueryURL(query: Query, kind: string): string;
 }
 
 export interface IFullNamed extends INamed {

@@ -196,6 +196,13 @@ URL cube: ${qp.cube}`
     throw new ClientError(`Provided URL is not a valid Mondrian REST query URL: ${url}`);
   }
 
+  stringifyQueryURL(query: Query, kind: string): string {
+    if (kind === "logiclayer") {
+      return TesseractDataSource.urlLogicLayer(query);
+    }
+    return TesseractDataSource.urlAggregate(query);
+  }
+
   static urlAggregate(query: Query): string {
     const format = query.getParam("format");
     const paramObject = aggregateQueryBuilder(query);

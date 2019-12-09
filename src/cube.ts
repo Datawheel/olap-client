@@ -49,6 +49,13 @@ class Cube {
     return this._source.annotations["caption"] || this._source.name;
   }
 
+  get datasource(): IDataSource {
+    if (!this._parent) {
+      throw new ClientError(`Cube ${this} doesn't have an associated server url.`);
+    }
+    return this._parent;
+  }
+
   get defaultMeasure(): Measure {
     const measureName = this._source.annotations["default"] || "undefined";
     return this.measuresByName[measureName] || this.measures[0];
@@ -63,17 +70,11 @@ class Cube {
   }
 
   get server(): string {
-    if (!this._parent) {
-      throw new ClientError(`Cube ${this} doesn't have an associated server url.`);
-    }
-    return this._parent.serverUrl;
+    return this.datasource.serverUrl;
   }
 
   get serverSoftware(): string {
-    if (!this._parent) {
-      throw new ClientError(`Cube ${this} doesn't have an associated server url.`);
-    }
-    return this._parent.serverSoftware;
+    return this.datasource.serverSoftware;
   }
 
   get standardDimensions(): Dimension[] {

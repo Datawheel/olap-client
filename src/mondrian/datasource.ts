@@ -180,6 +180,10 @@ export class MondrianDataSource implements IDataSource {
     throw new ClientError(`Provided URL is not a valid Mondrian REST query URL: ${url}`);
   }
 
+  stringifyQueryURL(query: Query): string {
+    return MondrianDataSource.urlAggregate(query);
+  }
+
   static urlAggregate(query: Query): string {
     const format = query.getParam("format");
     const paramObject = aggregateQueryBuilder(query);

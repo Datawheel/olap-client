@@ -50,7 +50,7 @@ export function logicLayerQueryBuilder(
 
 export function logicLayerQueryParser(
   query: Query,
-  params: TesseractLogicLayerURLSearchParams
+  params: Partial<TesseractLogicLayerURLSearchParams>
 ): Query {
   const cube = query.cube;
 

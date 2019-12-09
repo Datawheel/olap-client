@@ -92,7 +92,7 @@ export function aggregateQueryBuilder(
 
 export function aggregateQueryParser(
   query: Query,
-  params: TesseractAggregateURLSearchParams
+  params: Partial<TesseractAggregateURLSearchParams>
 ): Query {
   const cube = query.cube;
 

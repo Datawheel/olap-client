@@ -298,7 +298,13 @@ export class Query {
     };
   }
 
-  toString(): string {
-    return formUrlEncoded(this.toJSON());
+  toString(kind: string): string {
+    if (kind != null) {
+      const {datasource} = this.cube;
+      return datasource.stringifyQueryURL(this, kind);
+    }
+    else {
+      return formUrlEncoded(this.toJSON());
+    }
   }
 }
