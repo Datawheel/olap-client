@@ -1,7 +1,8 @@
 import {Order} from "../enums";
+import {QueryGrowth, QueryRCA, QueryTopk} from "../interfaces";
 import Level from "../level";
 import Measure from "../measure";
-import {Drillable, Query, QueryGrowth, QueryRCA, QueryTopk} from "../query";
+import {Drillable, Query} from "../query";
 import {undefinedHelpers} from "../utils";
 import {TesseractLogicLayerURLSearchParams} from "./interfaces";
 

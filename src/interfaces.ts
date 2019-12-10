@@ -1,6 +1,7 @@
 import Cube from "./cube";
-import {AggregatorType, DimensionType} from "./enums";
+import {AggregatorType, Comparison, DimensionType, Order} from "./enums";
 import Level from "./level";
+import Measure from "./measure";
 import Member from "./member";
 import {Query} from "./query";
 
@@ -146,4 +147,41 @@ export interface ParseURLOptions {
   exclude: string[];
   include: string[];
   filter: (key: string, value: string | boolean | string[]) => boolean;
+}
+
+export interface QueryFilter {
+  measure: Measure;
+  comparison: Comparison;
+  value: number;
+}
+
+export interface QueryGrowth {
+  level?: Level;
+  measure?: Measure;
+}
+
+export interface QueryOptions {
+  debug?: boolean;
+  distinct?: boolean;
+  nonempty?: boolean;
+  parents?: boolean;
+  sparse?: boolean;
+}
+
+export interface QueryProperty {
+  level: Level;
+  name: string;
+}
+
+export interface QueryRCA {
+  level1?: Level;
+  level2?: Level;
+  measure?: Measure;
+}
+
+export interface QueryTopk {
+  amount?: number;
+  level?: Level;
+  measure?: Measure;
+  order?: Order;
 }

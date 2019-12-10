@@ -2,7 +2,15 @@ import formUrlEncoded from "form-urlencoded";
 import Cube from "./cube";
 import {Comparison, Format, Order} from "./enums";
 import {ClientError} from "./errors";
-import {LevelDescriptor} from "./interfaces";
+import {
+  LevelDescriptor,
+  QueryFilter,
+  QueryGrowth,
+  QueryOptions,
+  QueryProperty,
+  QueryRCA,
+  QueryTopk
+} from "./interfaces";
 import Level from "./level";
 import Measure from "./measure";
 import NamedSet from "./namedset";
@@ -12,43 +20,6 @@ export type LevelReference = string | LevelDescriptor | Level;
 
 export type Drillable = Level | NamedSet;
 export type DrillableReference = LevelReference | Drillable;
-
-export interface QueryFilter {
-  measure: Measure;
-  comparison: Comparison;
-  value: number;
-}
-
-export interface QueryGrowth {
-  level?: Level;
-  measure?: Measure;
-}
-
-export interface QueryOptions {
-  debug?: boolean;
-  distinct?: boolean;
-  nonempty?: boolean;
-  parents?: boolean;
-  sparse?: boolean;
-}
-
-export interface QueryProperty {
-  level: Level;
-  name: string;
-}
-
-export interface QueryRCA {
-  level1?: Level;
-  level2?: Level;
-  measure?: Measure;
-}
-
-export interface QueryTopk {
-  amount?: number;
-  level?: Level;
-  measure?: Measure;
-  order?: Order;
-}
 
 export class Query {
   readonly cube: Cube;
@@ -261,6 +232,8 @@ export class Query {
       captions: this.captions.slice(),
       cube: cube.name,
       cuts: {...this.cuts},
+      debug: this.options.debug,
+      distinct: this.options.distinct,
       drilldowns: this.drilldowns.map(item => item.fullName),
       filters: this.filters.slice(),
       format: this.format,
@@ -268,15 +241,17 @@ export class Query {
       limit: this.limit,
       locale: this.locale,
       measures: this.measures.map(item => item.name),
+      nonempty: this.options.nonempty,
       offset: this.offset,
-      order_desc: this.orderDescendent,
-      order_prop: this.orderProperty,
-      properties: this.properties,
+      parents: this.options.parents,
+      properties: this.properties.slice(),
       rca: {...this.rca},
       server: cube.server,
+      sortOrder: this.orderDescendent,
+      sortProperty: this.orderProperty,
+      sparse: this.options.sparse,
       time: this.time,
-      topk: {...this.topk},
-      ...this.options
+      topk: {...this.topk}
     };
   }
 

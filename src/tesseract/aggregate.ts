@@ -1,16 +1,15 @@
 import {Comparison, Order} from "../enums";
 import {ClientError} from "../errors";
-import Level from "../level";
-import Measure from "../measure";
 import {
-  Drillable,
-  Query,
   QueryFilter,
   QueryGrowth,
   QueryProperty,
   QueryRCA,
   QueryTopk
-} from "../query";
+} from "../interfaces";
+import Level from "../level";
+import Measure from "../measure";
+import {Drillable, Query} from "../query";
 import {ensureArray, undefinedHelpers} from "../utils";
 import {TesseractAggregateURLSearchParams} from "./interfaces";
 import {joinFullName, parseCut, stringifyCut} from "./utils";
@@ -171,6 +170,7 @@ export function aggregateQueryParser(
     const orderIndex = params.sort.lastIndexOf(".");
     const sortProperty = params.sort.slice(0, orderIndex);
     const sortOrder = params.sort.slice(orderIndex + 1);
+    // TODO: This can throw, check sortProperty before applying
     query.setSorting(sortProperty, sortOrder === "desc");
   }
 

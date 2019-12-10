@@ -1,8 +1,9 @@
 import {Comparison} from "../enums";
 import {ClientError} from "../errors";
+import {QueryFilter, QueryProperty} from "../interfaces";
 import Level from "../level";
 import Measure from "../measure";
-import {Drillable, Query, QueryFilter, QueryProperty} from "../query";
+import {Drillable, Query} from "../query";
 import {ensureArray, undefinedHelpers} from "../utils";
 import {MondrianAggregateURLSearchParams} from "./interfaces";
 import {joinFullName, parseCut, stringifyCut} from "./utils";
