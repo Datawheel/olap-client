@@ -161,7 +161,7 @@ export class MondrianDataSource implements IDataSource {
     );
   }
 
-  static parseQueryURL(query: Query, url: string, options: Partial<ParseURLOptions>) {
+  parseQueryURL(query: Query, url: string, options: Partial<ParseURLOptions>) {
     const searchIndex = url.indexOf("?");
     const searchParams = url.slice(searchIndex + 1);
     const qp: MondrianAggregateURLSearchParams = formUrlDecoded(searchParams);
@@ -174,7 +174,7 @@ export class MondrianDataSource implements IDataSource {
     const qpFinal = applyParseUrlRules(qp, options);
 
     if (url.indexOf("/aggregate") > -1) {
-      return aggregateQueryParser(query, qpFinal);
+      return MondrianDataSource.queryAggregate(query, qpFinal);
     }
 
     throw new ClientError(`Provided URL is not a valid Mondrian REST query URL: ${url}`);
@@ -182,6 +182,10 @@ export class MondrianDataSource implements IDataSource {
 
   stringifyQueryURL(query: Query): string {
     return MondrianDataSource.urlAggregate(query);
+  }
+
+  static queryAggregate(query: Query, params: Partial<MondrianAggregateURLSearchParams>): Query {
+    return aggregateQueryParser(query, params);
   }
 
   static urlAggregate(query: Query): string {

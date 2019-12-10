@@ -115,8 +115,9 @@ export function aggregateQueryParser(
   });
 
   ensureArray(params.cuts).forEach(item => {
-    const cut = parseCut(item);
-    query.addCut(...cut);
+    const [levelName, members] = parseCut(item);
+    const level = levels[levelName];
+    level && query.addCut(level, members);
   });
 
   ensureArray(params.drilldowns).forEach(item => {
@@ -167,7 +168,10 @@ export function aggregateQueryParser(
   }
 
   if (params.sort) {
-    query.setSorting(params.sort, true);
+    const orderIndex = params.sort.lastIndexOf(".");
+    const sortProperty = params.sort.slice(0, orderIndex);
+    const sortOrder = params.sort.slice(orderIndex + 1);
+    query.setSorting(sortProperty, sortOrder === "desc");
   }
 
   typeof params.debug === "boolean" && query.setOption("debug", params.debug);

@@ -163,16 +163,12 @@ export class TesseractDataSource implements IDataSource {
     });
   }
 
-  static parseQueryURL(
-    query: Query,
-    url: string,
-    options: Partial<ParseURLOptions>
-  ): Query {
+  parseQueryURL(query: Query, url: string, options: Partial<ParseURLOptions>): Query {
     const searchIndex = url.indexOf("?");
     const searchParams = url.slice(searchIndex + 1);
     const qp = formUrlDecoded(searchParams);
 
-    const formatMatch = url.match(/^.+\/aggregate(\.[a-z]+)\?.+$/);
+    const formatMatch = url.match(/^.+\/(?:aggregate|data)(\.[a-z]+)\?.+$/);
     if (formatMatch) {
       qp["format"] = formatMatch[1].slice(1);
     }
@@ -180,20 +176,21 @@ export class TesseractDataSource implements IDataSource {
     const qpFinal = applyParseUrlRules(qp, options);
 
     if (url.indexOf("/aggregate") > -1) {
-      return aggregateQueryParser(query, qpFinal as TesseractAggregateURLSearchParams);
+      return TesseractDataSource.queryAggregate(query, qpFinal);
     }
+
     if (url.indexOf("/data") > -1) {
       if (qp.cube !== query.cube.name) {
         throw new ClientError(
           `URL and Query object belong to different cubes
-Query cube: ${query.cube.name}
-URL cube: ${qp.cube}`
+  Query cube: ${query.cube.name}
+  URL cube: ${qp.cube}`
         );
       }
-      return logicLayerQueryParser(query, qpFinal as TesseractLogicLayerURLSearchParams);
+      return TesseractDataSource.queryLogicLayer(query, qpFinal);
     }
 
-    throw new ClientError(`Provided URL is not a valid Mondrian REST query URL: ${url}`);
+    throw new ClientError(`Provided URL is not a valid Tesseract OLAP query URL: ${url}`);
   }
 
   stringifyQueryURL(query: Query, kind: string): string {
@@ -201,6 +198,20 @@ URL cube: ${qp.cube}`
       return TesseractDataSource.urlLogicLayer(query);
     }
     return TesseractDataSource.urlAggregate(query);
+  }
+
+  static queryAggregate(
+    query: Query,
+    params: Partial<TesseractAggregateURLSearchParams>
+  ): Query {
+    return aggregateQueryParser(query, params);
+  }
+
+  static queryLogicLayer(
+    query: Query,
+    params: Partial<TesseractLogicLayerURLSearchParams>
+  ): Query {
+    return logicLayerQueryParser(query, params);
   }
 
   static urlAggregate(query: Query): string {

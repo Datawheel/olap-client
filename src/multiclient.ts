@@ -7,12 +7,13 @@ import {
   IClient,
   IDataSource,
   LevelDescriptor,
+  ParseURLOptions,
   ServerStatus
 } from "./interfaces";
 import Level from "./level";
 import Member from "./member";
 import {Query} from "./query";
-import {arrayMapper, levelFinderFactory} from "./utils";
+import {groupBy, levelFinderFactory} from "./utils";
 
 class MultiClient implements IClient {
   private _cubeCache: {[key: string]: Promise<Cube[]>} = {};
@@ -53,7 +54,7 @@ class MultiClient implements IClient {
   }
 
   private cacheCube(cubes: Cube[]): void {
-    const cubeMap = arrayMapper(cubes, "name");
+    const cubeMap = groupBy(cubes, "name");
     Object.keys(cubeMap).forEach(cubeName => {
       this._cubeCache[cubeName] = Promise.resolve(cubeMap[cubeName]);
     });
@@ -193,6 +194,27 @@ Level: ${level}`
       return datasource
         .fetchMembers(level, options)
         .then(members => members.map(member => new Member(member, level)));
+    });
+  }
+
+  parseQueryURL(url: string, options: Partial<ParseURLOptions> = {}): Promise<Query> {
+    const datasource = this.dataSourceList.find(ds => url.startsWith(ds.serverUrl));
+    if (!datasource) {
+      throw new ClientError(
+        `Provided URL not available on this MultiClient instance: ${url}`
+      );
+    }
+
+    const cubeMatch = /\/cubes\/([^\/]+)\/|\bcube=([^&]+)&/.exec(url);
+    if (!cubeMatch) {
+      throw new ClientError(`Provided URL is not a valid Query URL: ${url}`);
+    }
+    const cubeName = cubeMatch[1] || cubeMatch[2];
+    const cubePicker = (cubes: Cube[]) =>
+      cubes.find(cube => cube.server === datasource.serverUrl) || cubes[0];
+
+    return this.getCube(cubeName, cubePicker).then(cube => {
+      return datasource.parseQueryURL(cube.query, url, options);
     });
   }
 }

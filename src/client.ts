@@ -8,6 +8,7 @@ import {
   IClient,
   IDataSource,
   LevelDescriptor,
+  ParseURLOptions,
   ServerStatus
 } from "./interfaces";
 import Level from "./level";
@@ -134,6 +135,17 @@ Verify the initialization procedure, there might be a race condition.`);
         .fetchMembers(level, options)
         .then(members => members.map(member => new Member(member, level)))
     );
+  }
+
+  parseQueryURL(url: string, options: Partial<ParseURLOptions> = {}): Promise<Query> {
+    const cubeMatch = (/\/cubes\/([^\/]+)\/|\bcube=([^&]+)&/).exec(url);
+    if (!cubeMatch) {
+      throw new ClientError(`Provided URL is not a valid Query URL: ${url}`);
+    }
+    const cubeName = cubeMatch[1] || cubeMatch[2];
+    return this.getCube(cubeName).then(cube => {
+      return this.datasource.parseQueryURL(cube.query, url, options);
+    });
   }
 
   setDataSource(datasource: IDataSource): void {

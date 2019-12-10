@@ -2,12 +2,10 @@ import formUrlEncoded from "form-urlencoded";
 import Cube from "./cube";
 import {Comparison, Format, Order} from "./enums";
 import {ClientError} from "./errors";
-import {LevelDescriptor, ParseURLOptions} from "./interfaces";
+import {LevelDescriptor} from "./interfaces";
 import Level from "./level";
 import Measure from "./measure";
-import {MondrianDataSource} from "./mondrian/datasource";
 import NamedSet from "./namedset";
-import {TesseractDataSource} from "./tesseract/datasource";
 import {pushUnique} from "./utils";
 
 export type LevelReference = string | LevelDescriptor | Level;
@@ -76,6 +74,7 @@ export class Query {
   private orderProperty: string;
   private properties: QueryProperty[] = [];
   private rca: QueryRCA = {};
+  private time: string | undefined;
   private topk: QueryTopk = {};
 
   constructor(cube: Cube) {
@@ -143,6 +142,7 @@ export class Query {
   getParam(key: "orderProperty"): string;
   getParam(key: "properties"): QueryProperty[];
   getParam(key: "rca"): QueryRCA;
+  getParam(key: "time"): string;
   getParam(key: "topk"): QueryTopk;
   getParam(key: string): any {
     const value = this[key];
@@ -159,30 +159,6 @@ export class Query {
       );
     }
     return `${level.fullName}.${propertyName}`;
-  }
-
-  parseURL(url: string, options: Partial<ParseURLOptions> = {}): this {
-    const {server, serverSoftware} = this.cube;
-
-    if (url.indexOf(server) !== 0) {
-      throw new ClientError(
-        `Provided URL "${url}" doesn't match with the parent server for the cube: ${server}.`
-      );
-    }
-
-    const searchIndex = url.indexOf("?");
-    if (searchIndex === -1) {
-      throw new ClientError(`Provided URL doesn't have query parameters: ${url}`);
-    }
-
-    if (serverSoftware === TesseractDataSource.softwareName) {
-      TesseractDataSource.parseQueryURL(this, url, options);
-    }
-    else if (serverSoftware === MondrianDataSource.softwareName) {
-      MondrianDataSource.parseQueryURL(this, url, options);
-    }
-
-    return this;
   }
 
   setFormat(format: Format): this {
@@ -255,6 +231,11 @@ export class Query {
     return this;
   }
 
+  setTime(time: string): this {
+    this.time = time;
+    return this;
+  }
+
   setTop(
     amount: number,
     levelRef: LevelReference,
@@ -293,6 +274,7 @@ export class Query {
       properties: this.properties,
       rca: {...this.rca},
       server: cube.server,
+      time: this.time,
       topk: {...this.topk},
       ...this.options
     };

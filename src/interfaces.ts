@@ -96,6 +96,7 @@ export interface IClient {
     options?: any
   ): Promise<Member>;
   getMembers(parent: Level | LevelDescriptor, options?: any): Promise<Member[]>;
+  parseQueryURL(url: string, options: Partial<ParseURLOptions>): Promise<Query>;
 }
 
 export interface IDataSource {
@@ -105,6 +106,7 @@ export interface IDataSource {
   fetchCubes(): Promise<AdaptedCube[]>;
   fetchMember(parent: Level, key: string | number, options?: any): Promise<AdaptedMember>;
   fetchMembers(parent: Level, options?: any): Promise<AdaptedMember[]>;
+  parseQueryURL(query: Query, url: string, options: Partial<ParseURLOptions>): Query;
   serverOnline: boolean;
   serverSoftware: string;
   serverUrl: string;

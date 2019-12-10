@@ -27,7 +27,7 @@ export function logicLayerQueryBuilder(
     cube: cube.name,
     debug: options.debug ? true : undefined,
     drilldowns: drilldowns ? drilldowns.join(",") : undefined,
-    locale: query.getParam("locale"),
+    locale: query.getParam("locale") || undefined,
     measures: measures ? measures.join(",") : undefined,
     parents: options.parents,
     sparse: options.sparse,
@@ -38,6 +38,7 @@ export function logicLayerQueryBuilder(
     rca: undefinedIfIncomplete(query.getParam("rca"), (r: Required<QueryRCA>) =>
       [r.level1.uniqueName, r.level2.uniqueName, r.measure.name].join(",")
     ),
+    time: query.getParam("time") || undefined,
     top: undefinedIfIncomplete(query.getParam("topk"), (t: Required<QueryTopk>) =>
       [t.amount, t.level.uniqueName, t.measure.name, t.order].join(",")
     )
@@ -94,9 +95,6 @@ export function logicLayerQueryParser(
   // }
 
   // TODO
-  // time: string;
-
-  // TODO
   // properties: string;
 
   if (params.growth) {
@@ -132,7 +130,14 @@ export function logicLayerQueryParser(
   }
 
   if (params.sort) {
-    query.setSorting(params.sort, true);
+    const orderIndex = params.sort.lastIndexOf(".");
+    const sortProperty = params.sort.slice(0, orderIndex);
+    const sortOrder = params.sort.slice(orderIndex + 1);
+    query.setSorting(sortProperty, sortOrder === "desc");
+  }
+
+  if (params.time) {
+    query.setTime(params.time);
   }
 
   typeof params.parents === "boolean" && query.setOption("parents", params.parents);

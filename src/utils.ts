@@ -18,7 +18,7 @@ export function applyMixins(derivedCtor: any, baseCtors: any[]) {
 
 export function applyParseUrlRules<T>(
   qp: T,
-  options: Partial<ParseURLOptions>
+  options: Partial<ParseURLOptions> = {}
 ): Partial<T> {
   const {exclude, include, filter} = options;
 
@@ -88,7 +88,7 @@ export function nameMapperFactory<P>(context: P) {
   };
 }
 
-export function arrayMapper<T>(
+export function groupBy<T>(
   list: T[],
   property: keyof T,
   targetMap: {[key: string]: T[]} = {}
