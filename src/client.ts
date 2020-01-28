@@ -138,6 +138,10 @@ Verify the initialization procedure, there might be a race condition.`);
   }
 
   parseQueryURL(url: string, options: Partial<ParseURLOptions> = {}): Promise<Query> {
+    const {serverUrl} = this.datasource;
+    if (!url.startsWith(serverUrl)) {
+      throw new ClientError(`Provided URL doesn't belong to the datasource set on this client instance: ${serverUrl}`)
+    }
     const cubeMatch = (/\/cubes\/([^\/]+)\/|\bcube=([^&]+)&/).exec(url);
     if (!cubeMatch) {
       throw new ClientError(`Provided URL is not a valid Query URL: ${url}`);
