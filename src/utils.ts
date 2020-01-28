@@ -56,7 +56,25 @@ export function levelFinderFactory(descriptor: LevelDescriptor): (cube: Cube) =>
   return (cube: Cube): Level => {
     if (!cubeName || cube.name === cubeName) {
       for (let level of cube.levelIterator) {
-        if (level.uniqueName === levelName || level.name === levelName) {
+        if (level.uniqueName === levelName) {
+          const sameHie = hierarchy ? hierarchy === level.hierarchy.name : true;
+          const sameDim = dimension ? dimension === level.dimension.name : true;
+          if (sameDim && sameHie) {
+            return level;
+          }
+        }
+      }
+      for (let level of cube.levelIterator) {
+        if (level.name === levelName) {
+          const sameHie = hierarchy ? hierarchy === level.hierarchy.name : true;
+          const sameDim = dimension ? dimension === level.dimension.name : true;
+          if (sameDim && sameHie) {
+            return level;
+          }
+        }
+      }
+      for (let level of cube.levelIterator) {
+        if (level.fullName === levelName) {
           const sameHie = hierarchy ? hierarchy === level.hierarchy.name : true;
           const sameDim = dimension ? dimension === level.dimension.name : true;
           if (sameDim && sameHie) {
