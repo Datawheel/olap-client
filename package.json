@@ -37,22 +37,22 @@
     "mondrian-rest-client"
   ],
   "dependencies": {
-    "axios": "^0.19.0",
+    "axios": "^0.19.2",
     "form-urldecoded": "^0.0.6",
-    "form-urlencoded": "^4.0.0",
+    "form-urlencoded": "^4.1.1",
     "url-join": "^4.0.1"
   },
   "devDependencies": {
     "@types/form-urlencoded": "^2.0.1",
     "@types/url-join": "^4.0.0",
-    "mocha": "^6.2.0",
-    "rollup": "^1.19.2",
+    "mocha": "^6.2.2",
+    "rollup": "^1.30.1",
     "rollup-plugin-cleanup": "^3.1.1",
     "rollup-plugin-commonjs": "^10.0.2",
     "rollup-plugin-license": "^0.10.0",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-replace": "^2.2.0",
     "rollup-plugin-typescript2": "^0.22.1",
-    "typescript": "^3.5.3"
+    "typescript": "^3.7.5"
   }
 }
