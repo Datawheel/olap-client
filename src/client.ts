@@ -1,4 +1,4 @@
-import Axios, {AxiosError, AxiosResponse} from "axios";
+import Axios, {AxiosError, AxiosRequestConfig, AxiosResponse} from "axios";
 import urljoin from "url-join";
 import Cube from "./cube";
 import {ClientError, ServerError} from "./errors";
@@ -23,16 +23,34 @@ export class Client implements IClient {
   private _cubesCache: Promise<Cube[]> | undefined = undefined;
   private _ds: IDataSource | undefined;
 
-  static dataSourceFromURL(url: string): Promise<IDataSource> {
+  static dataSourceFromURL(
+    config: string | AxiosRequestConfig
+  ): Promise<IDataSource> {
+    if (typeof config === "string") {
+      config = { url: config };
+    }
+    const { url, ...reqConfig } = config;
+
+    if (!url) {
+      throw new ClientError(`DataSource can be built with a string URL or an object with a url property.
+Received ${JSON.stringify(config)}`);
+    }
+
     const cubesUrl = urljoin(url, "cubes");
-    return Axios.get(cubesUrl).then(
+    return Axios({ ...reqConfig, url: cubesUrl }).then(
       (response: AxiosResponse) => {
         if (response.status === 200 && "cubes" in response.data) {
-          return "name" in response.data
-            ? new TesseractDataSource(url)
-            : new MondrianDataSource(url);
+          const ds =
+            "name" in response.data
+              ? new TesseractDataSource(url)
+              : new MondrianDataSource(url);
+          ds.setRequestConfig(reqConfig);
+          return ds;
         }
-        throw new ServerError(response, `URL is not a known OLAP server: ${url}`);
+        throw new ServerError(
+          response,
+          `URL is not a known OLAP server: ${url}`
+        );
       },
       (error: AxiosError) => {
         error.message += `\nURL is not a known OLAP server: ${url}`;
@@ -41,8 +59,10 @@ export class Client implements IClient {
     );
   }
 
-  static fromURL(url: string): Promise<Client> {
-    return Client.dataSourceFromURL(url).then(datasource => new Client(datasource));
+  static fromURL(url: string | AxiosRequestConfig): Promise<Client> {
+    return Client.dataSourceFromURL(url).then(
+      datasource => new Client(datasource)
+    );
   }
 
   constructor(datasource?: IDataSource) {
@@ -129,7 +149,10 @@ Verify the initialization procedure, there might be a race condition.`);
     );
   }
 
-  getMembers(levelRef: Level | LevelDescriptor, options?: any): Promise<Member[]> {
+  getMembers(
+    levelRef: Level | LevelDescriptor,
+    options?: any
+  ): Promise<Member[]> {
     return this.getLevel(levelRef).then(level =>
       this.datasource
         .fetchMembers(level, options)
@@ -137,12 +160,17 @@ Verify the initialization procedure, there might be a race condition.`);
     );
   }
 
-  parseQueryURL(url: string, options: Partial<ParseURLOptions> = {}): Promise<Query> {
+  parseQueryURL(
+    url: string,
+    options: Partial<ParseURLOptions> = {}
+  ): Promise<Query> {
     const {serverUrl} = this.datasource;
     if (!url.startsWith(serverUrl)) {
-      throw new ClientError(`Provided URL doesn't belong to the datasource set on this client instance: ${serverUrl}`)
+      throw new ClientError(
+        `Provided URL doesn't belong to the datasource set on this client instance: ${serverUrl}`
+      );
     }
-    const cubeMatch = (/\/cubes\/([^\/]+)\/|\bcube=([^&]+)&/).exec(url);
+    const cubeMatch = /\/cubes\/([^\/]+)\/|\bcube=([^&]+)&/.exec(url);
     if (!cubeMatch) {
       throw new ClientError(`Provided URL is not a valid Query URL: ${url}`);
     }
@@ -158,5 +186,9 @@ Verify the initialization procedure, there might be a race condition.`);
       this._cubeCache = {};
       this._cubesCache = undefined;
     }
+  }
+
+  setRequestConfig(config: AxiosRequestConfig): void {
+    this.datasource.setRequestConfig(config);
   }
 }

@@ -1,3 +1,4 @@
+import {AxiosRequestConfig} from "axios";
 import {Client} from "./client";
 import Cube from "./cube";
 import {ClientError} from "./errors";
@@ -61,7 +62,9 @@ class MultiClient implements IClient {
   }
 
   checkStatus(): Promise<ServerStatus[]> {
-    const promises = this.dataSourceList.map(datasource => datasource.checkStatus());
+    const promises = this.dataSourceList.map(datasource =>
+      datasource.checkStatus()
+    );
     return Promise.all(promises);
   }
 
@@ -85,14 +88,18 @@ Verify the initialization procedure, there might be a race condition.`);
     return datasource.execQuery(query, endpoint);
   }
 
-  getCube(cubeName: string, selectorFn?: (cubes: Cube[]) => Cube): Promise<Cube> {
+  getCube(
+    cubeName: string,
+    selectorFn?: (cubes: Cube[]) => Cube
+  ): Promise<Cube> {
     const promise =
       this._cubeCache[cubeName] ||
       Promise.resolve(this.dataSourceList).then(datasources => {
         const promises = datasources.map(datasource =>
-          datasource
-            .fetchCube(cubeName)
-            .then((acube: AdaptedCube) => new Cube(acube, datasource), () => undefined)
+          datasource.fetchCube(cubeName).then(
+            (acube: AdaptedCube) => new Cube(acube, datasource),
+            () => undefined
+          )
         );
         return Promise.all(promises).then(values => {
           const cubes = values.filter(Boolean) as Cube[];
@@ -180,7 +187,10 @@ Level: ${level}`
     });
   }
 
-  getMembers(levelRef: Level | LevelDescriptor, options?: any): Promise<Member[]> {
+  getMembers(
+    levelRef: Level | LevelDescriptor,
+    options?: any
+  ): Promise<Member[]> {
     return this.getLevel(levelRef).then(level => {
       const server = level.cube.server;
       const datasource = this.datasources[server];
@@ -197,8 +207,13 @@ Level: ${level}`
     });
   }
 
-  parseQueryURL(url: string, options: Partial<ParseURLOptions> = {}): Promise<Query> {
-    const datasource = this.dataSourceList.find(ds => url.startsWith(ds.serverUrl));
+  parseQueryURL(
+    url: string,
+    options: Partial<ParseURLOptions> = {}
+  ): Promise<Query> {
+    const datasource = this.dataSourceList.find(ds =>
+      url.startsWith(ds.serverUrl)
+    );
     if (!datasource) {
       throw new ClientError(
         `Provided URL not available on this MultiClient instance: ${url}`
@@ -216,6 +231,10 @@ Level: ${level}`
     return this.getCube(cubeName, cubePicker).then(cube => {
       return datasource.parseQueryURL(cube.query, url, options);
     });
+  }
+
+  setRequestConfig(config: AxiosRequestConfig): void {
+    this.dataSourceList.map(ds => ds.setRequestConfig(config));
   }
 }
 

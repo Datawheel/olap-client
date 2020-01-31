@@ -4,6 +4,7 @@ import Level from "./level";
 import Measure from "./measure";
 import Member from "./member";
 import {Query} from "./query";
+import {AxiosRequestConfig} from "axios";
 
 export interface AdaptedCube extends IAnnotated, IFullNamed, ISerializable {
   readonly _type: "cube";
@@ -12,7 +13,10 @@ export interface AdaptedCube extends IAnnotated, IFullNamed, ISerializable {
   readonly namedsets: AdaptedNamedSet[];
 }
 
-export interface AdaptedDimension extends IAnnotated, IFullNamed, ISerializable {
+export interface AdaptedDimension
+  extends IAnnotated,
+    IFullNamed,
+    ISerializable {
   readonly _type: "dimension";
   readonly cube: string;
   readonly defaultHierarchy: string;
@@ -20,7 +24,10 @@ export interface AdaptedDimension extends IAnnotated, IFullNamed, ISerializable 
   readonly hierarchies: AdaptedHierarchy[];
 }
 
-export interface AdaptedHierarchy extends IAnnotated, IFullNamed, ISerializable {
+export interface AdaptedHierarchy
+  extends IAnnotated,
+    IFullNamed,
+    ISerializable {
   readonly _type: "hierarchy";
   readonly cube: string;
   readonly dimension: string;
@@ -74,6 +81,7 @@ export interface AdaptedProperty extends INamed {
 
 export interface Aggregation<T = any> {
   data: T;
+  headers: Record<string, string>;
   query: Query;
   status?: number;
   url?: string;
@@ -89,7 +97,10 @@ export interface IAnnotated {
 
 export interface IClient {
   execQuery(query: Query, endpoint?: string): Promise<Aggregation>;
-  getCube(cubeName: string, selectorFn?: (cubes: Cube[]) => Cube): Promise<Cube>;
+  getCube(
+    cubeName: string,
+    selectorFn?: (cubes: Cube[]) => Cube
+  ): Promise<Cube>;
   getCubes(): Promise<Cube[]>;
   getMember(
     parent: Level | LevelDescriptor,
@@ -98,6 +109,7 @@ export interface IClient {
   ): Promise<Member>;
   getMembers(parent: Level | LevelDescriptor, options?: any): Promise<Member[]>;
   parseQueryURL(url: string, options: Partial<ParseURLOptions>): Promise<Query>;
+  setRequestConfig(config: AxiosRequestConfig): void;
 }
 
 export interface IDataSource {
@@ -105,13 +117,22 @@ export interface IDataSource {
   execQuery(query: Query, endpoint?: string): Promise<Aggregation>;
   fetchCube(cubeName: string): Promise<AdaptedCube>;
   fetchCubes(): Promise<AdaptedCube[]>;
-  fetchMember(parent: Level, key: string | number, options?: any): Promise<AdaptedMember>;
+  fetchMember(
+    parent: Level,
+    key: string | number,
+    options?: any
+  ): Promise<AdaptedMember>;
   fetchMembers(parent: Level, options?: any): Promise<AdaptedMember[]>;
-  parseQueryURL(query: Query, url: string, options: Partial<ParseURLOptions>): Query;
+  parseQueryURL(
+    query: Query,
+    url: string,
+    options: Partial<ParseURLOptions>
+  ): Query;
   serverOnline: boolean;
   serverSoftware: string;
   serverUrl: string;
   serverVersion: string;
+  setRequestConfig(config: AxiosRequestConfig): void;
   stringifyQueryURL(query: Query, kind: string): string;
 }
 

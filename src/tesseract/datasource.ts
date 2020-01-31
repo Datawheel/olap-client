@@ -1,4 +1,4 @@
-import Axios, {AxiosError} from "axios";
+import Axios, {AxiosError, AxiosInstance, AxiosRequestConfig} from "axios";
 import formUrlDecoded from "form-urldecoded";
 import formUrlEncoded from "form-urlencoded";
 import urljoin from "url-join";
@@ -30,6 +30,7 @@ interface TesseractServerStatus {
 }
 
 export class TesseractDataSource implements IDataSource {
+  private _axios: AxiosInstance = Axios.create({});
   serverOnline: boolean;
   serverSoftware: string = TesseractDataSource.softwareName;
   serverVersion: string = "";
@@ -45,7 +46,7 @@ export class TesseractDataSource implements IDataSource {
   }
 
   checkStatus(): Promise<ServerStatus> {
-    return Axios.get<TesseractServerStatus>(this.serverUrl).then(
+    return this._axios.get<TesseractServerStatus>(this.serverUrl).then(
       response => {
         const {status, tesseract_version} = response.data;
         this.serverOnline = status === "ok";
@@ -64,7 +65,10 @@ export class TesseractDataSource implements IDataSource {
     );
   }
 
-  execQuery(query: Query, endpoint: string = "aggregate"): Promise<Aggregation> {
+  execQuery(
+    query: Query,
+    endpoint: string = "aggregate"
+  ): Promise<Aggregation> {
     if (endpoint === "aggregate") {
       return this.execQueryAggregate(query);
     }
@@ -83,9 +87,16 @@ export class TesseractDataSource implements IDataSource {
       skipIndex: true,
       sorted: true
     });
-    return Axios.get(url, {params}).then(response => {
-      const data = format === Format.jsonrecords ? response.data.data : response.data;
-      return {data, query, status: response.status, url: `${url}?${searchParams}`};
+    return this._axios.get(url, {params}).then(response => {
+      const data =
+        format === Format.jsonrecords ? response.data.data : response.data;
+      return {
+        data,
+        headers: response.headers,
+        query,
+        status: response.status,
+        url: `${url}?${searchParams}`
+      };
     });
   }
 
@@ -98,16 +109,23 @@ export class TesseractDataSource implements IDataSource {
       skipIndex: true,
       sorted: true
     });
-    return Axios.get(url, {params}).then(response => {
-      const data = format === Format.jsonrecords ? response.data.data : response.data;
-      return {data, query, status: response.status, url: `${url}?${searchParams}`};
+    return this._axios.get(url, {params}).then(response => {
+      const data =
+        format === Format.jsonrecords ? response.data.data : response.data;
+      return {
+        data,
+        headers: response.headers,
+        query,
+        status: response.status,
+        url: `${url}?${searchParams}`
+      };
     });
   }
 
   fetchCube(cubeName: string): Promise<AdaptedCube> {
     const url = urljoin(this.serverUrl, "cubes", cubeName);
     const cubeAdapter = cubeAdapterFactory({server_uri: this.serverUrl});
-    return Axios.get<TesseractCube>(url).then(response => {
+    return this._axios.get<TesseractCube>(url).then(response => {
       const tesseractCube = response.data;
       if (tesseractCube && typeof tesseractCube.name === "string") {
         return cubeAdapter(tesseractCube);
@@ -119,7 +137,7 @@ export class TesseractDataSource implements IDataSource {
   fetchCubes(): Promise<AdaptedCube[]> {
     const url = urljoin(this.serverUrl, "cubes");
     const cubeAdapter = cubeAdapterFactory({server_uri: this.serverUrl});
-    return Axios.get<TesseractEndpointCubes>(url).then(response => {
+    return this._axios.get<TesseractEndpointCubes>(url).then(response => {
       const tesseractResponse = response.data;
       if (tesseractResponse && Array.isArray(tesseractResponse.cubes)) {
         return tesseractResponse.cubes.map(cubeAdapter);
@@ -140,9 +158,9 @@ export class TesseractDataSource implements IDataSource {
       locale: (params.locale || ``).toUpperCase(),
       server_uri: this.serverUrl
     });
-    return Axios.get<{data: TesseractMember[]}>(url, {params}).then(response =>
-      response.data.data.map(memberAdapter)
-    );
+    return this._axios
+      .get<{data: TesseractMember[]}>(url, {params})
+      .then(response => response.data.data.map(memberAdapter));
   }
 
   fetchMember(
@@ -158,12 +176,18 @@ export class TesseractDataSource implements IDataSource {
         return member;
       }
       throw new ClientError(
-        `Requested member doesn't exist: descriptor ${JSON.stringify(parent)}, key ${key}`
+        `Requested member doesn't exist: descriptor ${JSON.stringify(
+          parent
+        )}, key ${key}`
       );
     });
   }
 
-  parseQueryURL(query: Query, url: string, options: Partial<ParseURLOptions>): Query {
+  parseQueryURL(
+    query: Query,
+    url: string,
+    options: Partial<ParseURLOptions>
+  ): Query {
     const searchIndex = url.indexOf("?");
     const searchParams = url.slice(searchIndex + 1);
     const qp = formUrlDecoded(searchParams);
@@ -190,7 +214,13 @@ export class TesseractDataSource implements IDataSource {
       return TesseractDataSource.queryLogicLayer(query, qpFinal);
     }
 
-    throw new ClientError(`Provided URL is not a valid Tesseract OLAP query URL: ${url}`);
+    throw new ClientError(
+      `Provided URL is not a valid Tesseract OLAP query URL: ${url}`
+    );
+  }
+
+  setRequestConfig(config: AxiosRequestConfig): void {
+    Object.assign(this._axios.defaults, config);
   }
 
   stringifyQueryURL(query: Query, kind: string): string {
