@@ -1,19 +1,12 @@
 const assert = require("assert");
-const { Client, TesseractDataSource, Comparison } = require("../dist/index.cjs");
-
-/**
- * @template T
- * @param {T[]} list
- * @returns {T}
- */
-const randomPick = list => list[Math.floor(Math.random() * list.length)];
-
-const encode = string => encodeURIComponent(string).replace(/%20/g, "+");
+const {Client, Comparison} = require("../dist/index.cjs");
+const {TestDataSource} = require("./datasource");
+const {encode, randomPick} = require("./utils");
 
 /** @type {import("../src").Cube} */
 let cube;
 
-const ds = new TesseractDataSource("https://api.oec.world/tesseract/");
+const ds = new TestDataSource();
 const client = new Client(ds);
 
 describe("Query", () => {
@@ -111,19 +104,19 @@ describe("Query", () => {
       const measure = randomPick(cube.measures);
       assert.equal(query.filters.length, 0);
 
-      query.addFilter(measure.name, ">", 0);
+      query.addFilter(measure.name, [">", 0]);
       assert.equal(query.filters.length, 1);
     });
 
     it("should throw if trying to filter on a measure that doesn't exists", () => {
-      assert.throws(() => cube.query.addFilter("undefined", ">", 0));
+      assert.throws(() => cube.query.addFilter("undefined", [">", 0]));
     });
 
     it("should throw if trying to filter on an invalid amount", () => {
       const measure = randomPick(cube.measures);
-      assert.throws(() => cube.query.addFilter(measure, ">", NaN));
-      assert.throws(() => cube.query.addFilter(measure, "<", Infinity));
-      assert.throws(() => cube.query.addFilter(measure, "=", "red"));
+      assert.throws(() => cube.query.addFilter(measure, [">", NaN]));
+      assert.throws(() => cube.query.addFilter(measure, ["<", Infinity]));
+      assert.throws(() => cube.query.addFilter(measure, ["=", "red"]));
     });
   });
 

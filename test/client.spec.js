@@ -1,13 +1,19 @@
 const assert = require("assert");
-const { Client, MondrianDataSource } = require("../dist/index.cjs");
+const {Client, TesseractDataSource} = require("..");
+const {randomPick} = require("./utils");
+const {TestDataSource} = require("./datasource");
 
 const {
   MONDRIAN_SERVER = "https://chilecube.datachile.io/",
   TESSERACT_SERVER = "https://api.oec.world/tesseract/"
 } = process.env;
 
-describe("Client", () => {
-  describe(".dataSourceFromURL()", () => {
+const ds = new TestDataSource();
+
+describe("Client", function() {
+  describe(".dataSourceFromURL()", function() {
+    this.timeout(5000);
+
     it("should identify a mondrian server", async () => {
       const ds = await Client.dataSourceFromURL(MONDRIAN_SERVER);
       assert.equal(ds.constructor.name, "MondrianDataSource");
@@ -41,8 +47,7 @@ describe("Client", () => {
     it("should allow to add new datasources later", () => {
       assert.doesNotThrow(() => {
         const client = new Client();
-        const datasource = new MondrianDataSource(MONDRIAN_SERVER);
-        client.setDataSource(datasource);
+        client.setDataSource(ds);
       });
     });
 
@@ -55,14 +60,16 @@ describe("Client", () => {
   });
 
   describe("#execQuery()", function() {
-    this.timeout(5000);
-
     it("should execute a Query correctly", async () => {
-      const client = await Client.fromURL("https://chilecube.datachile.io");
-      const cube = await client.getCube("tax_data");
+      const client = new Client(ds);
+      const cubes = await client.getCubes();
+      const cube = randomPick(cubes);
+
+      const measure = randomPick(cube.measures);
+      const level = randomPick(randomPick(randomPick(cube.dimensions).hierarchies).levels);
       const query = cube.query
-        .addMeasure("Labour")
-        .addDrilldown("Year")
+        .addMeasure(measure)
+        .addDrilldown(level.name)
         .setOption("debug", false)
         .setOption("distinct", false)
         .setOption("nonempty", true);
@@ -72,8 +79,20 @@ describe("Client", () => {
     });
   });
 
+  describe("#getMembers()", function() {
+    it("should retrieve the list of members for a level", async () => {
+      const client = new Client(ds);
+      const cubes = await client.getCubes();
+      const cube = randomPick(cubes);
+      const level = randomPick(randomPick(randomPick(cube.dimensions).hierarchies).levels);
+
+      const promise = client.getMembers(level);
+      await assert.doesNotReject(promise);
+    });
+  });
+
   describe("#parseQueryURL()", function() {
-    it("should parse an url into a query", () => {
+    it("should parse an url into a query", async () => {
       const ds = new TesseractDataSource("https://api.oec.world/tesseract/");
       const client = new Client(ds);
 
