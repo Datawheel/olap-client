@@ -4,10 +4,11 @@ export function joinFullName(nameParts: string[]): string {
     : nameParts.join(".");
 }
 
-export function splitFullName(fullname?: string): string[] | undefined {
-  if (!fullname) return undefined;
+export function splitFullName(fullname: string): string[] {
   fullname = `${fullname}`.replace(/^\[|\]$/g, "");
-  return fullname.indexOf("].[") > -1 ? fullname.split(/\]\.\[?/) : fullname.split(".");
+  return fullname.indexOf("].[") > -1
+    ? fullname.split(/\]\.\[?/)
+    : fullname.split(".");
 }
 
 export function parseCut(cut: string): [string, string[]] {

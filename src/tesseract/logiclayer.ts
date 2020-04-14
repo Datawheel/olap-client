@@ -1,10 +1,11 @@
 import {Order} from "../enums";
-import {QueryGrowth, QueryRCA, QueryTopk} from "../interfaces";
+import {QueryGrowth, QueryProperty, QueryRCA, QueryTopk} from "../interfaces";
 import Level from "../level";
 import Measure from "../measure";
 import {Drillable, Query} from "../query";
 import {undefinedHelpers} from "../utils";
 import {TesseractLogicLayerURLSearchParams} from "./interfaces";
+import {joinFullName, splitFullName} from "./utils";
 
 export function logicLayerQueryBuilder(
   query: Query
@@ -24,21 +25,27 @@ export function logicLayerQueryBuilder(
     ? `${query.getParam("orderProperty")}.${sortOrder}`
     : undefined;
 
+  const properties = undefinedIfEmpty(
+    query.getParam("properties"),
+    (prop: QueryProperty) => `${prop.level.uniqueName}.${prop.name}`
+  );
+
   const tesseractQuery = {
     cube: cube.name,
     debug: options.debug ? true : undefined,
-    drilldowns: drilldowns ? drilldowns.join(",") : undefined,
-    locale: query.getParam("locale") || undefined,
-    measures: measures ? measures.join(",") : undefined,
-    parents: options.parents,
-    sparse: options.sparse,
-    sort,
+    drilldowns: drilldowns?.join(","),
     growth: undefinedIfIncomplete(query.getParam("growth"), (g: Required<QueryGrowth>) =>
       [g.level.uniqueName, g.measure.name].join(",")
     ),
+    locale: query.getParam("locale") || undefined,
+    measures: measures?.join(","),
+    parents: options.parents,
+    properties: properties?.join(","),
     rca: undefinedIfIncomplete(query.getParam("rca"), (r: Required<QueryRCA>) =>
       [r.level1.uniqueName, r.level2.uniqueName, r.measure.name].join(",")
     ),
+    sort,
+    sparse: options.sparse,
     time: query.getParam("time") || undefined,
     top: undefinedIfIncomplete(query.getParam("topk"), (t: Required<QueryTopk>) =>
       [t.amount, t.level.uniqueName, t.measure.name, t.order].join(",")
@@ -95,8 +102,13 @@ export function logicLayerQueryParser(
   //   params.filters.split(",").forEach(item => {});
   // }
 
-  // TODO
-  // properties: string;
+  if (params.properties) {
+    params.properties.split(",").forEach((item) => {
+      const level = splitFullName(item);
+      const property = level.pop();
+      property && query.addProperty(joinFullName(level), property);
+    });
+  }
 
   if (params.growth) {
     const [levelUniqueName, measureName] = params.growth.split(",");

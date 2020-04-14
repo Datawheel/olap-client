@@ -12,7 +12,7 @@ import Measure from "../measure";
 import {Drillable, Query} from "../query";
 import {ensureArray, undefinedHelpers} from "../utils";
 import {TesseractAggregateURLSearchParams} from "./interfaces";
-import {joinFullName, parseCut, stringifyCut} from "./utils";
+import {joinFullName, parseCut, stringifyCut, splitFullName} from "./utils";
 
 export function aggregateQueryBuilder(
   query: Query
@@ -136,8 +136,11 @@ export function aggregateQueryParser(
     measure && query.addMeasure(measure);
   });
 
-  // TODO
-  // ensureArray(params.properties).forEach(item => {});
+  ensureArray(params.properties).forEach(item => {
+    const level = splitFullName(item);
+    const property = level.pop();
+    property && query.addProperty(joinFullName(level), property);
+  });
 
   if (params.growth) {
     const [levelFullName, measureName] = params.growth.split(",");
