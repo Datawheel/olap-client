@@ -9,7 +9,7 @@ import {
   AdaptedMember,
   AdaptedProperty
 } from "../interfaces";
-import {ensureArray, switchCase} from "../utils";
+import {ensureArray} from "../utils";
 import {
   TesseractCube,
   TesseractDimension,
@@ -71,12 +71,8 @@ function dimensionAdapterFactory(
       _type: "dimension",
       annotations: json.annotations,
       cube: meta.cube_name,
-      defaultHierarchy: json.default_hierarchy || json.hierarchies[0].name,
-      dimensionType: switchCase<DimensionType>(
-        DimensionType,
-        json.type,
-        DimensionType.Standard
-      ),
+      defaultHierarchy: json.default_hierarchy ?? json.hierarchies[0].name,
+      dimensionType: DimensionType[json.type] ?? DimensionType.Standard,
       fullName: joinFullName(dimension_fullname),
       hierarchies: json.hierarchies.map(hierarchyAdapterFactory(contextMeta)),
       name: json.name,
@@ -153,13 +149,10 @@ function measureAdapterFactory(
   meta: Pick<TesseractAdapterMeta, "cube_name" | "cube_uri">
 ): (json: TesseractMeasure) => AdaptedMeasure {
   return (json: TesseractMeasure) => {
+    const agg = json.aggregator.name?.toUpperCase();
     return {
       _type: "measure",
-      aggregatorType: switchCase<AggregatorType>(
-        AggregatorType,
-        json.aggregator.name.toUpperCase(),
-        AggregatorType.UNKNOWN
-      ),
+      aggregatorType: AggregatorType[agg] ?? AggregatorType.UNKNOWN,
       annotations: json.annotations,
       caption: json.name,
       cube: meta.cube_name,

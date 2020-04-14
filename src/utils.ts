@@ -289,7 +289,3 @@ export function queryToSource(query: Query) {
     .filter(Boolean)
     .join("\n  ");
 }
-
-export function switchCase<T>(cases: any, key: string, defaultCase: T): T {
-  return hasOwnProperty.call(cases, key) ? cases[key] : defaultCase;
-}

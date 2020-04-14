@@ -10,7 +10,7 @@ import {
   AdaptedNamedSet,
   AdaptedProperty
 } from "../interfaces";
-import {ensureArray, switchCase} from "../utils";
+import {ensureArray} from "../utils";
 import {
   MondrianCube,
   MondrianDimension,
@@ -71,11 +71,7 @@ function dimensionAdapterFactory(
       annotations: json.annotations,
       cube: meta.cube_name,
       defaultHierarchy: json.hierarchies[0].name,
-      dimensionType: switchCase<DimensionType>(
-        DimensionType,
-        json.type,
-        DimensionType.Standard
-      ),
+      dimensionType: DimensionType[json.type] ?? DimensionType.Standard,
       hierarchies: json.hierarchies.map(hierarchyAdapterFactory(contextMeta)),
       name: json.name,
       uri: dimension_uri
