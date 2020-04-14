@@ -63,12 +63,26 @@ class Dimension {
     return this.levelIteratorFactory();
   }
 
-  private *levelIteratorFactory(): IterableIterator<Level> {
-    for (let hierarchy of this.hierarchies) {
-      for (let level of hierarchy.levels) {
-        yield level;
+  private levelIteratorFactory(): IterableIterator<Level> {
+    const { hierarchies } = this;
+    let h = 0;
+    let l = 0;
+
+    function next(): IteratorResult<Level> {
+      if (h === hierarchies.length) {
+        return { value: undefined, done: true };
       }
+      const hierarchy = hierarchies[h];
+      if (l === hierarchy.levels.length) {
+        h++;
+        l = 0;
+        return next();
+      }
+      return { value: hierarchy.levels[l++], done: false };
     }
+
+    const iterator = { next, [Symbol.iterator]: () => iterator };
+    return iterator;
   }
 }
 

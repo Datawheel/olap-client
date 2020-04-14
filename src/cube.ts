@@ -62,7 +62,7 @@ class Cube {
   }
 
   get geoDimension(): Dimension | undefined {
-    return this.dimensions.find(d => d.dimensionType === DimensionType.Geographic);
+    return this.dimensions.find((d) => d.dimensionType === DimensionType.Geographic);
   }
 
   get query(): Query {
@@ -82,11 +82,11 @@ class Cube {
   }
 
   get timeDimension(): Dimension | undefined {
-    return this.dimensions.find(d => d.dimensionType === DimensionType.Time);
+    return this.dimensions.find((d) => d.dimensionType === DimensionType.Time);
   }
 
   findDimensionsByType(type: DimensionType): Dimension[] {
-    return this.dimensions.filter(d => d.dimensionType === type);
+    return this.dimensions.filter((d) => d.dimensionType === type);
   }
 
   getDimension(identifier: string | Dimension): Dimension {
@@ -104,8 +104,8 @@ class Cube {
       typeof identifier === "string"
         ? ({ level: identifier } as LevelDescriptor)
         : Level.isLevel(identifier)
-          ? identifier.descriptor
-          : identifier;
+        ? identifier.descriptor
+        : identifier;
     return levelFinderFactory(descriptor)(this);
   }
 
@@ -131,10 +131,25 @@ class Cube {
     return this.levelIteratorFactory();
   }
 
-  private *levelIteratorFactory(): IterableIterator<Level> {
-    for (let dimension of this.dimensions) {
-      yield* dimension.levelIterator;
+  private levelIteratorFactory(): IterableIterator<Level> {
+    const { dimensions } = this;
+    let levelIterator = dimensions[0].levelIterator;
+    let d = 0;
+
+    function next(): IteratorResult<Level> {
+      if (d === dimensions.length) {
+        return { value: undefined, done: true };
+      }
+      const nextIteration = levelIterator.next();
+      if (nextIteration.done) {
+        levelIterator = dimensions[++d]?.levelIterator;
+        return next();
+      }
+      return nextIteration;
     }
+
+    const iterator = { next, [Symbol.iterator]: () => iterator };
+    return iterator;
   }
 }
 
