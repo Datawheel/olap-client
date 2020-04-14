@@ -1,7 +1,7 @@
-import Axios, {AxiosError, AxiosRequestConfig, AxiosResponse} from "axios";
+import Axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 import urljoin from "url-join";
 import Cube from "./cube";
-import {ClientError, ServerError} from "./errors";
+import { ClientError, ServerError } from "./errors";
 import {
   AdaptedCube,
   Aggregation,
@@ -13,27 +13,26 @@ import {
 } from "./interfaces";
 import Level from "./level";
 import Member from "./member";
-import {MondrianDataSource} from "./mondrian/datasource";
-import {Query} from "./query";
-import {TesseractDataSource} from "./tesseract/datasource";
-import {levelFinderFactory} from "./utils";
+import { MondrianDataSource } from "./mondrian/datasource";
+import { Query } from "./query";
+import { TesseractDataSource } from "./tesseract/datasource";
+import { levelFinderFactory } from "./utils";
 
 export class Client implements IClient {
-  private _cubeCache: {[key: string]: Promise<Cube>} = {};
+  private _cubeCache: { [key: string]: Promise<Cube> } = {};
   private _cubesCache: Promise<Cube[]> | undefined = undefined;
   private _ds: IDataSource | undefined;
 
-  static dataSourceFromURL(
-    config: string | AxiosRequestConfig
-  ): Promise<IDataSource> {
+  static dataSourceFromURL(config: string | AxiosRequestConfig): Promise<IDataSource> {
     if (typeof config === "string") {
       config = { url: config };
     }
     const { url, ...reqConfig } = config;
 
     if (!url) {
-      throw new ClientError(`DataSource can be built with a string URL or an object with a url property.
-Received ${JSON.stringify(config)}`);
+      const reason = `DataSource can be built with a string URL or an object with a url property.
+Received ${JSON.stringify(config)}`;
+      return Promise.reject(new ClientError(reason));
     }
 
     const cubesUrl = urljoin(url, "cubes");
@@ -47,10 +46,7 @@ Received ${JSON.stringify(config)}`);
           ds.setRequestConfig(reqConfig);
           return ds;
         }
-        throw new ServerError(
-          response,
-          `URL is not a known OLAP server: ${url}`
-        );
+        throw new ServerError(response, `URL is not a known OLAP server: ${url}`);
       },
       (error: AxiosError) => {
         error.message += `\nURL is not a known OLAP server: ${url}`;
@@ -60,9 +56,7 @@ Received ${JSON.stringify(config)}`);
   }
 
   static fromURL(url: string | AxiosRequestConfig): Promise<Client> {
-    return Client.dataSourceFromURL(url).then(
-      datasource => new Client(datasource)
-    );
+    return Client.dataSourceFromURL(url).then(datasource => new Client(datasource));
   }
 
   constructor(datasource?: IDataSource) {
@@ -80,8 +74,9 @@ Received ${JSON.stringify(config)}`);
 
   private get datasource(): IDataSource {
     if (!this._ds) {
-      throw new ClientError(`This Client instance has no DataSource configured.
-Verify the initialization procedure, there might be a race condition.`);
+      const reason = `This Client instance has no DataSource configured.
+Verify the initialization procedure, there might be a race condition.`;
+      throw new ClientError(reason);
     }
     return this._ds;
   }
@@ -131,9 +126,8 @@ Verify the initialization procedure, there might be a race condition.`);
               continue;
             }
           }
-          throw new ClientError(
-            `No level matched the descriptor ${JSON.stringify(identifier)}`
-          );
+          const reason = `No level matched the descriptor ${JSON.stringify(identifier)}`;
+          throw new ClientError(reason);
         });
   }
 
@@ -149,10 +143,7 @@ Verify the initialization procedure, there might be a race condition.`);
     );
   }
 
-  getMembers(
-    levelRef: Level | LevelDescriptor,
-    options?: any
-  ): Promise<Member[]> {
+  getMembers(levelRef: Level | LevelDescriptor, options?: any): Promise<Member[]> {
     return this.getLevel(levelRef).then(level =>
       this.datasource
         .fetchMembers(level, options)
@@ -160,19 +151,16 @@ Verify the initialization procedure, there might be a race condition.`);
     );
   }
 
-  parseQueryURL(
-    url: string,
-    options: Partial<ParseURLOptions> = {}
-  ): Promise<Query> {
-    const {serverUrl} = this.datasource;
+  parseQueryURL(url: string, options: Partial<ParseURLOptions> = {}): Promise<Query> {
+    const { serverUrl } = this.datasource;
     if (!url.startsWith(serverUrl)) {
-      throw new ClientError(
-        `Provided URL doesn't belong to the datasource set on this client instance: ${serverUrl}`
-      );
+      const reason = `Provided URL doesn't belong to the datasource set on this client instance: ${serverUrl}`;
+      return Promise.reject(new ClientError(reason));
     }
     const cubeMatch = /\/cubes\/([^\/]+)\/|\bcube=([^&]+)&/.exec(url);
     if (!cubeMatch) {
-      throw new ClientError(`Provided URL is not a valid Query URL: ${url}`);
+      const reason = `Provided URL is not a valid Query URL: ${url}`;
+      return Promise.reject(new ClientError(reason));
     }
     const cubeName = cubeMatch[1] || cubeMatch[2];
     return this.getCube(cubeName).then(cube => {

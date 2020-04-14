@@ -1,6 +1,8 @@
-import {Comparison, Order} from "../enums";
-import {ClientError} from "../errors";
+import { CalculationName, Direction } from "../enums";
+import { ClientError } from "../errors";
 import {
+  Drillable,
+  QueryCut,
   QueryFilter,
   QueryGrowth,
   QueryProperty,
@@ -9,88 +11,109 @@ import {
 } from "../interfaces";
 import Level from "../level";
 import Measure from "../measure";
-import {Drillable, Query} from "../query";
-import {ensureArray, undefinedHelpers} from "../utils";
-import {TesseractAggregateURLSearchParams} from "./interfaces";
-import {joinFullName, parseCut, stringifyCut} from "./utils";
+import { Query } from "../query";
+import {
+  ensureArray,
+  ifNotEmpty,
+  ifValid,
+  isQueryGrowth,
+  isQueryRCA,
+  isQueryTopk
+} from "../utils";
+import { TesseractAggregateURLSearchParams } from "./interfaces";
+import {
+  joinFullName,
+  parseCut,
+  parseFilterConstraints,
+  splitFullName,
+  stringifyCut,
+  stringifyFilter,
+  stringifyProperty,
+  stringifySorting
+} from "./utils";
 
 export function aggregateQueryBuilder(
   query: Query
 ): Partial<TesseractAggregateURLSearchParams> {
-  const {
-    undefinedIfEmpty,
-    undefinedIfIncomplete,
-    undefinedIfKeyless,
-    undefinedIfZero
-  } = undefinedHelpers();
-
   const captions = query.getParam("captions");
 
   const locale = query.getParam("locale").slice(0, 2);
   if (locale) {
     const localeTester = new RegExp(`^${locale}\\s|\\s${locale}$`, "i");
     query.getParam("drilldowns").forEach(dd => {
-      // the future implementation of namedset will require this
       if (Level.isLevel(dd)) {
-        const localeProp = dd.properties.find(prop => localeTester.test(prop.name));
-        if (localeProp) {
-          captions.push(dd.fullName.concat(".", localeProp.name));
+        const property = dd.properties.find(prop => localeTester.test(prop.name));
+        if (property) {
+          captions.push({ level: dd, name: property.name });
         }
       }
+      // TODO: implement namedset
     });
   }
 
-  const drilldowns = undefinedIfEmpty(
-    query.getParam("drilldowns"),
-    (d: Drillable) => d.fullName
+  const drilldowns = ifNotEmpty<Drillable>(query.getParam("drilldowns"), d =>
+    Level.isLevel(d) ? d.fullName : d.name
   );
-  const measures = undefinedIfEmpty(query.getParam("measures"), (m: Measure) => m.name);
+  const measures = ifNotEmpty<Measure>(query.getParam("measures"), m => m.name);
 
   if (!drilldowns || !measures) {
     const lost = [!drilldowns && "drilldowns", !measures && "measures"].filter(Boolean);
     throw new ClientError(`Invalid Query: missing ${lost.join(" and ")}`);
   }
 
-  const sortOrder = query.getParam("orderDescendent") ? "desc" : "asc";
-  const sort = query.getParam("orderProperty")
-    ? `${query.getParam("orderProperty")}.${sortOrder}`
-    : undefined;
-
+  const pagination = query.getParam("pagination");
+  const sorting = query.getParam("sorting");
   const options = query.getParam("options");
+
+  // Supported params are in
+  // https://github.com/tesseract-olap/tesseract/blob/master/tesseract-server/src/handlers/aggregate.rs#L131
+
+  // PENDING IMPLEMENTATION
+  // top_where: Option<String>
+  // rate: Option<String>
+
+  // UNSUPPORTED
+  // distinct
+  // nonempty
+
+  // Keep in mind the stringify functions between aggregate and logiclayer aren't shared
+  // aggregate uses Level#fullName, logiclayer uses Level#uniqueName
+
   return {
-    captions: undefinedIfEmpty(captions),
-    cuts: undefinedIfKeyless(query.getParam("cuts"), stringifyCut),
+    captions: ifNotEmpty<QueryProperty>(captions, stringifyProperty),
+    cuts: ifNotEmpty<QueryCut>(query.getParam("cuts"), stringifyCut),
     debug: options.debug ? true : undefined,
     drilldowns,
-    exclude_default_members: undefined,
-    filters: undefinedIfEmpty(
-      query.getParam("filters"),
-      (f: QueryFilter) => `${f.measure.name} ${f.comparison} ${f.value}`
-    ),
-    growth: undefinedIfIncomplete(
+    exclude_default_members: options.exclude_default_members,
+    filters: ifNotEmpty<QueryFilter>(query.getParam("filters"), stringifyFilter),
+    growth: ifValid<QueryGrowth, string>(
       query.getParam("growth"),
-      (g: Required<QueryGrowth>) => `${g.level.fullName},${g.measure.name}`
+      isQueryGrowth,
+      (item: QueryGrowth) => `${item.level.fullName},${item.measure.name}`
     ),
-    limit: undefinedIfZero(query.getParam("limit")),
+    limit: pagination.amount || undefined,
     measures,
     parents: Boolean(options.parents),
-    properties: undefinedIfEmpty(query.getParam("properties"), (p: QueryProperty) =>
-      joinFullName([p.level.dimension.name, p.level.hierarchy.name, p.level.name, p.name])
+    properties: ifNotEmpty<QueryProperty>(
+      query.getParam("properties"),
+      stringifyProperty
     ),
     rate: undefined,
-    rca: undefinedIfIncomplete(
+    rca: ifValid<QueryRCA, string>(
       query.getParam("rca"),
-      (r: Required<QueryRCA>) =>
-        `${r.level1.fullName},${r.level2.fullName},${r.measure.name}`
+      isQueryRCA,
+      (item: QueryRCA) =>
+        `${item.level1.fullName},${item.level2.fullName},${item.measure.name}`
     ),
-    sort,
+    sort: sorting.property ? stringifySorting(sorting) : undefined,
     sparse: Boolean(options.sparse),
     top_where: undefined,
-    top: undefinedIfIncomplete(
-      query.getParam("topk"),
-      (t: Required<QueryTopk>) =>
-        `${t.amount},${t.level.fullName},${t.measure.name},${t.order}`
-    )
+    top: ifValid<QueryTopk, string>(query.getParam("topk"), isQueryTopk, item => {
+      const calculation = Measure.isMeasure(item.measure)
+        ? item.measure.name
+        : item.measure;
+      return `${item.amount},${item.level.fullName},${calculation},${item.order}`;
+    })
   };
 }
 
@@ -125,10 +148,13 @@ export function aggregateQueryParser(
   });
 
   ensureArray(params.filters).forEach(item => {
-    const [measureName, operator, value] = item.split(" ");
-    const comparison = Comparison[operator];
-    const measure = cube.measuresByName[measureName];
-    measure && query.addFilter(measure, comparison, Number.parseFloat(value));
+    const index = item.indexOf(".");
+    const measureName = item.substr(0, index);
+    const measure = CalculationName[measureName] || cube.measuresByName[measureName];
+    if (measure) {
+      const { constraints, joint } = parseFilterConstraints(item);
+      query.addFilter(measure, constraints[0], joint, constraints[1]);
+    }
   });
 
   ensureArray(params.measures).forEach(item => {
@@ -136,30 +162,37 @@ export function aggregateQueryParser(
     measure && query.addMeasure(measure);
   });
 
-  // TODO
-  // ensureArray(params.properties).forEach(item => {});
+  ensureArray(params.properties).forEach(item => {
+    const level = splitFullName(item);
+    const property = level.pop();
+    property && query.addProperty(joinFullName(level), property);
+  });
 
   if (params.growth) {
-    const [levelFullName, measureName] = params.growth.split(",");
-    const level = levels[levelFullName];
+    const [lvlFullName, measureName] = params.growth.split(",");
+    const level = levels[lvlFullName];
     const measure = cube.measuresByName[measureName];
     level && measure && query.setGrowth(level, measure);
   }
 
   if (params.rca) {
-    const [level1FullName, level2FullName, measureName] = params.rca.split(",");
-    const level1 = levels[level1FullName];
-    const level2 = levels[level2FullName];
+    const [lvl1FullName, lvl2FullName, measureName] = params.rca.split(",");
+    const level1 = levels[lvl1FullName];
+    const level2 = levels[lvl2FullName];
     const measure = cube.measuresByName[measureName];
     level1 && level2 && measure && query.setRCA(level1, level2, measure);
   }
 
   if (params.top) {
-    const [amountRaw, levelFullName, measureName, order] = params.top.split(",");
+    const [amountRaw, lvlFullName, calculationName, order] = params.top.split(",");
     const amount = Number.parseInt(amountRaw);
-    const level = levels[levelFullName];
-    const measure = cube.measuresByName[measureName];
-    amount && level && measure && query.setTop(amount, level, measure, Order[order]);
+    const level = levels[lvlFullName];
+    const calculation =
+      CalculationName[calculationName] || cube.measuresByName[calculationName];
+    amount &&
+      level &&
+      calculation &&
+      query.setTop(amount, level, calculation, Direction[order] || Direction.DESC);
   }
 
   if (params.limit != null) {
@@ -167,20 +200,23 @@ export function aggregateQueryParser(
   }
 
   if (params.sort) {
-    const orderIndex = params.sort.lastIndexOf(".");
-    const sortProperty = params.sort.slice(0, orderIndex);
-    const sortOrder = params.sort.slice(orderIndex + 1);
-    // TODO: This can throw, check sortProperty before applying
-    query.setSorting(sortProperty, sortOrder === "desc");
+    const index = params.sort.lastIndexOf(".");
+    const sortProperty = params.sort.slice(0, index);
+    const sortOrder = params.sort.slice(index + 1);
+    const calculation =
+      CalculationName[sortProperty] || cube.measuresByName[sortProperty];
+    calculation && query.setSorting(calculation, Direction[sortOrder] || Direction.DESC);
   }
 
-  typeof params.debug === "boolean" && query.setOption("debug", params.debug);
-  typeof params.distinct === "boolean" && query.setOption("distinct", params.distinct);
-  typeof params.nonempty === "boolean" && query.setOption("nonempty", params.nonempty);
-  typeof params.parents === "boolean" && query.setOption("parents", params.parents);
-  typeof params.sparse === "boolean" && query.setOption("sparse", params.sparse);
+  const { debug, distinct, exclude_default_members, nonempty, parents, sparse } = params;
+  typeof debug === "boolean" && query.setOption("debug", debug);
+  typeof distinct === "boolean" && query.setOption("distinct", distinct);
+  typeof exclude_default_members === "boolean" &&
+    query.setOption("exclude_default_members", exclude_default_members);
+  typeof nonempty === "boolean" && query.setOption("nonempty", nonempty);
+  typeof parents === "boolean" && query.setOption("parents", parents);
+  typeof sparse === "boolean" && query.setOption("sparse", sparse);
 
-  // exclude_default_members: boolean;
   // rate:       string;
   // top_where:  string;
 

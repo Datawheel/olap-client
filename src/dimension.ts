@@ -1,11 +1,11 @@
 import Cube from "./cube";
-import {DimensionType} from "./enums";
-import {ClientError} from "./errors";
+import { DimensionType } from "./enums";
+import { ClientError } from "./errors";
 import Hierarchy from "./hierarchy";
-import {AdaptedDimension} from "./interfaces";
+import { AdaptedDimension } from "./interfaces";
 import Level from "./level";
-import {Annotated, FullNamed, Serializable} from "./mixins";
-import {applyMixins, nameMapperFactory} from "./utils";
+import { Annotated, FullNamed, Serializable } from "./mixins";
+import { applyMixins, nameMapperFactory } from "./utils";
 
 interface Dimension extends Annotated, FullNamed, Serializable<AdaptedDimension> {}
 
@@ -14,7 +14,7 @@ class Dimension {
 
   readonly _source: AdaptedDimension;
   readonly hierarchies: Hierarchy[] = [];
-  readonly hierarchiesByName: {readonly [name: string]: Hierarchy} = {};
+  readonly hierarchiesByName: Readonly<Record<string, Hierarchy>> = {};
 
   static isDimension(obj: any): obj is Dimension {
     return Boolean(obj && obj._source && obj._source._type === "dimension");
@@ -26,9 +26,9 @@ class Dimension {
 
     const nameMapper = nameMapperFactory(this);
 
-    const [hierarchies, hierarchiesByName] = nameMapper(source.hierarchies, Hierarchy);
-    this.hierarchies = hierarchies;
-    this.hierarchiesByName = hierarchiesByName;
+    const hierarchyMap = nameMapper(source.hierarchies, Hierarchy);
+    this.hierarchies = hierarchyMap[0];
+    this.hierarchiesByName = hierarchyMap[1];
   }
 
   get caption(): string {

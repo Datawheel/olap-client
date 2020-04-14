@@ -1,5 +1,5 @@
-import {ClientError} from "./errors";
-import {Annotations, IAnnotated, IFullNamed, ISerializable} from "./interfaces";
+import { ClientError } from "./errors";
+import { Annotations, IAnnotated, IFullNamed, ISerializable } from "./interfaces";
 
 export class Annotated {
   readonly _source: IAnnotated;
@@ -12,9 +12,8 @@ export class Annotated {
     const value = this._source.annotations[key];
     if (value === undefined) {
       if (defaultValue === undefined) {
-        throw new ClientError(
-          `Annotation ${key} does not exist in ${this.constructor.name} ${this}.`
-        );
+        const reason = `Annotation ${key} does not exist in ${this.constructor.name} ${this}.`;
+        throw new ClientError(reason);
       }
       return defaultValue;
     }

@@ -1,10 +1,10 @@
 import Cube from "./cube";
 import Dimension from "./dimension";
-import {ClientError} from "./errors";
-import {AdaptedHierarchy} from "./interfaces";
+import { ClientError } from "./errors";
+import { AdaptedHierarchy } from "./interfaces";
 import Level from "./level";
-import {Annotated, FullNamed, Serializable} from "./mixins";
-import {applyMixins, nameMapperFactory} from "./utils";
+import { Annotated, FullNamed, Serializable } from "./mixins";
+import { applyMixins, nameMapperFactory } from "./utils";
 
 interface Hierarchy extends Annotated, FullNamed, Serializable<AdaptedHierarchy> {}
 
@@ -13,7 +13,7 @@ class Hierarchy {
 
   readonly _source: AdaptedHierarchy;
   readonly levels: Level[] = [];
-  readonly levelsByName: {readonly [name: string]: Level} = {};
+  readonly levelsByName: Readonly<Record<string, Level>> = {};
 
   static isHierarchy(obj: any): obj is Hierarchy {
     return Boolean(obj && obj._source && obj._source._type === "hierarchy");

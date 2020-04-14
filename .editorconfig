@@ -3,9 +3,11 @@ root = true
 [*]
 charset = utf-8
 end_of_line = crlf
+indent_brace_style = Stroustrup
 indent_size = 2
 indent_style = space
 insert_final_newline = true
+max_line_length = 90
 trim_trailing_whitespace = true
 
 [*.md]

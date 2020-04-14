@@ -1,16 +1,23 @@
-import {Comparison} from "../enums";
-import {ClientError} from "../errors";
-import {QueryFilter, QueryProperty} from "../interfaces";
+import { Comparison, Direction } from "../enums";
+import { ClientError } from "../errors";
+import { Drillable, QueryCut, QueryFilter, QueryProperty } from "../interfaces";
 import Level from "../level";
 import Measure from "../measure";
-import {Drillable, Query} from "../query";
-import {ensureArray, undefinedHelpers} from "../utils";
-import {MondrianAggregateURLSearchParams} from "./interfaces";
-import {joinFullName, parseCut, stringifyCut} from "./utils";
+import { Query } from "../query";
+import { ensureArray, ifNotEmpty } from "../utils";
+import { MondrianAggregateURLSearchParams } from "./interfaces";
+import {
+  joinFullName,
+  parseCut,
+  splitFullName,
+  stringifyCut,
+  stringifyFilter,
+  stringifyProperty
+} from "./utils";
 
-export function aggregateQueryBuilder(query: Query): MondrianAggregateURLSearchParams {
-  const {undefinedIfEmpty, undefinedIfKeyless, undefinedIfZero} = undefinedHelpers();
-
+export function aggregateQueryBuilder(
+  query: Query
+): Partial<MondrianAggregateURLSearchParams> {
   const captions = query.getParam("captions");
 
   const locale = query.getParam("locale").slice(0, 2);
@@ -19,50 +26,55 @@ export function aggregateQueryBuilder(query: Query): MondrianAggregateURLSearchP
     query.getParam("drilldowns").forEach(dd => {
       // the future implementation of namedset will require this
       if (Level.isLevel(dd)) {
-        const localeProp = dd.properties.find(prop => localeTester.test(prop.name));
-        if (localeProp) {
-          captions.push(dd.fullName.concat(".", localeProp.name));
+        const property = dd.properties.find(prop => localeTester.test(prop.name));
+        if (property) {
+          captions.push({ level: dd, name: property.name });
         }
       }
     });
   }
 
-  const drilldowns = undefinedIfEmpty(
+  const drilldowns = ifNotEmpty(
     query.getParam("drilldowns"),
-    (d: Drillable) => d.fullName
+    (drillable: Drillable) => drillable.fullName
   );
-  const measures = undefinedIfEmpty(query.getParam("measures"), (m: Measure) => m.name);
+  const measures = ifNotEmpty(
+    query.getParam("measures"),
+    (measure: Measure) => measure.name
+  );
 
   if (!drilldowns || !measures) {
     const lost = [!drilldowns && "drilldowns", !measures && "measures"].filter(Boolean);
     throw new ClientError(`Invalid Query: missing ${lost.join(" and ")}`);
   }
 
-  const orderParam = query.getParam("orderProperty");
-
+  const pagination = query.getParam("pagination");
+  const sorting = query.getParam("sorting");
   const options = query.getParam("options");
+
   return {
-    caption: undefinedIfEmpty(captions),
-    cut: undefinedIfKeyless(query.getParam("cuts"), stringifyCut),
+    caption: ifNotEmpty<QueryProperty>(captions, stringifyProperty),
+    cut: ifNotEmpty<QueryCut>(query.getParam("cuts"), stringifyCut),
     debug: options.debug,
     distinct: options.distinct,
     drilldown: drilldowns,
-    filter: undefinedIfEmpty(
-      query.getParam("filters"),
-      (f: QueryFilter) => `${f.measure.name} ${f.comparison} ${f.value}`
-    ),
-    limit: undefinedIfZero(query.getParam("limit")),
+    filter: ifNotEmpty<QueryFilter>(query.getParam("filters"), stringifyFilter),
+    limit: pagination.amount || undefined,
     measures,
     nonempty: options.nonempty,
-    offset: undefinedIfZero(query.getParam("offset")),
-    order_desc: query.getParam("orderDescendent") ? true : undefined,
-    order: orderParam
-      ? orderParam.indexOf(".") > -1 ? orderParam : joinFullName(["Measures", orderParam])
+    offset: pagination.offset || undefined,
+    order_desc: sorting.direction === Direction.DESC || undefined,
+    order: sorting.property
+      ? Measure.isMeasure(sorting.property)
+        ? sorting.property.fullName
+        : typeof sorting.property === "string"
+        ? undefined
+        : stringifyProperty(sorting.property)
       : undefined,
     parents: options.parents,
-    properties: undefinedIfEmpty(
+    properties: ifNotEmpty<QueryProperty>(
       query.getParam("properties"),
-      (p: QueryProperty) => `${p.level.fullName}.${p.name}`
+      stringifyProperty
     ),
     sparse: options.sparse
   };
@@ -70,7 +82,7 @@ export function aggregateQueryBuilder(query: Query): MondrianAggregateURLSearchP
 
 export function aggregateQueryParser(
   query: Query,
-  params: MondrianAggregateURLSearchParams
+  params: Partial<MondrianAggregateURLSearchParams>
 ): Query {
   const cube = query.cube;
 
@@ -98,10 +110,12 @@ export function aggregateQueryParser(
   });
 
   ensureArray(params.filter).forEach(item => {
-    const [measureName, operator, value] = item.split(" ");
-    const comparison = Comparison[operator];
+    const [, measureName, operator, value] = item.match(/^(.+)\s(>|<|>=|<=|=|<>)\s(.+)$/);
     const measure = cube.measuresByName[measureName];
-    measure && query.addFilter(measure, comparison, Number.parseFloat(value));
+    const comparison = Comparison[operator];
+    measure &&
+      comparison &&
+      query.addFilter(measure, [comparison, Number.parseFloat(value)]);
   });
 
   ensureArray(params.measures).forEach(item => {
@@ -109,8 +123,11 @@ export function aggregateQueryParser(
     measure && query.addMeasure(measure);
   });
 
-  // TODO
-  // ensureArray(params.properties).forEach(item => {});
+  ensureArray(params.properties).forEach(item => {
+    const level = splitFullName(item);
+    const property = level.pop();
+    property && query.addProperty(joinFullName(level), property);
+  });
 
   if (params.limit != null) {
     query.setPagination(params.limit, params.offset);

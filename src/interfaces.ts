@@ -1,10 +1,11 @@
+import { AxiosRequestConfig } from "axios";
 import Cube from "./cube";
-import {AggregatorType, Comparison, DimensionType, Order} from "./enums";
+import { AggregatorType, Comparison, DimensionType, Direction } from "./enums";
 import Level from "./level";
 import Measure from "./measure";
 import Member from "./member";
-import {Query} from "./query";
-import {AxiosRequestConfig} from "axios";
+import NamedSet from "./namedset";
+import { Query } from "./query";
 
 export interface AdaptedCube extends IAnnotated, IFullNamed, ISerializable {
   readonly _type: "cube";
@@ -13,10 +14,7 @@ export interface AdaptedCube extends IAnnotated, IFullNamed, ISerializable {
   readonly namedsets: AdaptedNamedSet[];
 }
 
-export interface AdaptedDimension
-  extends IAnnotated,
-    IFullNamed,
-    ISerializable {
+export interface AdaptedDimension extends IAnnotated, IFullNamed, ISerializable {
   readonly _type: "dimension";
   readonly cube: string;
   readonly defaultHierarchy: string;
@@ -24,10 +22,7 @@ export interface AdaptedDimension
   readonly hierarchies: AdaptedHierarchy[];
 }
 
-export interface AdaptedHierarchy
-  extends IAnnotated,
-    IFullNamed,
-    ISerializable {
+export interface AdaptedHierarchy extends IAnnotated, IFullNamed, ISerializable {
   readonly _type: "hierarchy";
   readonly cube: string;
   readonly dimension: string;
@@ -97,10 +92,7 @@ export interface IAnnotated {
 
 export interface IClient {
   execQuery(query: Query, endpoint?: string): Promise<Aggregation>;
-  getCube(
-    cubeName: string,
-    selectorFn?: (cubes: Cube[]) => Cube
-  ): Promise<Cube>;
+  getCube(cubeName: string, selectorFn?: (cubes: Cube[]) => Cube): Promise<Cube>;
   getCubes(): Promise<Cube[]>;
   getMember(
     parent: Level | LevelDescriptor,
@@ -108,7 +100,7 @@ export interface IClient {
     options?: any
   ): Promise<Member>;
   getMembers(parent: Level | LevelDescriptor, options?: any): Promise<Member[]>;
-  parseQueryURL(url: string, options: Partial<ParseURLOptions>): Promise<Query>;
+  parseQueryURL(url: string, options?: Partial<ParseURLOptions>): Promise<Query>;
   setRequestConfig(config: AxiosRequestConfig): void;
 }
 
@@ -117,17 +109,9 @@ export interface IDataSource {
   execQuery(query: Query, endpoint?: string): Promise<Aggregation>;
   fetchCube(cubeName: string): Promise<AdaptedCube>;
   fetchCubes(): Promise<AdaptedCube[]>;
-  fetchMember(
-    parent: Level,
-    key: string | number,
-    options?: any
-  ): Promise<AdaptedMember>;
+  fetchMember(parent: Level, key: string | number, options?: any): Promise<AdaptedMember>;
   fetchMembers(parent: Level, options?: any): Promise<AdaptedMember[]>;
-  parseQueryURL(
-    query: Query,
-    url: string,
-    options: Partial<ParseURLOptions>
-  ): Query;
+  parseQueryURL(query: Query, url: string, options: Partial<ParseURLOptions>): Query;
   serverOnline: boolean;
   serverSoftware: string;
   serverUrl: string;
@@ -156,6 +140,12 @@ export interface LevelDescriptor {
   hierarchy?: string;
   level: string;
 }
+export type LevelReference = string | LevelDescriptor | Level;
+
+export type Drillable = Level | NamedSet;
+export type DrillableReference = LevelReference | Drillable;
+
+export type Calculation = Measure | "growth" | "rca";
 
 export interface ServerStatus {
   software: string;
@@ -170,23 +160,28 @@ export interface ParseURLOptions {
   filter: (key: string, value: string | boolean | string[]) => boolean;
 }
 
+export interface QueryCut {
+  drillable: Drillable;
+  members: string[];
+}
+
 export interface QueryFilter {
-  measure: Measure;
-  comparison: Comparison;
-  value: number;
+  measure: Calculation;
+  const1: [Comparison, number];
+  joint?: "and" | "or";
+  const2?: [Comparison, number];
 }
 
 export interface QueryGrowth {
-  level?: Level;
-  measure?: Measure;
+  level: Level;
+  measure: Measure;
 }
 
-export interface QueryOptions {
-  debug?: boolean;
-  distinct?: boolean;
-  nonempty?: boolean;
-  parents?: boolean;
-  sparse?: boolean;
+export type QueryOptions = Record<string, boolean | undefined>;
+
+export interface QueryPagination {
+  amount: number;
+  offset: number;
 }
 
 export interface QueryProperty {
@@ -195,14 +190,24 @@ export interface QueryProperty {
 }
 
 export interface QueryRCA {
-  level1?: Level;
-  level2?: Level;
-  measure?: Measure;
+  level1: Level;
+  level2: Level;
+  measure: Measure;
+}
+
+export interface QuerySorting {
+  direction: Direction;
+  property: Calculation | QueryProperty;
+}
+
+export interface QueryTimeframe {
+  precision: "year" | "quarter" | "month" | "week" | "day" | undefined;
+  value: "latest" | "oldest" | undefined;
 }
 
 export interface QueryTopk {
-  amount?: number;
-  level?: Level;
-  measure?: Measure;
-  order?: Order;
+  amount: number;
+  level: Level;
+  measure: Calculation;
+  order: Direction;
 }

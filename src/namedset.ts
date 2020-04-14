@@ -1,9 +1,9 @@
 import Cube from "./cube";
-import {ClientError} from "./errors";
-import {AdaptedNamedSet} from "./interfaces";
+import { ClientError } from "./errors";
+import { AdaptedNamedSet } from "./interfaces";
 import Level from "./level";
-import {Annotated, FullNamed, Serializable} from "./mixins";
-import {applyMixins} from "./utils";
+import { Annotated, FullNamed, Serializable } from "./mixins";
+import { applyMixins } from "./utils";
 
 interface NamedSet extends Annotated, FullNamed, Serializable<AdaptedNamedSet> {}
 
@@ -22,7 +22,7 @@ class NamedSet {
     this._source = source;
 
     const [dimension, hierarchy, level] = source.level;
-    this.level = parent ? parent.getLevel({dimension, hierarchy, level}) : undefined;
+    this.level = parent ? parent.getLevel({ dimension, hierarchy, level }) : undefined;
   }
 
   get cube(): Cube {

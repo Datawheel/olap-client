@@ -1,9 +1,9 @@
 import Cube from "./cube";
-import {ClientError} from "./errors";
-import {AdaptedMember} from "./interfaces";
+import { ClientError } from "./errors";
+import { AdaptedMember } from "./interfaces";
 import Level from "./level";
-import {FullNamed, Serializable} from "./mixins";
-import {applyMixins} from "./utils";
+import { FullNamed, Serializable } from "./mixins";
+import { applyMixins } from "./utils";
 
 interface Member extends FullNamed, Serializable<AdaptedMember> {}
 

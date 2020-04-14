@@ -1,57 +1,131 @@
-import {Order} from "../enums";
-import {QueryGrowth, QueryRCA, QueryTopk} from "../interfaces";
+import { CalculationName, Direction, TimePrecision, TimeValue } from "../enums";
+import {
+  Drillable,
+  QueryFilter,
+  QueryGrowth,
+  QueryPagination,
+  QueryProperty,
+  QueryRCA,
+  QuerySorting,
+  QueryTimeframe,
+  QueryTopk
+} from "../interfaces";
 import Level from "../level";
 import Measure from "../measure";
-import {Drillable, Query} from "../query";
-import {undefinedHelpers} from "../utils";
-import {TesseractLogicLayerURLSearchParams} from "./interfaces";
+import { Query } from "../query";
+import {
+  ifNotEmpty,
+  ifValid,
+  isQueryFilter,
+  isQueryGrowth,
+  isQueryPagination,
+  isQueryRCA,
+  isQuerySorting,
+  isQueryTimeframe,
+  isQueryTopk
+} from "../utils";
+import { TesseractLogicLayerURLSearchParams } from "./interfaces";
+import {
+  joinFullName,
+  parseFilterConstraints,
+  splitFullName,
+  stringifyFilter,
+  stringifyPagination,
+  stringifyProperty,
+  stringifySorting
+} from "./utils";
 
 export function logicLayerQueryBuilder(
   query: Query
-): Record<string, string[] | string | number | boolean | undefined> {
-  const {undefinedIfEmpty, undefinedIfIncomplete} = undefinedHelpers();
-
+): Partial<TesseractLogicLayerURLSearchParams> {
   const cube = query.cube;
-  const options = query.getParam("options");
-  const drilldowns = undefinedIfEmpty(
-    query.getParam("drilldowns"),
-    (d: Drillable) => (Level.isLevel(d) ? d.uniqueName : d.name)
+  const drilldowns = ifNotEmpty<Drillable>(query.getParam("drilldowns"), drillable =>
+    Level.isLevel(drillable) ? drillable.uniqueName : drillable.name
   );
-  const measures = undefinedIfEmpty(query.getParam("measures"), (m: Measure) => m.name);
+  const measures = ifNotEmpty<Measure>(
+    query.getParam("measures"),
+    measure => measure.name
+  );
+  const properties = ifNotEmpty<QueryProperty>(
+    query.getParam("properties"),
+    stringifyProperty
+  );
+  const options = query.getParam("options");
 
-  const sortOrder = query.getParam("orderDescendent") ? "desc" : "asc";
-  const sort = query.getParam("orderProperty")
-    ? `${query.getParam("orderProperty")}.${sortOrder}`
-    : undefined;
+  // Supported params are in
+  // https://github.com/tesseract-olap/tesseract/blob/master/tesseract-server/src/handlers/logic_layer/aggregate.rs#L76
+
+  // PENDING IMPLEMENTATION
+  // top_where: Option<String>
+  // rate: Option<String>
+
+  // UNSUPPORTED
+  // captions
+  // distinct
+  // nonempty
+
+  // Keep in mind the stringify functions between aggregate and logiclayer aren't shared
+  // aggregate uses Level#fullName, logiclayer uses Level#uniqueName
 
   const tesseractQuery = {
     cube: cube.name,
-    debug: options.debug ? true : undefined,
-    drilldowns: drilldowns ? drilldowns.join(",") : undefined,
+    debug: options.debug,
+    drilldowns: drilldowns?.join(","),
+    exclude_default_members: options.exclude_default_members,
+    filters: ifValid<QueryFilter, string>(
+      query.getParam("filters"),
+      isQueryFilter,
+      stringifyFilter
+    ),
+    growth: ifValid<QueryGrowth, string>(
+      query.getParam("growth"),
+      isQueryGrowth,
+      (item: QueryGrowth) => `${item.level.uniqueName},${item.measure.name}`
+    ),
+    limit: ifValid<QueryPagination, string>(
+      query.getParam("pagination"),
+      isQueryPagination,
+      stringifyPagination
+    ),
     locale: query.getParam("locale") || undefined,
-    measures: measures ? measures.join(",") : undefined,
+    measures: measures?.join(","),
     parents: options.parents,
+    properties: properties?.join(","),
+    rca: ifValid<QueryRCA, string>(
+      query.getParam("rca"),
+      isQueryRCA,
+      (item: QueryRCA) =>
+        `${item.level1.uniqueName},${item.level2.uniqueName},${item.measure.name}`
+    ),
+    sort: ifValid<QuerySorting, string>(
+      query.getParam("sorting"),
+      isQuerySorting,
+      stringifySorting
+    ),
     sparse: options.sparse,
-    sort,
-    growth: undefinedIfIncomplete(query.getParam("growth"), (g: Required<QueryGrowth>) =>
-      [g.level.uniqueName, g.measure.name].join(",")
+    time: ifValid<QueryTimeframe, string>(
+      query.getParam("time"),
+      isQueryTimeframe,
+      item => (item.precision ? `${item.precision}.${item.value}` : `${item.value}`)
     ),
-    rca: undefinedIfIncomplete(query.getParam("rca"), (r: Required<QueryRCA>) =>
-      [r.level1.uniqueName, r.level2.uniqueName, r.measure.name].join(",")
-    ),
-    time: query.getParam("time") || undefined,
-    top: undefinedIfIncomplete(query.getParam("topk"), (t: Required<QueryTopk>) =>
-      [t.amount, t.level.uniqueName, t.measure.name, t.order].join(",")
+    top: ifValid<QueryTopk, string>(
+      query.getParam("topk"),
+      isQueryTopk,
+      (item: QueryTopk) => {
+        const calculation = Measure.isMeasure(item.measure)
+          ? item.measure.name
+          : item.measure;
+        return `${item.amount},${item.level.uniqueName},${calculation},${item.order}`;
+      }
     )
   };
 
-  const cuts = query.getParam("cuts");
-  for (let level of cube.levelIterator) {
-    const cutKey = level.fullName;
-    if (cuts.hasOwnProperty(cutKey)) {
-      tesseractQuery[level.uniqueName] = cuts[cutKey].join(",");
+  query.getParam("cuts").forEach(({ drillable, members }) => {
+    const level = Level.isLevel(drillable) ? drillable : undefined;
+    if (level) {
+      tesseractQuery[level.uniqueName] = members.join(",");
     }
-  }
+  });
 
   return tesseractQuery;
 }
@@ -83,6 +157,17 @@ export function logicLayerQueryParser(
     });
   }
 
+  if (params.limit != null) {
+    const [limit, offset] = params.limit
+      .split(".")
+      .map(token => Number.parseInt(token, 2) || undefined);
+    limit && query.setPagination(limit, offset);
+  }
+
+  if (params.locale && params.locale !== "undefined") {
+    query.setLocale(params.locale);
+  }
+
   if (params.measures) {
     params.measures.split(",").forEach(item => {
       const measure = cube.measuresByName[item];
@@ -90,64 +175,70 @@ export function logicLayerQueryParser(
     });
   }
 
-  // TODO
-  // if (params.filters) {
-  //   params.filters.split(",").forEach(item => {});
-  // }
-
-  // TODO
-  // properties: string;
+  if (params.filters) {
+    params.filters.split(",").forEach(item => {
+      const index = item.indexOf(".");
+      const measureName = item.substr(0, index);
+      const measure = CalculationName[measureName] || cube.measuresByName[measureName];
+      if (measure) {
+        const { constraints, joint } = parseFilterConstraints(item);
+        query.addFilter(measure, constraints[0], joint, constraints[1]);
+      }
+    });
+  }
 
   if (params.growth) {
-    const [levelUniqueName, measureName] = params.growth.split(",");
-    const level = levels[levelUniqueName];
+    const [lvlUniqueName, measureName] = params.growth.split(",");
+    const level = levels[lvlUniqueName];
     const measure = cube.measuresByName[measureName];
     level && measure && query.setGrowth(level, measure);
   }
 
+  if (params.properties) {
+    params.properties.split(",").forEach(item => {
+      const level = splitFullName(item);
+      const property = level.pop();
+      property && query.addProperty(joinFullName(level), property);
+    });
+  }
+
   if (params.rca) {
-    const [level1UniqueName, level2UniqueName, measureName] = params.rca.split(",");
-    const level1 = levels[level1UniqueName];
-    const level2 = levels[level2UniqueName];
+    const [lvl1UniqueName, lvl2UniqueName, measureName] = params.rca.split(",");
+    const level1 = levels[lvl1UniqueName];
+    const level2 = levels[lvl2UniqueName];
     const measure = cube.measuresByName[measureName];
     level1 && level2 && measure && query.setRCA(level1, level2, measure);
-  }
-
-  if (params.top) {
-    const [amountRaw, levelUniqueName, measureName, order] = params.top.split(",");
-    const amount = Number.parseInt(amountRaw);
-    const level = levels[levelUniqueName];
-    const measure = cube.measuresByName[measureName];
-    amount && level && measure && query.setTop(amount, level, measure, Order[order]);
-  }
-
-  if (params.limit != null) {
-    const limit = Number.parseInt(params.limit);
-    limit && query.setPagination(limit);
-  }
-
-  if (params.locale && params.locale !== "undefined") {
-    query.setLocale(params.locale);
   }
 
   if (params.sort) {
     const orderIndex = params.sort.lastIndexOf(".");
     const sortProperty = params.sort.slice(0, orderIndex);
     const sortOrder = params.sort.slice(orderIndex + 1);
-    query.setSorting(sortProperty, sortOrder === "desc");
+    query.setSorting(sortProperty, sortOrder === "desc" ? "asc" : "desc");
   }
 
   if (params.time) {
-    query.setTime(params.time);
+    const [precision, value] = params.time.split(".");
+    query.setTime(TimeValue[value], TimePrecision[precision]);
   }
 
-  typeof params.parents === "boolean" && query.setOption("parents", params.parents);
-  typeof params.debug === "boolean" && query.setOption("debug", params.debug);
-  typeof params.distinct === "boolean" && query.setOption("distinct", params.distinct);
-  typeof params.nonempty === "boolean" && query.setOption("nonempty", params.nonempty);
-  typeof params.sparse === "boolean" && query.setOption("sparse", params.sparse);
+  if (params.top) {
+    const [amountRaw, lvlUniqueName, measureName, order] = params.top.split(",");
+    const amount = Number.parseInt(amountRaw);
+    const level = levels[lvlUniqueName];
+    const measure = cube.measuresByName[measureName];
+    amount && level && measure && query.setTop(amount, level, measure, Direction[order]);
+  }
 
-  // exclude_default_members: boolean;
+  const { debug, distinct, exclude_default_members, nonempty, parents, sparse } = params;
+  typeof debug === "boolean" && query.setOption("debug", debug);
+  typeof distinct === "boolean" && query.setOption("distinct", distinct);
+  typeof exclude_default_members === "boolean" &&
+    query.setOption("exclude_default_members", exclude_default_members);
+  typeof nonempty === "boolean" && query.setOption("nonempty", nonempty);
+  typeof parents === "boolean" && query.setOption("parents", parents);
+  typeof sparse === "boolean" && query.setOption("sparse", sparse);
+
   // top_where: string;
   // rate: string;
 

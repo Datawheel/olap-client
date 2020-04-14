@@ -1,9 +1,9 @@
-import Axios, {AxiosError, AxiosInstance, AxiosRequestConfig} from "axios";
+import Axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
 import formUrlDecoded from "form-urldecoded";
 import formUrlEncoded from "form-urlencoded";
 import urljoin from "url-join";
-import {Format} from "../enums";
-import {ClientError, ServerError} from "../errors";
+import { Format } from "../enums";
+import { ClientError, ServerError } from "../errors";
 import {
   AdaptedCube,
   AdaptedMember,
@@ -13,12 +13,12 @@ import {
   ServerStatus
 } from "../interfaces";
 import Level from "../level";
-import {Query} from "../query";
-import {applyParseUrlRules} from "../utils";
-import {aggregateQueryBuilder, aggregateQueryParser} from "./aggregate";
-import {cubeAdapterFactory, memberAdapterFactory} from "./dataadapter";
-import {MondrianAggregateURLSearchParams} from "./interfaces";
-import {MondrianCube, MondrianMember} from "./schema";
+import { Query } from "../query";
+import { applyParseUrlRules } from "../utils";
+import { aggregateQueryBuilder, aggregateQueryParser } from "./aggregate";
+import { cubeAdapterFactory, memberAdapterFactory } from "./dataadapter";
+import { MondrianAggregateURLSearchParams } from "./interfaces";
+import { MondrianCube, MondrianMember } from "./schema";
 
 export class MondrianDataSource implements IDataSource {
   private _axios: AxiosInstance = Axios.create({});
@@ -57,14 +57,11 @@ export class MondrianDataSource implements IDataSource {
     );
   }
 
-  execQuery(
-    query: Query,
-    endpoint: string = "aggregate"
-  ): Promise<Aggregation> {
+  execQuery(query: Query, endpoint: string = "aggregate"): Promise<Aggregation> {
     if (endpoint === "aggregate") {
       return this.execQueryAggregate(query);
     }
-    throw new ClientError(`Invalid endpoint type: ${endpoint}`);
+    return Promise.reject(new ClientError(`Invalid endpoint type: ${endpoint}`));
   }
 
   private execQueryAggregate(query: Query): Promise<Aggregation> {
@@ -76,9 +73,8 @@ export class MondrianDataSource implements IDataSource {
       skipIndex: true,
       sorted: true
     });
-    return this._axios.get(url, {params}).then(response => {
-      const data =
-        format === Format.jsonrecords ? response.data.data : response.data;
+    return this._axios.get(url, { params }).then(response => {
+      const data = format === Format.jsonrecords ? response.data.data : response.data;
       return {
         data,
         headers: response.headers,
@@ -91,7 +87,7 @@ export class MondrianDataSource implements IDataSource {
 
   fetchCube(cubeName: string): Promise<AdaptedCube> {
     const url = urljoin(this.serverUrl, "cubes", cubeName);
-    const cubeAdapter = cubeAdapterFactory({server_uri: this.serverUrl});
+    const cubeAdapter = cubeAdapterFactory({ server_uri: this.serverUrl });
     return this._axios.get<MondrianCube>(url).then(response => {
       const mondrianCube = response.data;
       if (mondrianCube && typeof mondrianCube.name === "string") {
@@ -103,8 +99,8 @@ export class MondrianDataSource implements IDataSource {
 
   fetchCubes(): Promise<AdaptedCube[]> {
     const url = urljoin(this.serverUrl, "cubes");
-    const cubeAdapter = cubeAdapterFactory({server_uri: this.serverUrl});
-    return this._axios.get<{cubes: MondrianCube[]}>(url).then(response => {
+    const cubeAdapter = cubeAdapterFactory({ server_uri: this.serverUrl });
+    return this._axios.get<{ cubes: MondrianCube[] }>(url).then(response => {
       const mondrianResponse = response.data;
       if (mondrianResponse && Array.isArray(mondrianResponse.cubes)) {
         return mondrianResponse.cubes.map(cubeAdapter);
@@ -122,7 +118,7 @@ export class MondrianDataSource implements IDataSource {
     key: number | string,
     options: any = {}
   ): Promise<AdaptedMember> {
-    const {dimension, name} = parent;
+    const { dimension, name } = parent;
     const memberAdapter = memberAdapterFactory({
       level_uri: parent.toString()
     });
@@ -143,7 +139,7 @@ export class MondrianDataSource implements IDataSource {
       member_properties: options.member_properties
     };
     return this._axios
-      .get<MondrianMember>(url, {params})
+      .get<MondrianMember>(url, { params })
       .then(response => memberAdapter(response.data));
   }
 
@@ -168,14 +164,14 @@ export class MondrianDataSource implements IDataSource {
       member_properties: options.member_properties
     };
     return this._axios
-      .get<{members: MondrianMember[]}>(url, {params})
+      .get<{ members: MondrianMember[] }>(url, { params })
       .then(response => response.data.members.map(memberAdapter));
   }
 
-  parseQueryURL(query: Query, url: string, options: Partial<ParseURLOptions>) {
+  parseQueryURL(query: Query, url: string, options: Partial<ParseURLOptions>): Query {
     const searchIndex = url.indexOf("?");
     const searchParams = url.slice(searchIndex + 1);
-    const qp: MondrianAggregateURLSearchParams = formUrlDecoded(searchParams);
+    const qp: Partial<MondrianAggregateURLSearchParams> = formUrlDecoded(searchParams);
 
     const formatMatch = url.match(/^.+\/aggregate(\.[a-z]+)\?.+$/);
     if (formatMatch) {
@@ -185,12 +181,10 @@ export class MondrianDataSource implements IDataSource {
     const qpFinal = applyParseUrlRules(qp, options);
 
     if (url.indexOf("/aggregate") > -1) {
-      return MondrianDataSource.queryAggregate(query, qpFinal);
+      return aggregateQueryParser(query, qpFinal);
     }
 
-    throw new ClientError(
-      `Provided URL is not a valid Mondrian REST query URL: ${url}`
-    );
+    throw new ClientError(`Provided URL is not a valid Mondrian REST query URL: ${url}`);
   }
 
   setRequestConfig(config: AxiosRequestConfig): void {
@@ -201,12 +195,7 @@ export class MondrianDataSource implements IDataSource {
     return MondrianDataSource.urlAggregate(query);
   }
 
-  static queryAggregate(
-    query: Query,
-    params: Partial<MondrianAggregateURLSearchParams>
-  ): Query {
-    return aggregateQueryParser(query, params);
-  }
+  static queryAggregate = aggregateQueryParser;
 
   static urlAggregate(query: Query): string {
     const format = query.getParam("format");

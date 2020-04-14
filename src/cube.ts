@@ -1,13 +1,13 @@
 import Dimension from "./dimension";
-import {DimensionType} from "./enums";
-import {ClientError} from "./errors";
-import {AdaptedCube, IDataSource, LevelDescriptor} from "./interfaces";
+import { DimensionType } from "./enums";
+import { ClientError } from "./errors";
+import { AdaptedCube, IDataSource, LevelDescriptor, LevelReference } from "./interfaces";
 import Level from "./level";
 import Measure from "./measure";
-import {Annotated, FullNamed, Serializable} from "./mixins";
+import { Annotated, FullNamed, Serializable } from "./mixins";
 import NamedSet from "./namedset";
-import {Query, LevelReference} from "./query";
-import {applyMixins, levelFinderFactory, nameMapperFactory} from "./utils";
+import { Query } from "./query";
+import { applyMixins, levelFinderFactory, nameMapperFactory } from "./utils";
 
 interface Cube extends Annotated, FullNamed, Serializable<AdaptedCube> {}
 
@@ -16,11 +16,11 @@ class Cube {
 
   readonly _source: AdaptedCube;
   readonly dimensions: Dimension[] = [];
-  readonly dimensionsByName: {readonly [name: string]: Dimension | undefined} = {};
+  readonly dimensionsByName: Readonly<Record<string, Dimension>> = {};
   readonly measures: Measure[] = [];
-  readonly measuresByName: {readonly [name: string]: Measure | undefined} = {};
+  readonly measuresByName: Readonly<Record<string, Measure>> = {};
   readonly namedsets: NamedSet[] = [];
-  readonly namedsetsByName: {readonly [name: string]: NamedSet | undefined} = {};
+  readonly namedsetsByName: Readonly<Record<string, NamedSet>> = {};
 
   static isCube(obj: any): obj is Cube {
     return Boolean(obj && obj._source && obj._source._type === "cube");
@@ -32,17 +32,17 @@ class Cube {
 
     const nameMapper = nameMapperFactory(this);
 
-    const [dimensions, dimensionsByName] = nameMapper(source.dimensions, Dimension);
-    this.dimensions = dimensions;
-    this.dimensionsByName = dimensionsByName;
+    const dimensionMap = nameMapper(source.dimensions, Dimension);
+    this.dimensions = dimensionMap[0];
+    this.dimensionsByName = dimensionMap[1];
 
-    const [measures, measuresByName] = nameMapper(source.measures, Measure);
-    this.measures = measures;
-    this.measuresByName = measuresByName;
+    const measureMap = nameMapper(source.measures, Measure);
+    this.measures = measureMap[0];
+    this.measuresByName = measureMap[1];
 
-    const [namedsets, namedsetsByName] = nameMapper(source.namedsets, NamedSet);
-    this.namedsets = namedsets;
-    this.namedsetsByName = namedsetsByName;
+    const namedsetMap = nameMapper(source.namedsets, NamedSet);
+    this.namedsets = namedsetMap[0];
+    this.namedsetsByName = namedsetMap[1];
   }
 
   get caption(): string {
@@ -93,7 +93,8 @@ class Cube {
     const dimensionName = typeof identifier === "string" ? identifier : identifier.name;
     const dimension = this.dimensionsByName[dimensionName];
     if (!dimension) {
-      throw new ClientError(`Object ${identifier} is not a valid dimension identifier`);
+      const reason = `Object ${identifier} is not a valid dimension identifier`;
+      throw new ClientError(reason);
     }
     return dimension;
   }
@@ -101,8 +102,10 @@ class Cube {
   getLevel(identifier: LevelReference): Level {
     const descriptor =
       typeof identifier === "string"
-        ? {level: identifier} as LevelDescriptor
-        : Level.isLevel(identifier) ? identifier.descriptor : identifier;
+        ? ({ level: identifier } as LevelDescriptor)
+        : Level.isLevel(identifier)
+          ? identifier.descriptor
+          : identifier;
     return levelFinderFactory(descriptor)(this);
   }
 

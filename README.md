@@ -34,7 +34,7 @@ const datasource = new TesseractDataSource("https://another.tesseract-olap.serve
 client.setDataSource(datasource);
 ```
 
-If you don't know beforehand, use the Client.fromURL(url) static method.
+If you don't know beforehand, use the `Client.fromURL(url)` static method.
 It will do some requests to try and guess the type of datasource.
 
 ```js
@@ -61,6 +61,9 @@ Client.dataSourceFromURL("https://unknown.server/olap/").then(datasource => {
 ```
 
 Notice if you try to interact with a method of an `IClient` instance without a configured DataSource, it will throw an error.
+
+Both `Client.fromURL` and `Client.dataSourceFromURL` also accept an [AxiosRequestConfig](https://github.com/axios/axios#request-config) object, so you can customize the headers and other properties of the testing request.
+These additional properties will be stored in the DataSource instance, and will be reused in future requests through the client. You can change them at any time using the `IClient#setRequestConfig` method.
 
 ## MultiClient initialization
 
@@ -89,7 +92,7 @@ const unknownClient = MultiClient.fromURL("https://unknown.server/olap/", "https
 
 ## Usage
 
-Both `Client` and `MultiClient` instances follow the `IClient` interface. `Client` and `MultiClient`-specific methods are at the end.
+Both `Client` and `MultiClient` instances follow the `IClient` interface. `Client` and `MultiClient`-specific methods are described at the end.
 
 ### interface `IClient`
 
@@ -138,6 +141,26 @@ execQuery(query: Query, endpoint?: string): Promise<Aggregation>
 Execute a query in all the available datasources. The returned object implements the [Aggregation interface](#interface-aggregation).  
 The `query` parameter must be a `Query` instance, usually obtained from a `Cube` instance.
 
+#### `IClient#parseQueryURL`
+
+```ts
+parseQueryURL(url: string, options?: Partial<ParseURLOptions>): Promise<Query>;
+```
+
+Allows to parse a query URL for the server (or one of them) associated to the `IClient` instance, and get a `Query` instance with its associated data.
+Since the `IClient` instance needs a `Cube` to populate the `Query`, this method returns a Promise that fullfills to a `Query`.
+All invalid parameters for the current state of the Cube are ignored.  
+Additionally, the [`options` parameter](#interface-parseurloptions) allows the user to `include`/`exclude`/`filter` certain parameters from the resulting query.
+
+#### `IClient#setRequestConfig`
+
+```ts
+setRequestConfig(config: AxiosRequestConfig): void;
+```
+
+Sets the [default configuration parameters](https://github.com/axios/axios#request-config) for the requests done on all the associated DataSources.
+This method is also available on the `IDataSource` interface, so configurations can be different on each datasource, on the same client.
+
 ### class `Client`
 
 #### `Client#checkStatus`
@@ -160,7 +183,7 @@ The `datasource` parameter must be an object compatible with the `IDataSource` i
 #### `Client.dataSourceFromURL`
 
 ```ts
-static dataSourceFromURL(url: string): Promise<IDataSource>
+static dataSourceFromURL(url: string | AxiosRequestConfig): Promise<IDataSource>
 ```
 
 Tries to guess the type of server from a request to the `serverUrl`. The parameter must be a string.  
@@ -169,7 +192,7 @@ Since a request must be done beforehand, this static method returns a `Promise` 
 #### `Client.fromURL`
 
 ```ts
-static fromURL(url: string): Promise<Client>
+static fromURL(url: string | AxiosRequestConfig): Promise<Client>
 ```
 
 Using the result from `Client.dataSourceFromURL(serverUrl)`, generates a `new Client(datasource)` instance.
@@ -196,7 +219,7 @@ Returns an array of [objects with information](#interface-serverstatus) about ea
 #### `MultiClient.dataSourcesFromURL`
 
 ```ts
-static dataSourcesFromURL(...serverUrls: string[]): Promise<IDataSource[]>
+static dataSourcesFromURL(...serverUrls: Array<string | AxiosRequestConfig>): Promise<IDataSource[]>
 ```
 
 Does a request to each url in `serverUrls`, tries to guess the type of server, and returns the respective datasource.  
@@ -205,7 +228,7 @@ This method returns a `Promise` that resolves to an array of `IDataSource`.
 #### `MultiClient.fromURL`
 
 ```ts
-static fromURL(...serverUrls: string[]): Promise<MultiClient>
+static fromURL(...serverUrls: Array<string | AxiosRequestConfig>): Promise<MultiClient>
 ```
 
 From the result from `MultiClient.dataSourcesFromURL(...serverUrls)`, generates a single `new MultiClient(...datasources)` instance.  
@@ -217,10 +240,11 @@ This method returns a `Promise` that resolves to a `MultiClient` instance.
 
 ```ts
 interface Aggregation<T = any> {
-    data: T;
-    query: Query;
-    status?: number;
-    url?: string;
+  data: T;
+  headers: Record<string, string>; // Response headers
+  query: Query;
+  status?: number;
+  url?: string;
 }
 ```
 
@@ -233,25 +257,38 @@ The type of the `data` property depends on the `format` set on the Query:
 
 ```ts
 interface LevelDescriptor {
-    server?: string; // Server URL
-    cube?: string; // Cube name
-    dimension?: string; // Dimension name
-    hierarchy?: string; // Hierarchy name
-    level: string; // Level name, required
+  server?: string; // Server URL
+  cube?: string; // Cube name
+  dimension?: string; // Dimension name
+  hierarchy?: string; // Hierarchy name
+  level: string; // Level name, required
 }
 ```
 
 A LevelDescriptor is an ordinary object with enough info to differentiate a Level in a list of DataSources. Depending on the circumstances (e.g. some name is shared in more than one object) some Levels might need more information on a LevelDescriptor to be differentiated. All the properties are the `name`s of the parents, except for `server` that maps to the URL of the DataSource. Level is the only required at all times.
 It is suggested to fill the properties with as much information as possible to prevent getting a different level.
 
+### interface `ParseURLOptions`
+
+```ts
+interface ParseURLOptions {
+  exclude: string[];
+  include: string[];
+  filter: (key: string, value: string | boolean | string[]) => boolean;
+}
+```
+
+Gives the directions for the parseQueryURL method to `include` explicitly only some properties, or `exclude` properties from the ones available, or to `filter` on a parameter by parameter basis.  
+The `include` and `exclude` directives supersede the `filter` function.
+
 ### interface `ServerStatus`
 
 ```ts
 interface ServerStatus {
-    software: string;
-    online: boolean;
-    url: string;
-    version: string;
+  software: string;
+  online: boolean;
+  url: string;
+  version: string;
 }
 ```
 
@@ -266,14 +303,17 @@ This package integrates the `TesseractDataSource` and `MondrianDataSource` class
 interface IDataSource {
   serverOnline: boolean;
   serverSoftware: string;
-  serverVersion: string;
   serverUrl: string;
+  serverVersion: string;
   checkStatus(): Promise<ServerStatus>;
   execQuery(query: Query, endpoint?: string): Promise<Aggregation>;
   fetchCube(cubeName: string): Promise<AdaptedCube>;
   fetchCubes(): Promise<AdaptedCube[]>;
   fetchMember(parent: Level, key: string | number, options?: any): Promise<AdaptedMember>;
   fetchMembers(parent: Level, options?: any): Promise<AdaptedMember[]>;
+  parseQueryURL(query: Query, url: string, options: Partial<ParseURLOptions>): Query;
+  setRequestConfig(config: AxiosRequestConfig): void;
+  stringifyQueryURL(query: Query, kind: string): string;
 }
 ```
 

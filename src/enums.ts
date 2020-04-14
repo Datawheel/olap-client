@@ -7,6 +7,13 @@ export enum AggregatorType {
   UNKNOWN = "UNKNOWN"
 }
 
+export enum CalculationName {
+  growth = "growth",
+  GROWTH = "growth",
+  rca = "rca",
+  RCA = "rca"
+}
+
 export enum Comparison {
   "!=" = "neq",
   "<" = "lt",
@@ -16,10 +23,16 @@ export enum Comparison {
   ">" = "gt",
   ">=" = "gte",
   eq = "eq",
+  EQ = "eq",
   gt = "gt",
+  GT = "gt",
   gte = "gte",
+  GTE = "gte",
   lt = "lt",
+  LT = "lt",
   lte = "lte",
+  LTE = "lte",
+  NEQ = "neq",
   neq = "neq"
 }
 
@@ -36,7 +49,29 @@ export enum Format {
   xls = "xls"
 }
 
-export enum Order {
+export enum Direction {
   asc = "asc",
-  desc = "desc"
+  ASC = "asc",
+  desc = "desc",
+  DESC = "desc"
+}
+
+export enum TimePrecision {
+  day = "day",
+  DAY = "day",
+  month = "month",
+  MONTH = "month",
+  quarter = "quarter",
+  QUARTER = "quarter",
+  week = "week",
+  WEEK = "week",
+  year = "year",
+  YEAR = "year"
+}
+
+export enum TimeValue {
+  latest = "latest",
+  LATEST = "latest",
+  oldest = "oldest",
+  OLDEST = "oldest"
 }

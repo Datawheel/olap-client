@@ -1,7 +1,7 @@
 import Cube from "./cube";
 import {AggregatorType} from "./enums";
 import {ClientError} from "./errors";
-import {AdaptedMeasure} from "./interfaces";
+import {AdaptedMeasure, Calculation} from "./interfaces";
 import {Annotated, FullNamed, Serializable} from "./mixins";
 import {applyMixins} from "./utils";
 
@@ -11,6 +11,10 @@ class Measure {
   private readonly _parent?: Cube;
 
   readonly _source: AdaptedMeasure;
+
+  static isCalculation(obj: any): obj is Calculation {
+    return obj === "growth" || obj === "rca" || Measure.isMeasure(obj);
+  }
 
   static isMeasure(obj: any): obj is Measure {
     return Boolean(obj && obj._source && obj._source._type === "measure");

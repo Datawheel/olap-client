@@ -30,25 +30,25 @@ export interface TesseractAggregateURLSearchParams {
 }
 
 export interface TesseractLogicLayerURLSearchParams {
-  cube: string
+  cube:       string;
   drilldowns: string;
-  time: string;
-  measures: string;
+  time:       string;
+  measures:   string;
   properties: string;
-  filters: string;
-  parents: boolean;
-  top: string;
-  top_where: string;
-  sort: string;
-  limit: string;
-  growth: string;
-  rca: string;
-  debug: boolean;
+  filters:    string;
+  parents:    boolean;
+  top:        string;
+  top_where:  string;
+  sort:       string;
+  limit:      string;
+  growth:     string;
+  rca:        string;
+  debug:      boolean;
   exclude_default_members: boolean;
-  locale: string;
-  distinct: boolean;
-  nonempty: boolean;
-  sparse: boolean;
-  rate: string;
+  locale:     string;
+  distinct:   boolean;
+  nonempty:   boolean;
+  sparse:     boolean;
+  rate:       string;
   [cut: string]: string | boolean; // actually just string, but (ts2411)
 }

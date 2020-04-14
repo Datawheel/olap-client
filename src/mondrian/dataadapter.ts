@@ -84,7 +84,10 @@ function dimensionAdapterFactory(
 }
 
 function hierarchyAdapterFactory(
-  meta: Pick<MondrianAdapterMeta, "cube_name" | "dimension_name" | "dimension_uri">
+  meta: Pick<
+    MondrianAdapterMeta,
+    "cube_name" | "dimension_name" | "dimension_uri"
+  >
 ): (json: MondrianHierarchy) => AdaptedHierarchy {
   return (json: MondrianHierarchy) => {
     const hierarchy_uri = urljoin(
@@ -195,7 +198,11 @@ function namedSetAdapterFactory(
 function propertyAdapterFactory(
   meta: Pick<
     MondrianAdapterMeta,
-    "cube_name" | "dimension_name" | "hierarchy_name" | "level_name" | "level_uri"
+    | "cube_name"
+    | "dimension_name"
+    | "hierarchy_name"
+    | "level_name"
+    | "level_uri"
   >
 ): (name: MondrianProperty) => AdaptedProperty {
   return (name: MondrianProperty) => {
