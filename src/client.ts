@@ -30,7 +30,7 @@ export class Client implements IClient {
     const { url, ...reqConfig } = config;
 
     if (!url) {
-      const reason = `DataSource can be built with a string URL or an object with a url property.
+      const reason = `DataSource can be built with a string URL or an object with the 'url' property.
 Received ${JSON.stringify(config)}`;
       return Promise.reject(new ClientError(reason));
     }

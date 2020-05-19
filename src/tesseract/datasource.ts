@@ -35,7 +35,7 @@ export class TesseractDataSource implements IDataSource {
   static softwareName = "tesseract-olap";
 
   constructor(serverUrl: string) {
-    if (!serverUrl) {
+    if (!serverUrl || typeof serverUrl !== "string") {
       throw new ClientError(`Invalid Tesseract OLAP server URL: ${serverUrl}`);
     }
     this.serverUrl = serverUrl;

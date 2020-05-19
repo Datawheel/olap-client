@@ -30,7 +30,7 @@ export class MondrianDataSource implements IDataSource {
   static softwareName = "mondrian-rest";
 
   constructor(serverUrl: string) {
-    if (!serverUrl) {
+    if (!serverUrl || typeof serverUrl !== "string") {
       throw new ClientError(`Invalid Mondrian REST server URL: ${serverUrl}`);
     }
     this.serverUrl = serverUrl;
