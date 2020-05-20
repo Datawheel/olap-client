@@ -83,7 +83,7 @@ export class Query {
     const cut = this.cuts[drillable.fullName] || { drillable, members: [] };
     // must address if key is 0
     memberList.forEach(
-      (member: string) => (isNumeric(member) || member) && pushUnique(cut.members, member)
+      (member: string) => (member || isNumeric(member)) && pushUnique(cut.members, member)
     );
     this.cuts[drillable.fullName] = cut;
     return this;

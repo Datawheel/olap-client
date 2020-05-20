@@ -93,7 +93,7 @@ export function aggregateQueryBuilder(
     ),
     limit: pagination.amount || undefined,
     measures,
-    parents: Boolean(options.parents),
+    parents: options.parents,
     properties: ifNotEmpty<QueryProperty>(
       query.getParam("properties"),
       stringifyProperty
@@ -106,7 +106,7 @@ export function aggregateQueryBuilder(
         `${item.level1.fullName},${item.level2.fullName},${item.measure.name}`
     ),
     sort: sorting.property ? stringifySorting(sorting) : undefined,
-    sparse: Boolean(options.sparse),
+    sparse: options.sparse,
     top_where: undefined,
     top: ifValid<QueryTopk, string>(query.getParam("topk"), isQueryTopk, item => {
       const calculation = Measure.isMeasure(item.measure)

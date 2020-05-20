@@ -111,9 +111,14 @@ export function isQueryFilter(obj: any): obj is QueryFilter {
   return (
     obj &&
     Measure.isCalculation(obj.measure) &&
-    Comparison[obj.comparison] &&
-    isNumeric(obj.value)
+    isQueryFilterConstraint(obj.const1) &&
+    (!obj.joint || "and|or".includes(obj.joint)) &&
+    (!obj.const2 || isQueryFilterConstraint(obj.const2))
   );
+}
+
+export function isQueryFilterConstraint(obj: any): obj is [Comparison, number] {
+  return Array.isArray(obj) && Comparison.hasOwnProperty(obj[0]) && isNumeric(obj[1]);
 }
 
 export function isQueryGrowth(obj: any): obj is QueryGrowth {

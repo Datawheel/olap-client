@@ -39,17 +39,10 @@ export function logicLayerQueryBuilder(
   query: Query
 ): Partial<TesseractLogicLayerURLSearchParams> {
   const cube = query.cube;
-  const drilldowns = ifNotEmpty<Drillable>(query.getParam("drilldowns"), drillable =>
-    Level.isLevel(drillable) ? drillable.uniqueName : drillable.name
-  );
-  const measures = ifNotEmpty<Measure>(
-    query.getParam("measures"),
-    measure => measure.name
-  );
-  const properties = ifNotEmpty<QueryProperty>(
-    query.getParam("properties"),
-    stringifyProperty
-  );
+  const drilldowns = ifNotEmpty<Drillable>(query.getParam("drilldowns"), drillable => Level.isLevel(drillable) ? drillable.uniqueName : drillable.name);
+  const filters = ifNotEmpty<QueryFilter>(query.getParam("filters"), stringifyFilter, isQueryFilter);
+  const measures = ifNotEmpty<Measure>(query.getParam("measures"), measure => measure.name);
+  const properties = ifNotEmpty<QueryProperty>(query.getParam("properties"), stringifyProperty);
   const options = query.getParam("options");
 
   // Supported params are in
@@ -72,11 +65,7 @@ export function logicLayerQueryBuilder(
     debug: options.debug,
     drilldowns: drilldowns?.join(","),
     exclude_default_members: options.exclude_default_members,
-    filters: ifValid<QueryFilter, string>(
-      query.getParam("filters"),
-      isQueryFilter,
-      stringifyFilter
-    ),
+    filters: filters?.join(","),
     growth: ifValid<QueryGrowth, string>(
       query.getParam("growth"),
       isQueryGrowth,
@@ -180,6 +169,7 @@ export function logicLayerQueryParser(
       const index = item.indexOf(".");
       const measureName = item.substr(0, index);
       const measure = CalculationName[measureName] || cube.measuresByName[measureName];
+      console.log(index, measureName, measure);
       if (measure) {
         const { constraints, joint } = parseFilterConstraints(item);
         query.addFilter(measure, constraints[0], joint, constraints[1]);
