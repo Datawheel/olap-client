@@ -28,7 +28,7 @@ export function rangeify(list: number[]) {
     groups[diff] = groups[diff] || [];
     groups[diff].push(item);
   });
-  return Object.values(groups).map(group =>
+  return Object.values(groups).map((group) =>
     group.length > 1 ? [group[0], group[group.length - 1]] : group[0]
   );
 }

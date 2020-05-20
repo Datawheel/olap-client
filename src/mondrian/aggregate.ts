@@ -23,10 +23,10 @@ export function aggregateQueryBuilder(
   const locale = query.getParam("locale").slice(0, 2);
   if (locale) {
     const localeTester = new RegExp(`^${locale}\\s|\\s${locale}$`, "i");
-    query.getParam("drilldowns").forEach(dd => {
+    query.getParam("drilldowns").forEach((dd) => {
       // the future implementation of namedset will require this
       if (Level.isLevel(dd)) {
-        const property = dd.properties.find(prop => localeTester.test(prop.name));
+        const property = dd.properties.find((prop) => localeTester.test(prop.name));
         if (property) {
           captions.push({ level: dd, name: property.name });
         }
@@ -91,7 +91,7 @@ export function aggregateQueryParser(
     levels[level.fullName] = level;
   }
 
-  ensureArray(params.caption).forEach(item => {
+  ensureArray(params.caption).forEach((item) => {
     const propIndex = item.lastIndexOf(".");
     const levelFullName = item.slice(0, propIndex);
     const property = item.slice(propIndex + 1);
@@ -99,17 +99,17 @@ export function aggregateQueryParser(
     level && query.addCaption(level, property);
   });
 
-  ensureArray(params.cut).forEach(item => {
+  ensureArray(params.cut).forEach((item) => {
     const cut = parseCut(item);
     query.addCut(...cut);
   });
 
-  ensureArray(params.drilldown).forEach(item => {
+  ensureArray(params.drilldown).forEach((item) => {
     const level = levels[item];
     level && query.addDrilldown(level);
   });
 
-  ensureArray(params.filter).forEach(item => {
+  ensureArray(params.filter).forEach((item) => {
     const [, measureName, operator, value] = item.match(/^(.+)\s(>|<|>=|<=|=|<>)\s(.+)$/);
     const measure = cube.measuresByName[measureName];
     const comparison = Comparison[operator];
@@ -118,12 +118,12 @@ export function aggregateQueryParser(
       query.addFilter(measure, [comparison, Number.parseFloat(value)]);
   });
 
-  ensureArray(params.measures).forEach(item => {
+  ensureArray(params.measures).forEach((item) => {
     const measure = cube.measuresByName[item];
     measure && query.addMeasure(measure);
   });
 
-  ensureArray(params.properties).forEach(item => {
+  ensureArray(params.properties).forEach((item) => {
     const level = splitFullName(item);
     const property = level.pop();
     property && query.addProperty(joinFullName(level), property);

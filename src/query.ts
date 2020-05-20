@@ -306,19 +306,22 @@ export class Query {
   toJSON(): any {
     const cube = this.cube;
     return {
-      captions: ifNotEmpty(
+      captions: ifNotEmpty<QueryProperty>(
         Object.values(this.captions),
-        caption => `${caption.level.fullName},${caption.name}`
+        (caption: QueryProperty) => `${caption.level.fullName},${caption.name}`
       ),
       cube: cube.name,
-      cuts: ifNotEmpty(
+      cuts: ifNotEmpty<QueryCut>(
         Object.values(this.cuts),
-        cut => `${cut.drillable.fullName},${cut.members}`
+        (cut: QueryCut) => `${cut.drillable.fullName},${cut.members}`
       ),
       debug: this.options.debug,
       distinct: this.options.distinct,
-      drilldowns: ifNotEmpty(this.drilldowns, item => item.fullName),
-      filters: ifNotEmpty(this.filters, filter =>
+      drilldowns: ifNotEmpty<Drillable>(
+        this.drilldowns,
+        (item: Drillable) => item.fullName
+      ),
+      filters: ifNotEmpty<QueryFilter>(this.filters, (filter: QueryFilter) =>
         ([
           Measure.isMeasure(filter.measure) ? filter.measure.name : filter.measure
         ] as any[])
@@ -327,21 +330,21 @@ export class Query {
           .join(".")
       ),
       format: this.format,
-      growth: ifValid(this.growth, isQueryGrowth, item => ({
+      growth: ifValid(this.growth, isQueryGrowth, (item: QueryGrowth) => ({
         level: item.level.fullName,
         measure: item.measure.name
       })),
       limitAmount: this.limitAmount > 0 ? this.limitAmount : undefined,
       limitOffset: this.limitAmount > 0 ? this.limitOffset : undefined,
       locale: this.locale || undefined,
-      measures: ifNotEmpty(this.measures, item => item.name),
+      measures: ifNotEmpty<Measure>(this.measures, (item: Measure) => item.name),
       nonempty: this.options.nonempty,
       parents: this.options.parents,
-      properties: ifNotEmpty(
+      properties: ifNotEmpty<QueryProperty>(
         Object.values(this.properties),
-        property => `${property.level.fullName},${property.name}`
+        (property: QueryProperty) => `${property.level.fullName},${property.name}`
       ),
-      rca: ifValid(this.rca, isQueryRCA, item => ({
+      rca: ifValid(this.rca, isQueryRCA, (item: QueryRCA) => ({
         level1: item.level1.fullName,
         level2: item.level2.fullName,
         measure: item.measure.name
@@ -357,8 +360,8 @@ export class Query {
       sparse: this.options.sparse,
       timePrecision: this.timePrecision,
       timeValue: this.timeValue,
-      topk: ifValid(this.topk, isQueryTopk, item => ({
-        amount: item.amount,
+      topk: ifValid(this.topk, isQueryTopk, (item: QueryTopk) => ({
+        amount: `${item.amount}`,
         level: item.level.fullName,
         measure: Measure.isMeasure(item.measure) ? item.measure.name : item.measure,
         order: item.order

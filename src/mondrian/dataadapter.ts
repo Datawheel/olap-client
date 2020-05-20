@@ -1,5 +1,5 @@
 import urljoin from "url-join";
-import {AggregatorType, DimensionType} from "../enums";
+import { AggregatorType, DimensionType } from "../enums";
 import {
   AdaptedCube,
   AdaptedDimension,
@@ -10,7 +10,7 @@ import {
   AdaptedNamedSet,
   AdaptedProperty
 } from "../interfaces";
-import {ensureArray} from "../utils";
+import { ensureArray } from "../utils";
 import {
   MondrianCube,
   MondrianDimension,
@@ -43,7 +43,7 @@ export function cubeAdapterFactory(
 ): (json: MondrianCube) => AdaptedCube {
   return (json: MondrianCube) => {
     const cube_uri = urljoin(meta.server_uri, "cubes", encodeURIComponent(json.name));
-    const contextMeta = {...meta, cube_name: json.name, cube_uri};
+    const contextMeta = { ...meta, cube_name: json.name, cube_uri };
     return {
       _type: "cube",
       annotations: json.annotations,
@@ -65,7 +65,7 @@ function dimensionAdapterFactory(
       "dimensions",
       encodeURIComponent(json.name)
     );
-    const contextMeta = {...meta, dimension_name: json.name, dimension_uri};
+    const contextMeta = { ...meta, dimension_name: json.name, dimension_uri };
     return {
       _type: "dimension",
       annotations: json.annotations,
@@ -80,10 +80,7 @@ function dimensionAdapterFactory(
 }
 
 function hierarchyAdapterFactory(
-  meta: Pick<
-    MondrianAdapterMeta,
-    "cube_name" | "dimension_name" | "dimension_uri"
-  >
+  meta: Pick<MondrianAdapterMeta, "cube_name" | "dimension_name" | "dimension_uri">
 ): (json: MondrianHierarchy) => AdaptedHierarchy {
   return (json: MondrianHierarchy) => {
     const hierarchy_uri = urljoin(
@@ -91,7 +88,7 @@ function hierarchyAdapterFactory(
       "hierarchies",
       encodeURIComponent(json.name)
     );
-    const contextMeta = {...meta, hierarchy_name: json.name, hierarchy_uri};
+    const contextMeta = { ...meta, hierarchy_name: json.name, hierarchy_uri };
     return {
       _type: "hierarchy",
       allMemberName: json.all_member_name,
@@ -117,7 +114,7 @@ function levelAdapterFactory(
       "levels",
       encodeURIComponent(json.name)
     );
-    const contextMeta = {...meta, level_name: json.name, level_uri};
+    const contextMeta = { ...meta, level_name: json.name, level_uri };
     return {
       _type: "level",
       annotations: json.annotations,
@@ -194,11 +191,7 @@ function namedSetAdapterFactory(
 function propertyAdapterFactory(
   meta: Pick<
     MondrianAdapterMeta,
-    | "cube_name"
-    | "dimension_name"
-    | "hierarchy_name"
-    | "level_name"
-    | "level_uri"
+    "cube_name" | "dimension_name" | "hierarchy_name" | "level_name" | "level_uri"
   >
 ): (name: MondrianProperty) => AdaptedProperty {
   return (name: MondrianProperty) => {

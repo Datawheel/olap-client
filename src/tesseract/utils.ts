@@ -35,7 +35,7 @@ export function parseFilterConstraints(
   const constraints = item
     .substr(item.indexOf(".") + 1)
     .split(/\.or\.|\.and\./)
-    .map(item => {
+    .map((item) => {
       const index = item.indexOf(".");
       const comparison = Comparison[item.substr(0, index)];
       const value = Number.parseFloat(item.substr(index + 1));

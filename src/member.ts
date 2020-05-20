@@ -18,8 +18,12 @@ class Member {
     this._parent = parent;
     this._source = source;
 
-    this.ancestors = source.ancestors.map(member => new Member(member, parent));
-    this.children = source.children.map(member => new Member(member, parent));
+    this.ancestors = source.ancestors.map(
+      (member: AdaptedMember) => new Member(member, parent)
+    );
+    this.children = source.children.map(
+      (member: AdaptedMember) => new Member(member, parent)
+    );
   }
 
   get cube(): Cube {

@@ -1,10 +1,10 @@
 import Cube from "./cube";
 import Dimension from "./dimension";
-import {ClientError} from "./errors";
+import { ClientError } from "./errors";
 import Hierarchy from "./hierarchy";
-import {AdaptedLevel, AdaptedProperty, LevelDescriptor} from "./interfaces";
-import {Annotated, FullNamed, Serializable} from "./mixins";
-import {applyMixins} from "./utils";
+import { AdaptedLevel, AdaptedProperty, LevelDescriptor } from "./interfaces";
+import { Annotated, FullNamed, Serializable } from "./mixins";
+import { applyMixins } from "./utils";
 
 interface Level extends Annotated, FullNamed, Serializable<AdaptedLevel> {}
 
@@ -34,13 +34,13 @@ class Level {
   }
 
   get descriptor(): LevelDescriptor {
-    const descriptor: LevelDescriptor = {level: this.name};
+    const descriptor: LevelDescriptor = { level: this.name };
     try {
-      const {hierarchy} = this;
+      const { hierarchy } = this;
       descriptor.hierarchy = hierarchy.name;
-      const {dimension} = hierarchy;
+      const { dimension } = hierarchy;
       descriptor.dimension = dimension.name;
-      const {cube} = dimension;
+      const { cube } = dimension;
       descriptor.cube = cube.name;
       descriptor.server = cube.server;
     } catch (e) {}
@@ -70,7 +70,7 @@ class Level {
     const INTRINSIC_PROPERTIES = ["Caption", "Key", "Name", "UniqueName"];
     return (
       INTRINSIC_PROPERTIES.indexOf(propertyName) > -1 ||
-      this._source.properties.some(prop => prop.name === propertyName)
+      this._source.properties.some((prop: AdaptedProperty) => prop.name === propertyName)
     );
   }
 }

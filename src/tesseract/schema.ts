@@ -1,4 +1,4 @@
-import {Annotations} from "../interfaces";
+import { Annotations } from "../interfaces";
 
 export interface TesseractEndpointCubes {
   annotations: Annotations;

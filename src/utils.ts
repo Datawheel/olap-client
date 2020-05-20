@@ -13,7 +13,8 @@ import {
   QueryRCA,
   QuerySorting,
   QueryTimeframe,
-  QueryTopk
+  QueryTopk,
+  Drillable
 } from "./interfaces";
 import Level from "./level";
 import Measure from "./measure";
@@ -22,8 +23,8 @@ import { Query } from "./query";
 const hasOwnProperty = Object.prototype.hasOwnProperty;
 
 export function applyMixins(derivedCtor: any, baseCtors: any[]) {
-  baseCtors.forEach(baseCtor => {
-    Object.getOwnPropertyNames(baseCtor.prototype).forEach(name => {
+  baseCtors.forEach((baseCtor) => {
+    Object.getOwnPropertyNames(baseCtor.prototype).forEach((name) => {
       if (name !== "constructor") {
         const propDescriptor = Object.getOwnPropertyDescriptor(baseCtor.prototype, name);
         if (propDescriptor) {
@@ -53,11 +54,11 @@ export function applyParseUrlRules<T>(
           exclude.reduce((result, pattern) => result && key !== pattern, true)
       : always;
 
-    tester = key => included(key) && notExcluded(key);
+    tester = (key: string) => included(key) && notExcluded(key);
   }
 
   const qpFinal: Partial<T> = {};
-  Object.keys(qp).forEach(key => {
+  Object.keys(qp).forEach((key) => {
     const value = qp[key];
     tester(key, value) &&
       Object.defineProperty(qpFinal, key, { enumerable: true, value });
@@ -96,7 +97,7 @@ export function ifValid<T, U>(
 
 export function ifNotEmpty<T>(
   list: T[],
-  stringifierFn: (item: T) => string = item => `${item}`,
+  stringifierFn: (item: T) => string = (item: T) => `${item}`,
   filterFn: (item: T) => boolean = Boolean
 ): string[] | undefined {
   const result = list.filter(filterFn);
@@ -261,7 +262,9 @@ export function queryToSource(query: Query) {
     .concat(
       query.getParam("captions").map(captionToSource),
       query.getParam("cuts").map(cutToSource),
-      query.getParam("drilldowns").map(item => `.addDrilldown("${item.fullName}")`),
+      query
+        .getParam("drilldowns")
+        .map((item: Drillable) => `.addDrilldown("${item.fullName}")`),
       query.getParam("filters").map(filterToSource),
       formatToSource(query.getParam("format")),
       ifValid<QueryGrowth, string>(
@@ -270,7 +273,7 @@ export function queryToSource(query: Query) {
         growthToSource
       ) || "",
       localeToSource(query.getParam("locale")),
-      query.getParam("measures").map(item => `.addMeasure("${item.name}")`),
+      query.getParam("measures").map((item: Measure) => `.addMeasure("${item.name}")`),
       ["debug", "distinct", "nonempty", "parents", "sparse"].map(optionToSource),
       query.getParam("properties").map(propertyToSource),
       ifValid<QueryRCA, string>(query.getParam("rca"), isQueryRCA, rcaToSource) || "",

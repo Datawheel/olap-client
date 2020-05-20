@@ -4,6 +4,7 @@ import Cube from "./cube";
 import { ClientError, ServerError } from "./errors";
 import {
   AdaptedCube,
+  AdaptedMember,
   Aggregation,
   IClient,
   IDataSource,
@@ -56,7 +57,9 @@ Received ${JSON.stringify(config)}`;
   }
 
   static fromURL(url: string | AxiosRequestConfig): Promise<Client> {
-    return Client.dataSourceFromURL(url).then(datasource => new Client(datasource));
+    return Client.dataSourceFromURL(url).then(
+      (datasource: IDataSource) => new Client(datasource)
+    );
   }
 
   constructor(datasource?: IDataSource) {
@@ -102,7 +105,7 @@ Verify the initialization procedure, there might be a race condition.`;
     const promise =
       this._cubesCache ||
       datasource.fetchCubes().then((acubes: AdaptedCube[]) =>
-        acubes.map(acube => {
+        acubes.map((acube: AdaptedCube) => {
           const cube = new Cube(acube, datasource);
           return this.cacheCube(cube);
         })
@@ -118,7 +121,7 @@ Verify the initialization procedure, there might be a race condition.`;
     const levelFinder = levelFinderFactory(identifier);
     return identifier.cube
       ? this.getCube(identifier.cube).then(levelFinder)
-      : this.getCubes().then(cubes => {
+      : this.getCubes().then((cubes: Cube[]) => {
           for (let cube of cubes) {
             try {
               return levelFinder(cube);
@@ -136,18 +139,20 @@ Verify the initialization procedure, there might be a race condition.`;
     key: string | number,
     options?: any
   ): Promise<Member> {
-    return this.getLevel(levelRef).then(level =>
+    return this.getLevel(levelRef).then((level: Level) =>
       this.datasource
         .fetchMember(level, key, options)
-        .then(member => new Member(member, level))
+        .then((member: AdaptedMember) => new Member(member, level))
     );
   }
 
   getMembers(levelRef: Level | LevelDescriptor, options?: any): Promise<Member[]> {
-    return this.getLevel(levelRef).then(level =>
+    return this.getLevel(levelRef).then((level: Level) =>
       this.datasource
         .fetchMembers(level, options)
-        .then(members => members.map(member => new Member(member, level)))
+        .then((members: AdaptedMember[]) =>
+          members.map((member: AdaptedMember) => new Member(member, level))
+        )
     );
   }
 
@@ -163,9 +168,9 @@ Verify the initialization procedure, there might be a race condition.`;
       return Promise.reject(new ClientError(reason));
     }
     const cubeName = cubeMatch[1] || cubeMatch[2];
-    return this.getCube(cubeName).then(cube => {
-      return this.datasource.parseQueryURL(cube.query, url, options);
-    });
+    return this.getCube(cubeName).then((cube: Cube) =>
+      this.datasource.parseQueryURL(cube.query, url, options)
+    );
   }
 
   setDataSource(datasource: IDataSource): void {

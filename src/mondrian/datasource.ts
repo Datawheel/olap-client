@@ -73,7 +73,7 @@ export class MondrianDataSource implements IDataSource {
       skipIndex: true,
       sorted: true
     });
-    return this._axios.get(url, { params }).then(response => {
+    return this._axios.get(url, { params }).then((response) => {
       const data = format === Format.jsonrecords ? response.data.data : response.data;
       return {
         data,
@@ -88,7 +88,7 @@ export class MondrianDataSource implements IDataSource {
   fetchCube(cubeName: string): Promise<AdaptedCube> {
     const url = urljoin(this.serverUrl, "cubes", cubeName);
     const cubeAdapter = cubeAdapterFactory({ server_uri: this.serverUrl });
-    return this._axios.get<MondrianCube>(url).then(response => {
+    return this._axios.get<MondrianCube>(url).then((response) => {
       const mondrianCube = response.data;
       if (mondrianCube && typeof mondrianCube.name === "string") {
         return cubeAdapter(mondrianCube);
@@ -100,7 +100,7 @@ export class MondrianDataSource implements IDataSource {
   fetchCubes(): Promise<AdaptedCube[]> {
     const url = urljoin(this.serverUrl, "cubes");
     const cubeAdapter = cubeAdapterFactory({ server_uri: this.serverUrl });
-    return this._axios.get<{ cubes: MondrianCube[] }>(url).then(response => {
+    return this._axios.get<{ cubes: MondrianCube[] }>(url).then((response) => {
       const mondrianResponse = response.data;
       if (mondrianResponse && Array.isArray(mondrianResponse.cubes)) {
         return mondrianResponse.cubes.map(cubeAdapter);
@@ -140,7 +140,7 @@ export class MondrianDataSource implements IDataSource {
     };
     return this._axios
       .get<MondrianMember>(url, { params })
-      .then(response => memberAdapter(response.data));
+      .then((response) => memberAdapter(response.data));
   }
 
   fetchMembers(parent: Level, options: any = {}): Promise<AdaptedMember[]> {
@@ -165,7 +165,7 @@ export class MondrianDataSource implements IDataSource {
     };
     return this._axios
       .get<{ members: MondrianMember[] }>(url, { params })
-      .then(response => response.data.members.map(memberAdapter));
+      .then((response) => response.data.members.map(memberAdapter));
   }
 
   parseQueryURL(query: Query, url: string, options: Partial<ParseURLOptions>): Query {

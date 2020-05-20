@@ -11,6 +11,7 @@
     "types"
   ],
   "scripts": {
+    "format": "prettier --write src/*.ts",
     "build": "rollup --config rollup.config.js --environment NODE_ENV:production,BABEL_ENV:production",
     "dev": "rollup --config rollup.config.js --watch --environment NODE_ENV:development,BABEL_ENV:development",
     "prepublishOnly": "npm run build",
@@ -54,5 +55,8 @@
     "rollup-plugin-license": "^0.13.0",
     "rollup-plugin-typescript2": "^0.26.0",
     "typescript": "^3.8.3"
+  },
+  "prettier": {
+    "trailingComma": "none"
   }
 }

@@ -1,5 +1,5 @@
 import urljoin from "url-join";
-import {AggregatorType, DimensionType} from "../enums";
+import { AggregatorType, DimensionType } from "../enums";
 import {
   AdaptedCube,
   AdaptedDimension,
@@ -9,7 +9,7 @@ import {
   AdaptedMember,
   AdaptedProperty
 } from "../interfaces";
-import {ensureArray} from "../utils";
+import { ensureArray } from "../utils";
 import {
   TesseractCube,
   TesseractDimension,
@@ -19,7 +19,7 @@ import {
   TesseractMember,
   TesseractProperty
 } from "./schema";
-import {joinFullName} from "./utils";
+import { joinFullName } from "./utils";
 
 interface TesseractAdapterMeta {
   cube_name: string;
@@ -42,7 +42,7 @@ export function cubeAdapterFactory(
 ): (json: TesseractCube) => AdaptedCube {
   return (json: TesseractCube) => {
     const cube_uri = urljoin(meta.server_uri, "cubes", encodeURIComponent(json.name));
-    const contextMeta = {...meta, cube_name: json.name, cube_uri};
+    const contextMeta = { ...meta, cube_name: json.name, cube_uri };
     return {
       _type: "cube",
       annotations: json.annotations,
@@ -66,7 +66,7 @@ function dimensionAdapterFactory(
       "dimensions",
       encodeURIComponent(dimension_name)
     );
-    const contextMeta = {...meta, dimension_fullname, dimension_name, dimension_uri};
+    const contextMeta = { ...meta, dimension_fullname, dimension_name, dimension_uri };
     return {
       _type: "dimension",
       annotations: json.annotations,
@@ -95,7 +95,7 @@ function hierarchyAdapterFactory(
       "hierarchies",
       encodeURIComponent(hierarchy_name)
     );
-    const contextMeta = {...meta, hierarchy_fullname, hierarchy_name, hierarchy_uri};
+    const contextMeta = { ...meta, hierarchy_fullname, hierarchy_name, hierarchy_uri };
     return {
       _type: "hierarchy",
       annotations: json.annotations,
@@ -127,7 +127,7 @@ function levelAdapterFactory(
       "levels",
       encodeURIComponent(json.name)
     );
-    const contextMeta = {...meta, level_name, level_uri};
+    const contextMeta = { ...meta, level_name, level_uri };
     return {
       _type: "level",
       annotations: json.annotations,

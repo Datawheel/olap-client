@@ -1,9 +1,9 @@
 import Cube from "./cube";
-import {AggregatorType} from "./enums";
-import {ClientError} from "./errors";
-import {AdaptedMeasure, Calculation} from "./interfaces";
-import {Annotated, FullNamed, Serializable} from "./mixins";
-import {applyMixins} from "./utils";
+import { AggregatorType } from "./enums";
+import { ClientError } from "./errors";
+import { AdaptedMeasure, Calculation } from "./interfaces";
+import { Annotated, FullNamed, Serializable } from "./mixins";
+import { applyMixins } from "./utils";
 
 interface Measure extends Annotated, FullNamed, Serializable<AdaptedMeasure> {}
 

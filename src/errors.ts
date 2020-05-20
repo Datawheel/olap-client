@@ -1,4 +1,4 @@
-import {AxiosResponse} from "axios";
+import { AxiosResponse } from "axios";
 
 export class ClientError extends Error {
   constructor(message: string) {

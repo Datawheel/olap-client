@@ -40,9 +40,9 @@ export function aggregateQueryBuilder(
   const locale = query.getParam("locale").slice(0, 2);
   if (locale) {
     const localeTester = new RegExp(`^${locale}\\s|\\s${locale}$`, "i");
-    query.getParam("drilldowns").forEach(dd => {
+    query.getParam("drilldowns").forEach((dd) => {
       if (Level.isLevel(dd)) {
-        const property = dd.properties.find(prop => localeTester.test(prop.name));
+        const property = dd.properties.find((prop) => localeTester.test(prop.name));
         if (property) {
           captions.push({ level: dd, name: property.name });
         }
@@ -51,10 +51,10 @@ export function aggregateQueryBuilder(
     });
   }
 
-  const drilldowns = ifNotEmpty<Drillable>(query.getParam("drilldowns"), d =>
+  const drilldowns = ifNotEmpty<Drillable>(query.getParam("drilldowns"), (d) =>
     Level.isLevel(d) ? d.fullName : d.name
   );
-  const measures = ifNotEmpty<Measure>(query.getParam("measures"), m => m.name);
+  const measures = ifNotEmpty<Measure>(query.getParam("measures"), (m) => m.name);
 
   if (!drilldowns || !measures) {
     const lost = [!drilldowns && "drilldowns", !measures && "measures"].filter(Boolean);
@@ -108,7 +108,7 @@ export function aggregateQueryBuilder(
     sort: sorting.property ? stringifySorting(sorting) : undefined,
     sparse: options.sparse,
     top_where: undefined,
-    top: ifValid<QueryTopk, string>(query.getParam("topk"), isQueryTopk, item => {
+    top: ifValid<QueryTopk, string>(query.getParam("topk"), isQueryTopk, (item) => {
       const calculation = Measure.isMeasure(item.measure)
         ? item.measure.name
         : item.measure;
@@ -128,7 +128,7 @@ export function aggregateQueryParser(
     levels[level.fullName] = level;
   }
 
-  ensureArray(params.captions).forEach(item => {
+  ensureArray(params.captions).forEach((item) => {
     const propIndex = item.lastIndexOf(".");
     const levelFullName = item.slice(0, propIndex);
     const property = item.slice(propIndex + 1);
@@ -136,18 +136,18 @@ export function aggregateQueryParser(
     level && query.addCaption(level, property);
   });
 
-  ensureArray(params.cuts).forEach(item => {
+  ensureArray(params.cuts).forEach((item) => {
     const [levelName, members] = parseCut(item);
     const level = levels[levelName];
     level && query.addCut(level, members);
   });
 
-  ensureArray(params.drilldowns).forEach(item => {
+  ensureArray(params.drilldowns).forEach((item) => {
     const level = levels[item];
     level && query.addDrilldown(level);
   });
 
-  ensureArray(params.filters).forEach(item => {
+  ensureArray(params.filters).forEach((item) => {
     const index = item.indexOf(".");
     const measureName = item.substr(0, index);
     const measure = CalculationName[measureName] || cube.measuresByName[measureName];
@@ -157,12 +157,12 @@ export function aggregateQueryParser(
     }
   });
 
-  ensureArray(params.measures).forEach(item => {
+  ensureArray(params.measures).forEach((item) => {
     const measure = cube.measuresByName[item];
     measure && query.addMeasure(measure);
   });
 
-  ensureArray(params.properties).forEach(item => {
+  ensureArray(params.properties).forEach((item) => {
     const level = splitFullName(item);
     const property = level.pop();
     property && query.addProperty(joinFullName(level), property);

@@ -39,10 +39,22 @@ export function logicLayerQueryBuilder(
   query: Query
 ): Partial<TesseractLogicLayerURLSearchParams> {
   const cube = query.cube;
-  const drilldowns = ifNotEmpty<Drillable>(query.getParam("drilldowns"), drillable => Level.isLevel(drillable) ? drillable.uniqueName : drillable.name);
-  const filters = ifNotEmpty<QueryFilter>(query.getParam("filters"), stringifyFilter, isQueryFilter);
-  const measures = ifNotEmpty<Measure>(query.getParam("measures"), measure => measure.name);
-  const properties = ifNotEmpty<QueryProperty>(query.getParam("properties"), stringifyProperty);
+  const drilldowns = ifNotEmpty<Drillable>(query.getParam("drilldowns"), (drillable) =>
+    Level.isLevel(drillable) ? drillable.uniqueName : drillable.name
+  );
+  const filters = ifNotEmpty<QueryFilter>(
+    query.getParam("filters"),
+    stringifyFilter,
+    isQueryFilter
+  );
+  const measures = ifNotEmpty<Measure>(
+    query.getParam("measures"),
+    (measure) => measure.name
+  );
+  const properties = ifNotEmpty<QueryProperty>(
+    query.getParam("properties"),
+    stringifyProperty
+  );
   const options = query.getParam("options");
 
   // Supported params are in
@@ -95,7 +107,7 @@ export function logicLayerQueryBuilder(
     time: ifValid<QueryTimeframe, string>(
       query.getParam("time"),
       isQueryTimeframe,
-      item => (item.precision ? `${item.precision}.${item.value}` : `${item.value}`)
+      (item) => (item.precision ? `${item.precision}.${item.value}` : `${item.value}`)
     ),
     top: ifValid<QueryTopk, string>(
       query.getParam("topk"),
@@ -132,7 +144,7 @@ export function logicLayerQueryParser(
 
   const exclusions =
     "cube|drilldowns|time|measures|properties|filters|parents|top|top_where|sort|limit|growth|rca|debug|exclude_default_members|locale|distinct|nonempty|sparse|rate";
-  Object.keys(params).forEach(key => {
+  Object.keys(params).forEach((key) => {
     const level = levels[key];
     if (level && exclusions.indexOf(key) === -1) {
       query.addCut(level, `${params[key]}`.split(","));
@@ -140,7 +152,7 @@ export function logicLayerQueryParser(
   });
 
   if (params.drilldowns) {
-    params.drilldowns.split(",").forEach(item => {
+    params.drilldowns.split(",").forEach((item) => {
       const level = levels[item];
       level && query.addDrilldown(level);
     });
@@ -149,7 +161,7 @@ export function logicLayerQueryParser(
   if (params.limit != null) {
     const [limit, offset] = params.limit
       .split(".")
-      .map(token => Number.parseInt(token, 2) || undefined);
+      .map((token) => Number.parseInt(token, 2) || undefined);
     limit && query.setPagination(limit, offset);
   }
 
@@ -158,18 +170,17 @@ export function logicLayerQueryParser(
   }
 
   if (params.measures) {
-    params.measures.split(",").forEach(item => {
+    params.measures.split(",").forEach((item) => {
       const measure = cube.measuresByName[item];
       measure && query.addMeasure(measure);
     });
   }
 
   if (params.filters) {
-    params.filters.split(",").forEach(item => {
+    params.filters.split(",").forEach((item) => {
       const index = item.indexOf(".");
       const measureName = item.substr(0, index);
       const measure = CalculationName[measureName] || cube.measuresByName[measureName];
-      console.log(index, measureName, measure);
       if (measure) {
         const { constraints, joint } = parseFilterConstraints(item);
         query.addFilter(measure, constraints[0], joint, constraints[1]);
@@ -185,7 +196,7 @@ export function logicLayerQueryParser(
   }
 
   if (params.properties) {
-    params.properties.split(",").forEach(item => {
+    params.properties.split(",").forEach((item) => {
       const level = splitFullName(item);
       const property = level.pop();
       property && query.addProperty(joinFullName(level), property);

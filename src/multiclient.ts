@@ -5,6 +5,7 @@ import Cube from "./cube";
 import { ClientError } from "./errors";
 import {
   AdaptedCube,
+  AdaptedMember,
   Aggregation,
   IClient,
   IDataSource,
@@ -23,7 +24,7 @@ class MultiClient implements IClient {
   private datasources: Record<string, IDataSource | undefined> = {};
 
   static dataSourcesFromURL(...urls: string[]): Promise<IDataSource[]> {
-    const promises = urls.map(url => {
+    const promises = urls.map((url: string) => {
       const normalizedUrl = urljoin(url, "/");
       return Client.dataSourceFromURL(normalizedUrl);
     });
@@ -32,7 +33,7 @@ class MultiClient implements IClient {
 
   static fromURL(...urls: string[]): Promise<MultiClient> {
     return MultiClient.dataSourcesFromURL(...urls).then(
-      datasources => new MultiClient(...datasources)
+      (datasources: IDataSource[]) => new MultiClient(...datasources)
     );
   }
 
@@ -60,13 +61,15 @@ class MultiClient implements IClient {
 
   private cacheCube(cubes: Cube[]): void {
     const cubeMap = groupBy(cubes, "name");
-    Object.keys(cubeMap).forEach(cubeName => {
+    Object.keys(cubeMap).forEach((cubeName: string) => {
       this._cubeCache[cubeName] = Promise.resolve(cubeMap[cubeName]);
     });
   }
 
   checkStatus(): Promise<ServerStatus[]> {
-    const promises = this.dataSourceList.map(datasource => datasource.checkStatus());
+    const promises = this.dataSourceList.map((datasource: IDataSource) =>
+      datasource.checkStatus()
+    );
     return Promise.all(promises);
   }
 
@@ -91,14 +94,14 @@ Verify the initialization procedure, there might be a race condition.`);
   getCube(cubeName: string, selectorFn?: (cubes: Cube[]) => Cube): Promise<Cube> {
     const promise =
       this._cubeCache[cubeName] ||
-      Promise.resolve(this.dataSourceList).then(datasources => {
-        const promises = datasources.map(datasource =>
+      Promise.resolve(this.dataSourceList).then((datasources: IDataSource[]) => {
+        const promises = datasources.map((datasource: IDataSource) =>
           datasource.fetchCube(cubeName).then(
             (acube: AdaptedCube) => new Cube(acube, datasource),
             () => undefined
           )
         );
-        return Promise.all(promises).then(values => {
+        return Promise.all(promises).then((values: (Cube | undefined)[]) => {
           const cubes = values.filter(Boolean) as Cube[];
           this.cacheCube(cubes);
           return cubes;
@@ -123,14 +126,15 @@ To prevent this error, pass a selectorFn parameter to the MultiClient#getCube me
   getCubes(): Promise<Cube[]> {
     const promise =
       this._cubesCache ||
-      Promise.resolve(this.dataSourceList).then(datasources => {
-        const promises = datasources.map(datasource =>
-          datasource.fetchCubes().then((acubes: AdaptedCube[]) => {
-            const promises = acubes.map(acube => new Cube(acube, datasource));
-            return Promise.all(promises);
-          })
+      Promise.resolve(this.dataSourceList).then((datasources: IDataSource[]) => {
+        const promises = datasources.map((datasource: IDataSource) =>
+          datasource
+            .fetchCubes()
+            .then((acubes: AdaptedCube[]) =>
+              Promise.all(acubes.map((acube: AdaptedCube) => new Cube(acube, datasource)))
+            )
         );
-        return Promise.all(promises).then(cubesList => {
+        return Promise.all(promises).then((cubesList: Cube[][]) => {
           const cubes = ([] as Cube[]).concat(...cubesList);
           this.cacheCube(cubes);
           return cubes;
@@ -147,7 +151,7 @@ To prevent this error, pass a selectorFn parameter to the MultiClient#getCube me
     const levelFinder = levelFinderFactory(identifier);
     return identifier.cube
       ? this.getCube(identifier.cube).then(levelFinder)
-      : this.getCubes().then(cubes => {
+      : this.getCubes().then((cubes: Cube[]) => {
           let n = cubes.length;
           while (n--) {
             try {
@@ -166,7 +170,7 @@ To prevent this error, pass a selectorFn parameter to the MultiClient#getCube me
     key: string | number,
     options?: any
   ): Promise<Member> {
-    return this.getLevel(levelRef).then(level => {
+    return this.getLevel(levelRef).then((level: Level) => {
       const server = level.cube.server;
       const datasource = this.datasources[server];
       if (!datasource) {
@@ -177,12 +181,12 @@ Level: ${level}`;
       }
       return datasource
         .fetchMember(level, key, options)
-        .then(member => new Member(member, level));
+        .then((member: AdaptedMember) => new Member(member, level));
     });
   }
 
   getMembers(levelRef: Level | LevelDescriptor, options?: any): Promise<Member[]> {
-    return this.getLevel(levelRef).then(level => {
+    return this.getLevel(levelRef).then((level: Level) => {
       const server = level.cube.server;
       const datasource = this.datasources[server];
       if (!datasource) {
@@ -193,12 +197,16 @@ Level: ${level}`;
       }
       return datasource
         .fetchMembers(level, options)
-        .then(members => members.map(member => new Member(member, level)));
+        .then((members: AdaptedMember[]) =>
+          members.map((member: AdaptedMember) => new Member(member, level))
+        );
     });
   }
 
   parseQueryURL(url: string, options: Partial<ParseURLOptions> = {}): Promise<Query> {
-    const datasource = this.dataSourceList.find(ds => url.startsWith(ds.serverUrl));
+    const datasource = this.dataSourceList.find((ds: IDataSource) =>
+      url.startsWith(ds.serverUrl)
+    );
     if (!datasource) {
       const reason = `Provided URL not available on this MultiClient instance: ${url}`;
       return Promise.reject(new ClientError(reason));
@@ -211,15 +219,15 @@ Level: ${level}`;
     }
     const cubeName = cubeMatch[1] || cubeMatch[2];
     const cubePicker = (cubes: Cube[]) =>
-      cubes.find(cube => cube.server === datasource.serverUrl) || cubes[0];
+      cubes.find((cube: Cube) => cube.server === datasource.serverUrl) || cubes[0];
 
-    return this.getCube(cubeName, cubePicker).then(cube => {
+    return this.getCube(cubeName, cubePicker).then((cube: Cube) => {
       return datasource.parseQueryURL(cube.query, url, options);
     });
   }
 
   setRequestConfig(config: AxiosRequestConfig): void {
-    this.dataSourceList.forEach(ds => ds.setRequestConfig(config));
+    this.dataSourceList.forEach((ds: IDataSource) => ds.setRequestConfig(config));
   }
 }
 
