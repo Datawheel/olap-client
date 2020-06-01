@@ -93,13 +93,14 @@ function hierarchyAdapterFactory(
       encodeURIComponent(json.name)
     );
     const contextMeta = {...meta, hierarchy_name: json.name, hierarchy_uri};
+    const levels = json.has_all ? json.levels.slice(1) : json.levels;
     return {
       _type: "hierarchy",
       allMemberName: json.all_member_name,
       annotations: {},
       cube: meta.cube_name,
       dimension: meta.dimension_name,
-      levels: json.levels.slice(1).map(levelAdapterFactory(contextMeta)),
+      levels: levels.map(levelAdapterFactory(contextMeta)),
       name: json.name,
       uri: hierarchy_uri
     };
