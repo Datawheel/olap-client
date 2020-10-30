@@ -5,8 +5,10 @@ import {
   QueryCut,
   QueryFilter,
   QueryGrowth,
+  QueryPagination,
   QueryProperty,
   QueryRCA,
+  QuerySorting,
   QueryTopk
 } from "../interfaces";
 import Level from "../level";
@@ -17,7 +19,9 @@ import {
   ifNotEmpty,
   ifValid,
   isQueryGrowth,
+  isQueryPagination,
   isQueryRCA,
+  isQuerySorting,
   isQueryTopk
 } from "../utils";
 import { TesseractAggregateURLSearchParams } from "./interfaces";
@@ -28,6 +32,7 @@ import {
   splitFullName,
   stringifyCut,
   stringifyFilter,
+  stringifyPagination,
   stringifyProperty,
   stringifySorting
 } from "./utils";
@@ -61,23 +66,23 @@ export function aggregateQueryBuilder(
     throw new ClientError(`Invalid Query: missing ${lost.join(" and ")}`);
   }
 
-  const pagination = query.getParam("pagination");
-  const sorting = query.getParam("sorting");
   const options = query.getParam("options");
 
-  // Supported params are in
-  // https://github.com/tesseract-olap/tesseract/blob/master/tesseract-server/src/handlers/aggregate.rs#L131
+  /*
+  Supported params are described in
+  https://github.com/tesseract-olap/tesseract/blob/master/tesseract-server/src/handlers/aggregate.rs#L131
 
-  // PENDING IMPLEMENTATION
-  // top_where: Option<String>
-  // rate: Option<String>
+  PENDING IMPLEMENTATION
+  top_where: Option<String>
+  rate: Option<String>
 
-  // UNSUPPORTED
-  // distinct
-  // nonempty
+  UNSUPPORTED
+  distinct
+  nonempty
 
-  // Keep in mind the stringify functions between aggregate and logiclayer aren't shared
-  // aggregate uses Level#fullName, logiclayer uses Level#uniqueName
+  Keep in mind the stringify functions between aggregate and logiclayer aren't shared
+  aggregate uses Level#fullName, logiclayer uses Level#uniqueName
+  */
 
   return {
     captions: ifNotEmpty<QueryProperty>(captions, stringifyProperty),
@@ -91,7 +96,11 @@ export function aggregateQueryBuilder(
       isQueryGrowth,
       (item: QueryGrowth) => `${item.level.fullName},${item.measure.name}`
     ),
-    limit: pagination.amount || undefined,
+    limit: ifValid<QueryPagination, string>(
+      query.getParam("pagination"),
+      isQueryPagination,
+      stringifyPagination
+    ),
     measures,
     parents: options.parents,
     properties: ifNotEmpty<QueryProperty>(
@@ -105,7 +114,11 @@ export function aggregateQueryBuilder(
       (item: QueryRCA) =>
         `${item.level1.fullName},${item.level2.fullName},${item.measure.name}`
     ),
-    sort: sorting.property ? stringifySorting(sorting) : undefined,
+    sort: ifValid<QuerySorting, string>(
+      query.getParam("sorting"),
+      isQuerySorting,
+      stringifySorting
+    ),
     sparse: options.sparse,
     top_where: undefined,
     top: ifValid<QueryTopk, string>(query.getParam("topk"), isQueryTopk, (item) => {
@@ -196,7 +209,10 @@ export function aggregateQueryParser(
   }
 
   if (params.limit != null) {
-    query.setPagination(params.limit);
+    const limit = `${params.limit}`.split(",");
+    const offset = limit.length === 2 ? limit[0] : "0";
+    const amount = limit.length === 2 ? limit[1] : limit[0];
+    query.setPagination(Number.parseInt(amount, 10), Number.parseInt(offset, 10));
   }
 
   if (params.sort) {

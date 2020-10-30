@@ -159,10 +159,10 @@ export function logicLayerQueryParser(
   }
 
   if (params.limit != null) {
-    const [limit, offset] = params.limit
-      .split(".")
-      .map((token) => Number.parseInt(token, 2) || undefined);
-    limit && query.setPagination(limit, offset);
+    const limit = `${params.limit}`.split(",");
+    const offset = limit.length === 2 ? limit[0] : "0";
+    const amount = limit.length === 2 ? limit[1] : limit[0];
+    query.setPagination(Number.parseInt(amount, 10), Number.parseInt(offset, 10));
   }
 
   if (params.locale && params.locale !== "undefined") {

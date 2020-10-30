@@ -63,7 +63,7 @@ export function stringifyFilter(item: QueryFilter): string {
 }
 
 export function stringifyPagination(item: QueryPagination): string {
-  return item.offset > 0 ? `${item.amount},${item.offset}` : `${item.amount}`;
+  return item.offset > 0 ? `${item.offset},${item.amount}` : `${item.amount}`;
 }
 
 export function stringifyProperty(item: QueryProperty): string {
@@ -75,6 +75,11 @@ export function stringifyProperty(item: QueryProperty): string {
   ]);
 }
 
+/**
+ * Converts a sorting descriptor object to its URL string equivalent
+ * Tesseract only accepts measures, "rca", and "growth" as sorting properties.
+ * @param item The sorting descriptor object
+ */
 export function stringifySorting(item: QuerySorting): string {
   const property =
     typeof item.property === "string"

@@ -16,7 +16,7 @@ export interface TesseractAggregateURLSearchParams {
   exclude_default_members: boolean;
   filters: string[];
   growth: string;
-  limit: number;
+  limit: string | number;
   measures: string[];
   nonempty: boolean;
   parents: boolean;
