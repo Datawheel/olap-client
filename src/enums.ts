@@ -1,9 +1,15 @@
 export enum AggregatorType {
+  avg = "AVG",
   AVG = "AVG",
+  count = "COUNT",
   COUNT = "COUNT",
+  max = "MAX",
   MAX = "MAX",
+  min = "MIN",
   MIN = "MIN",
+  sum = "SUM",
   SUM = "SUM",
+  unknown = "UNKNOWN",
   UNKNOWN = "UNKNOWN"
 }
 
