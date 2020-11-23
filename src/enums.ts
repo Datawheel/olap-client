@@ -37,8 +37,11 @@ export enum Comparison {
 }
 
 export enum DimensionType {
+  geo = "geo",
   Geographic = "geo",
+  std = "std",
   Standard = "std",
+  time = "time",
   Time = "time"
 }
 
