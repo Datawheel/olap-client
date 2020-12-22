@@ -2,10 +2,17 @@
   "name": "@datawheel/olap-client",
   "version": "2.0.0-alpha.3",
   "description": "A multiclient library to handle requests with mondrian-rest and tesseract servers",
-  "main": "dist/index.cjs.js",
-  "module": "dist/index.esm.js",
-  "types": "types/index.d.ts",
+  "main": "./dist/index.cjs.js",
+  "module": "./dist/index.esm.js",
+  "types": "./types/index.d.ts",
   "readme": "README.md",
+  "exports": {
+    ".": {
+      "require": "./dist/index.cjs.js",
+      "import": "./dist/index.esm.js",
+      "default": "./dist/index.esm.js"
+    }
+  },
   "files": [
     "dist",
     "types"
