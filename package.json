@@ -37,7 +37,7 @@
     "mondrian-rest-client"
   ],
   "dependencies": {
-    "axios": "^0.20.0",
+    "axios": "^0.21.1",
     "form-urldecoded": "^0.1.2",
     "form-urlencoded": "^4.2.1",
     "url-join": "^4.0.1"
