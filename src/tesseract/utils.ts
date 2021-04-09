@@ -1,4 +1,4 @@
-import { Comparison } from "../enums";
+import { Comparison, Direction } from "../enums";
 import {
   QueryCut,
   QueryFilter,
@@ -82,10 +82,8 @@ export function stringifyProperty(item: QueryProperty): string {
  */
 export function stringifySorting(item: QuerySorting): string {
   const property =
-    typeof item.property === "string"
-      ? item.property
-      : Measure.isMeasure(item.property)
-      ? item.property.name
-      : stringifyProperty(item.property);
-  return `${property}.${item.direction ? "desc" : "asc"}`;
+    typeof item.property === "string" ? item.property :
+    Measure.isMeasure(item.property)  ? item.property.name :
+    /* else */                          stringifyProperty(item.property);
+  return `${property}.${Direction[item.direction] || "desc"}`;
 }
