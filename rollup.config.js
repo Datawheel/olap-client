@@ -1,9 +1,10 @@
-import cleanup from "rollup-plugin-cleanup";
 import commonjs from "@rollup/plugin-commonjs";
 import resolve from "@rollup/plugin-node-resolve";
 import replace from "@rollup/plugin-replace";
+import typescript from "@rollup/plugin-typescript";
+import cleanup from "rollup-plugin-cleanup";
 import license from "rollup-plugin-license";
-import typescript from "rollup-plugin-typescript2";
+import del from "rollup-plugin-delete";
 import {execSync} from 'child_process';
 import pkg from "./package.json";
 
@@ -38,24 +39,32 @@ export default commandLineArgs => {
     ],
     external: Object.keys({...pkg.dependencies}),
     plugins: [
+      del({
+        targets: 'dist/*',
+        runOnce: true
+      }),
       replace({
-        ENVIRONMENT: JSON.stringify(environment),
-        "__VERSION__": JSON.stringify(pkg.version)
+        preventAssignment: true,
+        values: {
+          ENVIRONMENT: JSON.stringify(environment),
+          "__VERSION__": JSON.stringify(pkg.version)
+        }
       }),
       resolve({
         extensions: [".mjs", ".js", ".jsx", ".ts", ".tsx"],
         preferBuiltins: true
       }),
       typescript({
-        clean: true,
-        rollupCommonJSResolveHack: true,
-        useTsconfigDeclarationDir: true
+        sourceMap: Boolean(sourcemap)
       }),
       commonjs({
         include: ["node_modules/**"]
       }),
       license({
-        banner: LICENSE_HEADER
+        banner: {
+          commentStyle: "ignored",
+          content: LICENSE_HEADER
+        }
       }),
       cleanup()
     ],
