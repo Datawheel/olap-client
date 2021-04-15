@@ -1,26 +1,26 @@
-import Cube from "./cube";
-import { AggregatorType } from "./enums";
-import { ClientError } from "./errors";
-import { AdaptedMeasure, Calculation } from "./interfaces";
-import { Annotated, FullNamed, Serializable } from "./mixins";
-import { applyMixins } from "./utils";
+import { Cube } from "./cube";
+import { AggregatorType, Calculation } from "./interfaces/enums";
+import { PlainMeasure } from "./interfaces/plain";
+import { Annotated, applyMixins, FullNamed, Serializable } from "./toolbox/mixins";
 
-interface Measure extends Annotated, FullNamed, Serializable<AdaptedMeasure> {}
+export type CalcOrMeasure = Calculation | Measure;
 
-class Measure {
+export interface Measure extends Annotated, FullNamed, Serializable<PlainMeasure> {}
+
+export class Measure {
   private readonly _parent?: Cube;
 
-  readonly _source: AdaptedMeasure;
+  readonly _source: PlainMeasure;
 
-  static isCalculation(obj: any): obj is Calculation {
-    return obj === "growth" || obj === "rca" || Measure.isMeasure(obj);
+  static isCalcOrMeasure(obj: any): obj is CalcOrMeasure {
+    return Calculation.hasOwnProperty(obj) || Measure.isMeasure(obj);
   }
 
   static isMeasure(obj: any): obj is Measure {
     return Boolean(obj && obj._source && obj._source._type === "measure");
   }
 
-  constructor(source: AdaptedMeasure, parent?: Cube) {
+  constructor(source: PlainMeasure, parent?: Cube) {
     this._parent = parent;
     this._source = source;
   }
@@ -30,13 +30,11 @@ class Measure {
   }
 
   get cube(): Cube {
-    if (!this._parent) {
-      throw new ClientError(`Measure ${this} doesn't have an associated parent cube.`);
+    if (this._parent) {
+      return this._parent;
     }
-    return this._parent;
+    throw new Error(`Measure ${this} doesn't have an associated parent cube.`);
   }
 }
 
 applyMixins(Measure, [Annotated, FullNamed, Serializable]);
-
-export default Measure;

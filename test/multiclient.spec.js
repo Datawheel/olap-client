@@ -6,9 +6,9 @@ const {
   TESSERACT_SERVER = "https://api.oec.world/tesseract"
 } = process.env;
 
-describe("MultiClient", () => {
-  describe(".dataSourceFromURL()", () => {
-    it("should identify multiple servers", () => {
+describe("MultiClient", function() {
+  describe(".dataSourceFromURL()", function() {
+    it("should identify multiple servers", function() {
       const promise = MultiClient.dataSourcesFromURL(
         MONDRIAN_SERVER,
         TESSERACT_SERVER
@@ -23,7 +23,7 @@ describe("MultiClient", () => {
       assert.doesNotReject(promise);
     });
 
-    it("should reject on invalid servers", () => {
+    it("should reject on invalid servers", function() {
       assert.rejects(MultiClient.dataSourcesFromURL("https://httpbin.org/html"));
       assert.rejects(MultiClient.dataSourcesFromURL("https://httpbin.org/status/404"));
       assert.rejects(
@@ -35,8 +35,8 @@ describe("MultiClient", () => {
     });
   });
 
-  describe(".fromURL()", () => {
-    it("should deduplicate servers", async () => {
+  describe(".fromURL()", function() {
+    it("should deduplicate servers", async function() {
       /** @type {import("../src").MultiClient} */
       const client = await MultiClient.fromURL(
         MONDRIAN_SERVER,
@@ -49,30 +49,30 @@ describe("MultiClient", () => {
     });
   });
 
-  describe("#constructor()", () => {
-    it("should construct an empty client instance if no parameters passed", () => {
-      assert.doesNotThrow(() => {
+  describe("#constructor()", function() {
+    it("should construct an empty client instance if no parameters passed", function() {
+      assert.doesNotThrow(function() {
         const client = new MultiClient();
       });
     });
 
-    it("should throw if requesting against a client without datasource", () => {
-      assert.throws(() => {
+    it("should throw if requesting against a client without datasource", function() {
+      assert.throws(function() {
         const client = new MultiClient();
         client.getCubes();
       });
     });
 
-    it("should allow to add new datasources later", () => {
-      assert.doesNotThrow(() => {
+    it("should allow to add new datasources later", function() {
+      assert.doesNotThrow(function() {
         const client = new MultiClient();
         const datasource = new MondrianDataSource(MONDRIAN_SERVER);
         client.addDataSource(datasource);
       });
     });
 
-    it("should throw if requesting anything without setting datasource", () => {
-      assert.throws(() => {
+    it("should throw if requesting anything without setting datasource", function() {
+      assert.throws(function() {
         const client = new MultiClient();
         return client.checkStatus();
       });
@@ -82,13 +82,10 @@ describe("MultiClient", () => {
   describe("#execQuery()", function () {
     this.timeout(5000);
 
-    it("should pick the right Cube and execute a Query correctly", async () => {
-      const client = await MultiClient.fromURL(
-        MONDRIAN_SERVER,
-        TESSERACT_SERVER
-      );
+    it("should pick the right Cube and execute a Query correctly", async function() {
+      const client = await MultiClient.fromURL(MONDRIAN_SERVER, TESSERACT_SERVER);
       const cube = await client.getCube("tax_data");
-      assert.equal(cube.server, "https://chilecube.datachile.io/");
+      assert.strictEqual(cube.server, "https://chilecube.datachile.io/");
 
       const query = cube.query
         .addMeasure("Labour")

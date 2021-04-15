@@ -2,22 +2,16 @@ import Axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
 import formUrlDecoded from "form-urldecoded";
 import formUrlEncoded from "form-urlencoded";
 import urljoin from "url-join";
-import { Format } from "../enums";
-import { ClientError, ServerError } from "../errors";
-import {
-  AdaptedCube,
-  AdaptedMember,
-  Aggregation,
-  IDataSource,
-  ParseURLOptions,
-  ServerStatus
-} from "../interfaces";
-import Level from "../level";
+import { Aggregation, IDataSource, ServerStatus } from "../interfaces/contracts";
+import { Format } from "../interfaces/enums";
+import { PlainCube, PlainMember } from "../interfaces/plain";
+import { Level } from "../level";
 import { Query } from "../query";
-import { applyParseUrlRules } from "../utils";
-import { aggregateQueryBuilder, aggregateQueryParser } from "./aggregate";
+import { applyParseUrlRules, ParseURLOptions } from "../toolbox/client";
+import { ServerError } from "../toolbox/errors";
+import { extractAggregateSearchParamsFromQuery, hydrateQueryFromAggregateSearchParams } from "./aggregate";
 import { cubeAdapterFactory, memberAdapterFactory } from "./dataadapter";
-import { logicLayerQueryBuilder, logicLayerQueryParser } from "./logiclayer";
+import { extractLogicLayerSearchParamsFromQuery, hydrateQueryFromLogicLayerSearchParams } from "./logiclayer";
 import { TesseractCube, TesseractEndpointCubes, TesseractMember } from "./schema";
 
 interface TesseractServerStatus {
@@ -36,9 +30,9 @@ export class TesseractDataSource implements IDataSource {
 
   constructor(serverUrl: string) {
     if (!serverUrl || typeof serverUrl !== "string") {
-      throw new ClientError(`Invalid Tesseract OLAP server URL: ${serverUrl}`);
+      throw new Error(`Invalid Tesseract OLAP server URL: ${serverUrl}`);
     }
-    this.serverUrl = serverUrl;
+    this.serverUrl = urljoin(serverUrl, "/");
   }
 
   checkStatus(): Promise<ServerStatus> {
@@ -69,11 +63,11 @@ export class TesseractDataSource implements IDataSource {
       return this.execQueryLogicLayer(query);
     }
     const reason = `Invalid endpoint type: ${endpoint}`;
-    return Promise.reject(new ClientError(reason));
+    return Promise.reject(new Error(reason));
   }
 
   private execQueryAggregate(query: Query): Promise<Aggregation> {
-    const params = aggregateQueryBuilder(query);
+    const params = extractAggregateSearchParamsFromQuery(query);
     const format = query.getParam("format");
     const url = urljoin(query.cube.toString(), `aggregate.${format}`);
     const searchParams = formUrlEncoded(params, {
@@ -94,7 +88,7 @@ export class TesseractDataSource implements IDataSource {
   }
 
   private execQueryLogicLayer(query: Query): Promise<Aggregation> {
-    const params = logicLayerQueryBuilder(query);
+    const params = extractLogicLayerSearchParamsFromQuery(query);
     const format = query.getParam("format");
     const url = urljoin(this.serverUrl, `data.${format}`);
     const searchParams = formUrlEncoded(params, {
@@ -114,7 +108,7 @@ export class TesseractDataSource implements IDataSource {
     });
   }
 
-  fetchCube(cubeName: string): Promise<AdaptedCube> {
+  fetchCube(cubeName: string): Promise<PlainCube> {
     const url = urljoin(this.serverUrl, "cubes", cubeName);
     const cubeAdapter = cubeAdapterFactory({ server_uri: this.serverUrl });
     return this._axios.get<TesseractCube>(url).then((response) => {
@@ -126,7 +120,7 @@ export class TesseractDataSource implements IDataSource {
     });
   }
 
-  fetchCubes(): Promise<AdaptedCube[]> {
+  fetchCubes(): Promise<PlainCube[]> {
     const url = urljoin(this.serverUrl, "cubes");
     const cubeAdapter = cubeAdapterFactory({ server_uri: this.serverUrl });
     return this._axios.get<TesseractEndpointCubes>(url).then((response) => {
@@ -138,7 +132,7 @@ export class TesseractDataSource implements IDataSource {
     });
   }
 
-  fetchMembers(parent: Level, options: any = {}): Promise<AdaptedMember[]> {
+  fetchMembers(parent: Level, options: any = {}): Promise<PlainMember[]> {
     const url = urljoin(this.serverUrl, `members`);
     const params = {
       cube: parent.cube.name,
@@ -151,23 +145,30 @@ export class TesseractDataSource implements IDataSource {
       server_uri: this.serverUrl
     });
     return this._axios
-      .get<{ data: TesseractMember[] }>(url, { params })
-      .then((response) => response.data.data.map(memberAdapter));
+      .get<{ data: unknown[] }>(url, { params })
+      .then((response) => {
+        const {data} = response.data;
+        let i = data.length;
+        while (i--) {
+          data[i] = memberAdapter(data[i] as TesseractMember);
+        }
+        return data as PlainMember[];
+      });
   }
 
   fetchMember(
     parent: Level,
     key: string | number,
     options: any = {}
-  ): Promise<AdaptedMember> {
+  ): Promise<PlainMember> {
     // Tesseract OLAP servers don't support retrieving one member.
     // We're going to get all of them, and return only the right one.
     return this.fetchMembers(parent, options).then((members) => {
-      const member = members.find((member: AdaptedMember) => member.key == key);
+      const member = members.find((member: PlainMember) => member.key == key);
       if (member) {
         return member;
       }
-      throw new ClientError(
+      throw new Error(
         `Requested member doesn't exist: descriptor ${JSON.stringify(parent)}, key ${key}`
       );
     });
@@ -178,29 +179,30 @@ export class TesseractDataSource implements IDataSource {
     const searchParams = url.slice(searchIndex + 1);
     const qp = formUrlDecoded(searchParams);
 
-    const formatMatch = url.match(/^.+\/(?:aggregate|data)(\.[a-z]+)\?.+$/);
+    const formatMatch = url.match(/^.+\/(?:aggregate|data)(\.[a-z]+)?\?.+$/);
     if (formatMatch) {
-      qp["format"] = formatMatch[1].slice(1);
+      const strFormat = `${formatMatch[1] || ""}`.slice(1);
+      query.setFormat(strFormat as Format);
     }
 
     const qpFinal = applyParseUrlRules(qp, options);
 
     if (url.indexOf("/aggregate") > -1) {
-      return TesseractDataSource.queryAggregate(query, qpFinal);
+      return hydrateQueryFromAggregateSearchParams(query, qpFinal);
     }
 
     if (url.indexOf("/data") > -1) {
       if (qp.cube !== query.cube.name) {
-        throw new ClientError(
+        throw new Error(
           `URL and Query object belong to different cubes
   Query cube: ${query.cube.name}
   URL cube: ${qp.cube}`
         );
       }
-      return TesseractDataSource.queryLogicLayer(query, qpFinal);
+      return hydrateQueryFromLogicLayerSearchParams(query, qpFinal);
     }
 
-    throw new ClientError(`Provided URL is not a valid Tesseract OLAP query URL: ${url}`);
+    throw new Error(`Provided URL is not a valid Tesseract OLAP query URL: ${url}`);
   }
 
   setRequestConfig(config: AxiosRequestConfig): void {
@@ -214,13 +216,13 @@ export class TesseractDataSource implements IDataSource {
     return TesseractDataSource.urlAggregate(query);
   }
 
-  static queryAggregate = aggregateQueryParser;
+  static queryAggregate = hydrateQueryFromAggregateSearchParams;
 
-  static queryLogicLayer = logicLayerQueryParser;
+  static queryLogicLayer = hydrateQueryFromLogicLayerSearchParams;
 
   static urlAggregate(query: Query): string {
     const format = query.getParam("format");
-    const paramObject = aggregateQueryBuilder(query);
+    const paramObject = extractAggregateSearchParamsFromQuery(query);
     const parameters = formUrlEncoded(paramObject, {
       ignorenull: true,
       skipIndex: true,
@@ -231,7 +233,7 @@ export class TesseractDataSource implements IDataSource {
 
   static urlLogicLayer(query: Query): string {
     const format = query.getParam("format");
-    const paramObject = logicLayerQueryBuilder(query);
+    const paramObject = extractLogicLayerSearchParamsFromQuery(query);
     const parameters = formUrlEncoded(paramObject, {
       ignorenull: true,
       skipIndex: true,

@@ -1,17 +1,16 @@
-import Cube from "./cube";
-import Dimension from "./dimension";
-import { ClientError } from "./errors";
-import { AdaptedHierarchy } from "./interfaces";
-import Level from "./level";
-import { Annotated, FullNamed, Serializable } from "./mixins";
-import { applyMixins, nameMapperFactory } from "./utils";
+import { Cube } from "./cube";
+import { Dimension } from "./dimension";
+import { PlainHierarchy } from "./interfaces/plain";
+import { Level, LevelReference } from "./level";
+import { childClassMapper } from "./toolbox/collection";
+import { Annotated, applyMixins, FullNamed, Serializable } from "./toolbox/mixins";
 
-interface Hierarchy extends Annotated, FullNamed, Serializable<AdaptedHierarchy> {}
+export interface Hierarchy extends Annotated, FullNamed, Serializable<PlainHierarchy> {}
 
-class Hierarchy {
+export class Hierarchy {
   private readonly _parent?: Dimension;
 
-  readonly _source: AdaptedHierarchy;
+  readonly _source: PlainHierarchy;
   readonly levels: Level[] = [];
   readonly levelsByName: Readonly<Record<string, Level>> = {};
 
@@ -19,15 +18,13 @@ class Hierarchy {
     return Boolean(obj && obj._source && obj._source._type === "hierarchy");
   }
 
-  constructor(source: AdaptedHierarchy, parent?: Dimension) {
+  constructor(source: PlainHierarchy, parent?: Dimension) {
     this._parent = parent;
     this._source = source;
 
-    const nameMapper = nameMapperFactory(this);
-
-    const [levels, levelsByName] = nameMapper(source.levels, Level);
-    this.levels = levels;
-    this.levelsByName = levelsByName;
+    const levels = childClassMapper(Level, source.levels, this);
+    this.levels = levels[0];
+    this.levelsByName = levels[1];
   }
 
   get cube(): Cube {
@@ -35,24 +32,23 @@ class Hierarchy {
   }
 
   get dimension(): Dimension {
-    if (!this._parent) {
-      throw new ClientError(
-        `Hierarchy ${this} doesn't have an associated parent dimension.`
-      );
+    if (this._parent) {
+      return this._parent;
     }
-    return this._parent;
+    throw new Error(`Hierarchy ${this} doesn't have an associated parent dimension.`);
   }
 
-  getLevel(identifier: string | Level): Level {
-    const levelName = typeof identifier === "string" ? identifier : identifier.name;
+  getLevel(ref: LevelReference): Level {
+    const levelName =
+      Level.isLevel(ref)           ? ref.name :
+      Level.isLevelDescriptor(ref) ? ref.level :
+      /* else */                     ref;
     const level = this.levelsByName[levelName];
-    if (!level) {
-      throw new ClientError(`Object ${identifier} is not a valid dimension identifier`);
+    if (level) {
+      return level;
     }
-    return level;
+    throw new Error(`Object ${ref} is not a valid level identifier`);
   }
 }
 
 applyMixins(Hierarchy, [Annotated, FullNamed, Serializable]);
-
-export default Hierarchy;

@@ -1,26 +1,8 @@
 import urljoin from "url-join";
-import { AggregatorType, DimensionType } from "../enums";
-import {
-  AdaptedCube,
-  AdaptedDimension,
-  AdaptedHierarchy,
-  AdaptedLevel,
-  AdaptedMeasure,
-  AdaptedMember,
-  AdaptedNamedSet,
-  AdaptedProperty
-} from "../interfaces";
-import { ensureArray } from "../utils";
-import {
-  MondrianCube,
-  MondrianDimension,
-  MondrianHierarchy,
-  MondrianLevel,
-  MondrianMeasure,
-  MondrianMember,
-  MondrianNamedSet,
-  MondrianProperty
-} from "./schema";
+import { AggregatorType, DimensionType } from "../interfaces/enums";
+import { PlainCube, PlainDimension, PlainHierarchy, PlainLevel, PlainMeasure, PlainMember, PlainNamedSet, PlainProperty } from "../interfaces/plain";
+import { asArray } from "../toolbox/collection";
+import { MondrianCube, MondrianDimension, MondrianHierarchy, MondrianLevel, MondrianMeasure, MondrianMember, MondrianNamedSet, MondrianProperty } from "./schema";
 
 interface MondrianAdapterMeta {
   cube_name: string;
@@ -40,7 +22,7 @@ interface MondrianAdapterMeta {
 
 export function cubeAdapterFactory(
   meta: Pick<MondrianAdapterMeta, "server_uri">
-): (json: MondrianCube) => AdaptedCube {
+): (json: MondrianCube) => PlainCube {
   return (json: MondrianCube) => {
     const cube_uri = urljoin(meta.server_uri, "cubes", encodeURIComponent(json.name));
     const contextMeta = { ...meta, cube_name: json.name, cube_uri };
@@ -58,7 +40,7 @@ export function cubeAdapterFactory(
 
 function dimensionAdapterFactory(
   meta: Pick<MondrianAdapterMeta, "cube_name" | "cube_uri">
-): (json: MondrianDimension) => AdaptedDimension {
+): (json: MondrianDimension) => PlainDimension {
   return (json: MondrianDimension) => {
     const dimension_uri = urljoin(
       meta.cube_uri,
@@ -81,7 +63,7 @@ function dimensionAdapterFactory(
 
 function hierarchyAdapterFactory(
   meta: Pick<MondrianAdapterMeta, "cube_name" | "dimension_name" | "dimension_uri">
-): (json: MondrianHierarchy) => AdaptedHierarchy {
+): (json: MondrianHierarchy) => PlainHierarchy {
   return (json: MondrianHierarchy) => {
     const hierarchy_uri = urljoin(
       meta.dimension_uri,
@@ -108,7 +90,7 @@ function levelAdapterFactory(
     MondrianAdapterMeta,
     "cube_name" | "dimension_name" | "hierarchy_name" | "hierarchy_uri"
   >
-): (json: MondrianLevel) => AdaptedLevel {
+): (json: MondrianLevel) => PlainLevel {
   return (json: MondrianLevel) => {
     const level_uri = urljoin(
       meta.hierarchy_uri,
@@ -134,7 +116,7 @@ function levelAdapterFactory(
 
 function measureAdapterFactory(
   meta: Pick<MondrianAdapterMeta, "cube_name" | "cube_uri">
-): (json: MondrianMeasure) => AdaptedMeasure {
+): (json: MondrianMeasure) => PlainMeasure {
   return (json: MondrianMeasure) => {
     return {
       _type: "measure",
@@ -151,13 +133,13 @@ function measureAdapterFactory(
 
 export function memberAdapterFactory(
   meta: Pick<MondrianAdapterMeta, "level_uri">
-): (json: MondrianMember) => AdaptedMember {
+): (json: MondrianMember) => PlainMember {
   return (json: MondrianMember) => {
     return {
       _type: "member",
-      ancestors: ensureArray(json.ancestors).map(memberAdapterFactory(meta)),
+      ancestors: asArray(json.ancestors).map(memberAdapterFactory(meta)),
       caption: json.caption,
-      children: ensureArray(json.children).map(memberAdapterFactory(meta)),
+      children: asArray(json.children).map(memberAdapterFactory(meta)),
       depth: json.depth,
       fullName: json.full_name,
       // isAllMember: json["all_member?"],
@@ -174,7 +156,7 @@ export function memberAdapterFactory(
 
 function namedSetAdapterFactory(
   meta: Pick<MondrianAdapterMeta, "cube_name" | "cube_uri">
-): (json: MondrianNamedSet) => AdaptedNamedSet {
+): (json: MondrianNamedSet) => PlainNamedSet {
   return (json: MondrianNamedSet) => {
     return {
       _type: "namedset",
@@ -194,7 +176,7 @@ function propertyAdapterFactory(
     MondrianAdapterMeta,
     "cube_name" | "dimension_name" | "hierarchy_name" | "level_name" | "level_uri"
   >
-): (name: MondrianProperty) => AdaptedProperty {
+): (name: MondrianProperty) => PlainProperty {
   return (name: MondrianProperty) => {
     return {
       _type: "property",

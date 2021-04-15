@@ -1,20 +1,21 @@
-import Dimension from "./dimension";
-import { DimensionType } from "./enums";
-import { ClientError } from "./errors";
-import { AdaptedCube, IDataSource, LevelDescriptor, LevelReference } from "./interfaces";
-import Level from "./level";
-import Measure from "./measure";
-import { Annotated, FullNamed, Serializable } from "./mixins";
-import NamedSet from "./namedset";
-import { Query } from "./query";
-import { applyMixins, levelFinderFactory, nameMapperFactory } from "./utils";
+import { Dimension } from "./dimension";
+import { IDataSource } from "./interfaces/contracts";
+import { DimensionType } from "./interfaces/enums";
+import { PlainCube } from "./interfaces/plain";
+import { Level, LevelReference } from "./level";
+import { Measure } from "./measure";
+import { NamedSet } from "./namedset";
+import { Property, PropertyReference } from "./property";
+import { Drillable, DrillableReference, Query } from "./query";
+import { childClassMapper, iteratorMatch } from "./toolbox/collection";
+import { Annotated, applyMixins, FullNamed, Serializable } from "./toolbox/mixins";
 
-interface Cube extends Annotated, FullNamed, Serializable<AdaptedCube> {}
+export interface Cube extends Annotated, FullNamed, Serializable<PlainCube> {}
 
-class Cube {
+export class Cube {
   private readonly _parent?: IDataSource;
 
-  readonly _source: AdaptedCube;
+  readonly _source: PlainCube;
   readonly dimensions: Dimension[] = [];
   readonly dimensionsByName: Readonly<Record<string, Dimension>> = {};
   readonly measures: Measure[] = [];
@@ -26,23 +27,21 @@ class Cube {
     return Boolean(obj && obj._source && obj._source._type === "cube");
   }
 
-  constructor(source: AdaptedCube, parent?: IDataSource) {
+  constructor(source: PlainCube, parent?: IDataSource) {
     this._parent = parent;
     this._source = source;
 
-    const nameMapper = nameMapperFactory(this);
+    const dimensions = childClassMapper(Dimension, source.dimensions, this);
+    this.dimensions = dimensions[0];
+    this.dimensionsByName = dimensions[1];
 
-    const dimensionMap = nameMapper(source.dimensions, Dimension);
-    this.dimensions = dimensionMap[0];
-    this.dimensionsByName = dimensionMap[1];
+    const measures = childClassMapper(Measure, source.measures, this);
+    this.measures = measures[0];
+    this.measuresByName = measures[1];
 
-    const measureMap = nameMapper(source.measures, Measure);
-    this.measures = measureMap[0];
-    this.measuresByName = measureMap[1];
-
-    const namedsetMap = nameMapper(source.namedsets, NamedSet);
-    this.namedsets = namedsetMap[0];
-    this.namedsetsByName = namedsetMap[1];
+    const namedsets = childClassMapper(NamedSet, source.namedsets, this);
+    this.namedsets = namedsets[0];
+    this.namedsetsByName = namedsets[1];
   }
 
   get caption(): string {
@@ -50,10 +49,10 @@ class Cube {
   }
 
   get datasource(): IDataSource {
-    if (!this._parent) {
-      throw new ClientError(`Cube ${this} doesn't have an associated server url.`);
+    if (this._parent) {
+      return this._parent;
     }
-    return this._parent;
+    throw new Error(`Cube ${this} doesn't have an associated server url.`);
   }
 
   get defaultMeasure(): Measure {
@@ -85,50 +84,67 @@ class Cube {
     return this.dimensions.find((d) => d.dimensionType === DimensionType.Time);
   }
 
+  get levelIterator(): IterableIterator<Level> {
+    return this.levelIteratorFactory();
+  }
+
+  get propertyIterator(): IterableIterator<Property> {
+    return this.propertyIteratorFactory();
+  }
+
   findDimensionsByType(type: DimensionType): Dimension[] {
     return this.dimensions.filter((d) => d.dimensionType === type);
   }
 
-  getDimension(identifier: string | Dimension): Dimension {
-    const dimensionName = typeof identifier === "string" ? identifier : identifier.name;
+  getDimension(ref: string | Dimension): Dimension {
+    const dimensionName = typeof ref === "string" ? ref : ref.name;
     const dimension = this.dimensionsByName[dimensionName];
-    if (!dimension) {
-      const reason = `Object ${identifier} is not a valid dimension identifier`;
-      throw new ClientError(reason);
+    if (dimension) {
+      return dimension;
     }
-    return dimension;
+    throw new Error(`Object ${ref} is not a valid dimension identifier`);
   }
 
-  getLevel(identifier: LevelReference): Level {
-    const descriptor =
-      typeof identifier === "string"
-        ? ({ level: identifier } as LevelDescriptor)
-        : Level.isLevel(identifier)
-        ? identifier.descriptor
-        : identifier;
-    return levelFinderFactory(descriptor)(this);
+  getDrillable(ref: DrillableReference): Drillable {
+    if (NamedSet.isNamedset(ref)) return this.getNamedSet(ref);
+    if (Level.isLevel(ref)) return this.getLevel(ref);
+    return this.namedsetsByName[`${ref}`] || this.getLevel(ref);
   }
 
-  getMeasure(identifier: string | Measure): Measure {
-    const measureName = typeof identifier === "string" ? identifier : identifier.name;
+  getLevel(ref: LevelReference): Level {
+    const iterator = this.levelIteratorFactory();
+    const match = iteratorMatch<Level, LevelReference>(iterator, ref);
+    if (match != null) {
+      return match;
+    }
+    throw new Error(`Object ${ref} didn't match any level in cube ${this.name}`);
+  }
+
+  getMeasure(ref: string | Measure): Measure {
+    const measureName = typeof ref === "string" ? ref : ref.name;
     const measure = this.measuresByName[measureName];
-    if (!measure) {
-      throw new ClientError(`Object ${identifier} is not a valid measure identifier`);
+    if (measure) {
+      return measure;
     }
-    return measure;
+    throw new Error(`Object ${ref} is not a valid measure identifier`);
   }
 
-  getNamedSet(identifier: string | NamedSet): NamedSet {
-    const namedsetName = typeof identifier === "string" ? identifier : identifier.name;
+  getNamedSet(ref: string | NamedSet): NamedSet {
+    const namedsetName = typeof ref === "string" ? ref : ref.name;
     const namedset = this.namedsetsByName[namedsetName];
-    if (!namedset) {
-      throw new ClientError(`Object ${identifier} is not a valid namedset identifier`);
+    if (namedset) {
+      return namedset;
     }
-    return namedset;
+    throw new Error(`Object ${ref} is not a valid namedset identifier`);
   }
 
-  get levelIterator(): IterableIterator<Level> {
-    return this.levelIteratorFactory();
+  getProperty(ref: PropertyReference): Property {
+    const iterator = this.propertyIteratorFactory();
+    const match = iteratorMatch<Property, PropertyReference>(iterator, ref);
+    if (match != null) {
+      return match;
+    }
+    throw new Error(`Object ${ref} didn't match any level in cube ${this.name}`);
   }
 
   private levelIteratorFactory(): IterableIterator<Level> {
@@ -136,7 +152,7 @@ class Cube {
     let levelIterator = dimensions[0].levelIterator;
     let d = 0;
 
-    function next(): IteratorResult<Level> {
+    function next(): IteratorResult<Level, undefined> {
       if (d === dimensions.length) {
         return { value: undefined, done: true };
       }
@@ -151,8 +167,27 @@ class Cube {
     const iterator = { next, [Symbol.iterator]: () => iterator };
     return iterator;
   }
+
+  private propertyIteratorFactory(): IterableIterator<Property> {
+    const {dimensions} = this;
+    let d = 0;
+    let propertyIterator = dimensions[d].propertyIterator;
+
+    function next(): IteratorResult<Property, undefined> {
+      if (d === dimensions.length) {
+        return { value: undefined, done: true };
+      }
+      const nextProperty = propertyIterator.next();
+      if (nextProperty.done) {
+        propertyIterator = dimensions[++d]?.propertyIterator;
+        return next();
+      }
+      return nextProperty;
+    }
+
+    const iterator = { next, [Symbol.iterator]: () => iterator };
+    return iterator;
+  }
 }
 
 applyMixins(Cube, [Annotated, FullNamed, Serializable]);
-
-export default Cube;

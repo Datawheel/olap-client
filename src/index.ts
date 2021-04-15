@@ -1,39 +1,18 @@
 export { Client } from "./client";
-export { default as Cube } from "./cube";
-export { default as Dimension } from "./dimension";
-export {
-  AggregatorType,
-  Comparison,
-  DimensionType,
-  Direction,
-  Direction as Order,
-  Format,
-  TimePrecision,
-  TimeValue
-} from "./enums";
-export { default as Hierarchy } from "./hierarchy";
-export {
-  AdaptedCube,
-  AdaptedDimension,
-  AdaptedHierarchy,
-  AdaptedLevel,
-  AdaptedMeasure,
-  AdaptedMember,
-  AdaptedNamedSet,
-  AdaptedProperty,
-  Aggregation,
-  Drillable,
-  DrillableReference,
-  IClient,
-  IDataSource,
-  LevelReference,
-  ServerStatus
-} from "./interfaces";
-export { default as Level } from "./level";
-export { default as Measure } from "./measure";
-export { default as Member } from "./member";
+export { Cube } from "./cube";
+export { Dimension } from "./dimension";
+export { Hierarchy } from "./hierarchy";
+export { Aggregation, IClient, IDataSource, ServerStatus } from "./interfaces/contracts";
+export { CalculationDescriptor, CalculationGrowthDescriptor, CalculationRCADescriptor, CalculationTopkDescriptor, CutDescriptor, FilterDescriptor, LevelDescriptor, PropertyDescriptor, QueryDescriptor } from "./interfaces/descriptors";
+export { AggregatorType, Calculation, Comparison, DimensionType, Direction, Direction as Order, Format, TimePrecision, TimeValue } from "./interfaces/enums";
+export { PlainCube, PlainDimension, PlainHierarchy, PlainLevel, PlainMeasure, PlainMember, PlainNamedSet, PlainProperty } from "./interfaces/plain";
+export { Level } from "./level";
+export { Measure } from "./measure";
+export { Member } from "./member";
 export { MondrianDataSource } from "./mondrian/datasource";
-export { default as MultiClient } from "./multiclient";
-export { default as NamedSet } from "./namedset";
-export { Query } from "./query";
+export { MultiClient } from "./multiclient";
+export { NamedSet } from "./namedset";
+export { Property } from "./property";
+export { Drillable, DrillableReference, Query, QueryCalc, QueryCalcGrowth, QueryCalcRca, QueryCalcTopk, QueryCut, QueryFilter, QueryOptions, QueryPagination, QuerySorting, QueryTimeframe } from "./query";
 export { TesseractDataSource } from "./tesseract/datasource";
+export { ServerConfig } from "./toolbox/client";

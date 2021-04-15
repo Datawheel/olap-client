@@ -19,7 +19,7 @@
   ],
   "scripts": {
     "build:library": "rollup --config rollup.config.js --environment NODE_ENV:production,BABEL_ENV:production",
-    "build:typings": "tsc --esModuleInterop --emitDeclarationOnly --declaration src/index.ts",
+    "build:typings": "tsc --esModuleInterop --emitDeclarationOnly --declaration --project .",
     "build": "npm run build:library && npm run build:typings",
     "dev": "rollup --config rollup.config.js --watch --environment NODE_ENV:development,BABEL_ENV:development",
     "format": "prettier --write src/*.ts",

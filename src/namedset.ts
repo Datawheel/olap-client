@@ -1,23 +1,21 @@
-import Cube from "./cube";
-import { ClientError } from "./errors";
-import { AdaptedNamedSet } from "./interfaces";
-import Level from "./level";
-import { Annotated, FullNamed, Serializable } from "./mixins";
-import { applyMixins } from "./utils";
+import { Cube } from "./cube";
+import { PlainNamedSet } from "./interfaces/plain";
+import { Level } from "./level";
+import { Annotated, applyMixins, FullNamed, Serializable } from "./toolbox/mixins";
 
-interface NamedSet extends Annotated, FullNamed, Serializable<AdaptedNamedSet> {}
+export interface NamedSet extends Annotated, FullNamed, Serializable<PlainNamedSet> {}
 
-class NamedSet {
+export class NamedSet {
   private readonly _parent?: Cube;
 
-  readonly _source: AdaptedNamedSet;
+  readonly _source: PlainNamedSet;
   readonly level?: Level;
 
   static isNamedset(obj: any): obj is NamedSet {
     return Boolean(obj && obj._source && obj._source._type === "namedset");
   }
 
-  constructor(source: AdaptedNamedSet, parent?: Cube) {
+  constructor(source: PlainNamedSet, parent?: Cube) {
     this._parent = parent;
     this._source = source;
 
@@ -26,13 +24,11 @@ class NamedSet {
   }
 
   get cube(): Cube {
-    if (!this._parent) {
-      throw new ClientError(`NamedSet ${this} doesn't have an associated parent cube.`);
+    if (this._parent) {
+      return this._parent;
     }
-    return this._parent;
+    throw new Error(`NamedSet ${this} doesn't have an associated parent cube.`);
   }
 }
 
 applyMixins(NamedSet, [Annotated, FullNamed, Serializable]);
-
-export default NamedSet;

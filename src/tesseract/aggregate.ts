@@ -1,43 +1,14 @@
-import { CalculationName, Direction } from "../enums";
-import { ClientError } from "../errors";
-import {
-  Drillable,
-  QueryCut,
-  QueryFilter,
-  QueryGrowth,
-  QueryPagination,
-  QueryProperty,
-  QueryRCA,
-  QuerySorting,
-  QueryTopk
-} from "../interfaces";
-import Level from "../level";
-import Measure from "../measure";
-import { Query } from "../query";
-import {
-  ensureArray,
-  ifNotEmpty,
-  ifValid,
-  isQueryGrowth,
-  isQueryPagination,
-  isQueryRCA,
-  isQuerySorting,
-  isQueryTopk
-} from "../utils";
+import { Calculation, Direction } from "../interfaces/enums";
+import { Level } from "../level";
+import { CalcOrMeasure, Measure } from "../measure";
+import { Property } from "../property";
+import { Drillable, Query, QueryCalcGrowth, QueryCalcRca, QueryCalcTopk, QueryCut, QueryFilter } from "../query";
+import { asArray, filterMap } from "../toolbox/collection";
+import { ifNotEmpty } from "../toolbox/validation";
 import { TesseractAggregateURLSearchParams } from "./interfaces";
-import {
-  joinFullName,
-  parseCut,
-  parseFilterConstraints,
-  splitFullName,
-  stringifyCut,
-  stringifyFilter,
-  stringifyPagination,
-  stringifyProperty,
-  stringifySorting
-} from "./utils";
+import { joinFullName, parseCut, parseFilterConstraints, splitFullName, stringifyFilter } from "./utils";
 
-export function aggregateQueryBuilder(
+export function extractAggregateSearchParamsFromQuery(
   query: Query
 ): Partial<TesseractAggregateURLSearchParams> {
   const captions = query.getParam("captions");
@@ -45,92 +16,97 @@ export function aggregateQueryBuilder(
   const locale = query.getParam("locale").slice(0, 2);
   if (locale) {
     const localeTester = new RegExp(`^${locale}\\s|\\s${locale}$`, "i");
-    query.getParam("drilldowns").forEach((dd) => {
+    query.getParam("drilldowns").forEach((dd: Drillable) => {
       if (Level.isLevel(dd)) {
         const property = dd.properties.find((prop) => localeTester.test(prop.name));
-        if (property) {
-          captions.push({ level: dd, name: property.name });
-        }
+        property && captions.push(property);
       }
       // TODO: implement namedset
     });
   }
 
-  const drilldowns = ifNotEmpty<Drillable>(query.getParam("drilldowns"), (d) =>
-    Level.isLevel(d) ? d.fullName : d.name
-  );
-  const measures = ifNotEmpty<Measure>(query.getParam("measures"), (m) => m.name);
-
-  if (!drilldowns || !measures) {
-    const lost = [!drilldowns && "drilldowns", !measures && "measures"].filter(Boolean);
-    throw new ClientError(`Invalid Query: missing ${lost.join(" and ")}`);
-  }
-
   const options = query.getParam("options");
+  const pagination = query.getParam("pagination");
+  const sorting = query.getParam("sorting");
 
-  /*
-  Supported params are described in
-  https://github.com/tesseract-olap/tesseract/blob/master/tesseract-server/src/handlers/aggregate.rs#L131
+  const calculations = query.getParam("calculations");
+  const growth = calculations.filter(calc => calc.kind === "growth").pop() as QueryCalcGrowth | undefined;
+  const rca = calculations.filter(calc => calc.kind === "rca").pop() as QueryCalcRca | undefined;
+  const topk = calculations.filter(calc => calc.kind === "topk").pop() as QueryCalcTopk | undefined;
 
-  PENDING IMPLEMENTATION
-  top_where: Option<String>
-  rate: Option<String>
-
-  UNSUPPORTED
-  distinct
-  nonempty
-
-  Keep in mind the stringify functions between aggregate and logiclayer aren't shared
-  aggregate uses Level#fullName, logiclayer uses Level#uniqueName
-  */
+  /**
+   * Supported params are described in https://github.com/tesseract-olap/tesseract/blob/master/tesseract-server/src/handlers/aggregate.rs#L131
+   *
+   * PENDING IMPLEMENTATION
+   * - top_where: Option<String>
+   * - rate: Option<String>
+   *
+   * UNSUPPORTED: distinct, nonempty
+   *
+   * Keep in mind the stringify functions between aggregate and logiclayer
+   * aren't shared:
+   * - aggregate uses Level#fullName
+   * - logiclayer uses Level#uniqueName
+   */
 
   return {
-    captions: ifNotEmpty<QueryProperty>(captions, stringifyProperty),
+    captions: ifNotEmpty<Property>(captions, stringifyProperty),
     cuts: ifNotEmpty<QueryCut>(query.getParam("cuts"), stringifyCut),
-    debug: options.debug ? true : undefined,
-    drilldowns,
-    exclude_default_members: options.exclude_default_members,
+    drilldowns: ifNotEmpty<Drillable>(query.getParam("drilldowns"), item => Level.isLevel(item) ? item.fullName : item.name),
     filters: ifNotEmpty<QueryFilter>(query.getParam("filters"), stringifyFilter),
-    growth: ifValid<QueryGrowth, string>(
-      query.getParam("growth"),
-      isQueryGrowth,
-      (item: QueryGrowth) => `${item.level.fullName},${item.measure.name}`
-    ),
-    limit: ifValid<QueryPagination, string>(
-      query.getParam("pagination"),
-      isQueryPagination,
-      stringifyPagination
-    ),
-    measures,
+    measures: ifNotEmpty<Measure>(query.getParam("measures"), (m) => m.name),
+    properties: filterMap<Property, string>(query.getParam("properties"), stringifyProperty),
+
+    // prettier-ignore
+    limit:
+      !pagination.limit     ? undefined :
+      pagination.offset > 0 ? `${pagination.offset},${pagination.limit}` :
+      /* else */              `${pagination.limit}`,
+
+    // prettier-ignore
+    sort:
+      Measure.isMeasure(sorting.property)  ? `${sorting.property.name}.${sorting.direction}` :
+      typeof sorting.property === "string" ? `${sorting.property}.${sorting.direction}` :
+      /* else */                             undefined,
+
+    // booleans
+    debug: options.debug,
+    exclude_default_members: options.exclude_default_members,
     parents: options.parents,
-    properties: ifNotEmpty<QueryProperty>(
-      query.getParam("properties"),
-      stringifyProperty
-    ),
-    rate: undefined,
-    rca: ifValid<QueryRCA, string>(
-      query.getParam("rca"),
-      isQueryRCA,
-      (item: QueryRCA) =>
-        `${item.level1.fullName},${item.level2.fullName},${item.measure.name}`
-    ),
-    sort: ifValid<QuerySorting, string>(
-      query.getParam("sorting"),
-      isQuerySorting,
-      stringifySorting
-    ),
     sparse: options.sparse,
-    top_where: undefined,
-    top: ifValid<QueryTopk, string>(query.getParam("topk"), isQueryTopk, (item) => {
-      const calculation = Measure.isMeasure(item.measure)
-        ? item.measure.name
-        : item.measure;
-      return `${item.amount},${item.level.fullName},${calculation},${item.order}`;
-    })
+
+    // calculations
+    growth: growth && `${growth.category.fullName},${growth.value.name}`,
+    rca: rca && `${rca.location.fullName},${rca.category.fullName},${rca.value.name}`,
+    top: topk && (topk => {
+      const calculation = Measure.isMeasure(topk.value) ? topk.value.name : topk.value;
+      return `${topk.amount},${topk.category.fullName},${calculation},${topk.order}`;
+    })(topk)
   };
+
+  function stringifyCut(item: QueryCut): string {
+    const { drillable } = item;
+    const name = Level.isLevel(drillable)
+               ? [drillable.dimension.name, drillable.hierarchy.name, drillable.name]
+               : splitFullName(drillable.fullName);
+    return (
+      (item.isExclusive ? "~" : "") +
+      (item.isForMatch ? "*" : "") +
+      joinFullName(name.concat(item.members.join(",")))
+    );
+  }
+
+  function stringifyProperty(item: Property): string {
+    return joinFullName([
+      item.level.dimension.name,
+      item.level.hierarchy.name,
+      item.level.name,
+      item.name,
+    ]);
+  }
 }
 
-export function aggregateQueryParser(
+export function hydrateQueryFromAggregateSearchParams(
   query: Query,
   params: Partial<TesseractAggregateURLSearchParams>
 ): Query {
@@ -141,51 +117,55 @@ export function aggregateQueryParser(
     levels[level.fullName] = level;
   }
 
-  ensureArray(params.captions).forEach((item) => {
-    const propIndex = item.lastIndexOf(".");
-    const levelFullName = item.slice(0, propIndex);
-    const property = item.slice(propIndex + 1);
-    const level = levels[levelFullName];
-    level && query.addCaption(level, property);
+  const props: Record<string, Property> = {};
+  for (let prop of cube.propertyIterator) {
+    props[prop.fullName] = prop;
+  }
+
+  asArray(params.captions).forEach((item: string) => {
+    const property = props[item];
+    property && query.addCaption(property);
   });
 
-  ensureArray(params.cuts).forEach((item) => {
-    const [levelName, members] = parseCut(item);
-    const level = levels[levelName];
-    level && query.addCut(level, members);
+  asArray(params.cuts).forEach((item: string) => {
+    const { drillable, members, exclusive, forMatch } = parseCut(item);
+    const level = levels[drillable];
+    level && query.addCut(level, members, { exclusive, forMatch });
   });
 
-  ensureArray(params.drilldowns).forEach((item) => {
+  asArray(params.drilldowns).forEach((item: string) => {
     const level = levels[item];
     level && query.addDrilldown(level);
   });
 
-  ensureArray(params.filters).forEach((item) => {
+  asArray(params.filters).forEach((item: string) => {
     const index = item.indexOf(".");
     const measureName = item.substr(0, index);
-    const measure = CalculationName[measureName] || cube.measuresByName[measureName];
+    const measure = Calculation[measureName] || cube.measuresByName[measureName];
     if (measure) {
       const { constraints, joint } = parseFilterConstraints(item);
       query.addFilter(measure, constraints[0], joint, constraints[1]);
     }
   });
 
-  ensureArray(params.measures).forEach((item) => {
+  asArray(params.measures).forEach((item) => {
     const measure = cube.measuresByName[item];
     measure && query.addMeasure(measure);
   });
 
-  ensureArray(params.properties).forEach((item) => {
-    const level = splitFullName(item);
-    const property = level.pop();
-    property && query.addProperty(joinFullName(level), property);
+  asArray(params.properties).forEach((item) => {
+    const property = props[item];
+    property && query.addProperty(property);
   });
 
   if (params.growth) {
     const [lvlFullName, measureName] = params.growth.split(",");
     const level = levels[lvlFullName];
     const measure = cube.measuresByName[measureName];
-    level && measure && query.setGrowth(level, measure);
+    level && measure && query.addCalculation("growth", {
+      category: level,
+      value: measure,
+    });
   }
 
   if (params.rca) {
@@ -193,19 +173,24 @@ export function aggregateQueryParser(
     const level1 = levels[lvl1FullName];
     const level2 = levels[lvl2FullName];
     const measure = cube.measuresByName[measureName];
-    level1 && level2 && measure && query.setRCA(level1, level2, measure);
+    level1 && level2 && measure && query.addCalculation("rca", {
+      category: level1,
+      location: level2,
+      value: measure,
+    });
   }
 
   if (params.top) {
-    const [amountRaw, lvlFullName, calculationName, order] = params.top.split(",");
+    const [amountRaw, lvlFullName, calcName, order] = params.top.split(",");
     const amount = Number.parseInt(amountRaw);
     const level = levels[lvlFullName];
-    const calculation =
-      CalculationName[calculationName] || cube.measuresByName[calculationName];
-    amount &&
-      level &&
-      calculation &&
-      query.setTop(amount, level, calculation, Direction[order] || Direction.DESC);
+    const calculation: CalcOrMeasure = Calculation[calcName] || cube.measuresByName[calcName];
+    amount > 0 && level && calculation && query.addCalculation("topk", {
+      amount,
+      category: level,
+      value: calculation,
+      order: Direction[order] || Direction.DESC,
+    });
   }
 
   if (params.limit != null) {
@@ -219,19 +204,17 @@ export function aggregateQueryParser(
     const index = params.sort.lastIndexOf(".");
     const sortProperty = params.sort.slice(0, index);
     const sortOrder = params.sort.slice(index + 1);
-    const calculation =
-      CalculationName[sortProperty] || cube.measuresByName[sortProperty];
+    const calculation = Calculation[sortProperty] || cube.measuresByName[sortProperty];
     calculation && query.setSorting(calculation, Direction[sortOrder] || Direction.DESC);
   }
 
-  const { debug, distinct, exclude_default_members, nonempty, parents, sparse } = params;
-  typeof debug === "boolean" && query.setOption("debug", debug);
-  typeof distinct === "boolean" && query.setOption("distinct", distinct);
-  typeof exclude_default_members === "boolean" &&
-    query.setOption("exclude_default_members", exclude_default_members);
-  typeof nonempty === "boolean" && query.setOption("nonempty", nonempty);
-  typeof parents === "boolean" && query.setOption("parents", parents);
-  typeof sparse === "boolean" && query.setOption("sparse", sparse);
+  typeof params.debug === "boolean" && query.setOption("debug", params.debug);
+  typeof params.distinct === "boolean" && query.setOption("distinct", params.distinct);
+  typeof params.exclude_default_members === "boolean" &&
+    query.setOption("exclude_default_members", params.exclude_default_members);
+  typeof params.nonempty === "boolean" && query.setOption("nonempty", params.nonempty);
+  typeof params.parents === "boolean" && query.setOption("parents", params.parents);
+  typeof params.sparse === "boolean" && query.setOption("sparse", params.sparse);
 
   // rate:       string;
   // top_where:  string;

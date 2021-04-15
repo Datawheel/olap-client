@@ -1,4 +1,4 @@
-import { QueryProperty, QueryCut, QueryFilter } from "../interfaces";
+import { QueryCut, QueryFilter } from "../query";
 import { MondrianFilterOperator } from "./interfaces";
 
 export function joinFullName(nameParts: string[]): string {
@@ -33,8 +33,13 @@ export function rangeify(list: number[]) {
   );
 }
 
-export function splitFullName(fullname: string): string[] {
-  return `${fullname}`.replace(/^\[|\]$/g, "").split(/\]\.\[?/);
+export function splitFullName(fullName: string): string[] {
+  return `${fullName}`.replace(/^\[|\]$/g, "").split(/\]\.\[?/);
+}
+
+export function splitPropertyName(fullName: string): [string, string] {
+  const propIndex = fullName.lastIndexOf(".");
+  return [fullName.slice(0, propIndex), fullName.slice(propIndex + 1)]
 }
 
 export function stringifyCut(item: QueryCut): string {
@@ -48,8 +53,4 @@ export function stringifyFilter(item: QueryFilter): string {
   return typeof item.measure !== "string" && operator
     ? `${item.measure.name} ${operator} ${item.const1[1]}`
     : "";
-}
-
-export function stringifyProperty(item: QueryProperty) {
-  return `${item.level.fullName}.${item.name}`;
 }

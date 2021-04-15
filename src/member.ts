@@ -1,28 +1,26 @@
-import Cube from "./cube";
-import { ClientError } from "./errors";
-import { AdaptedMember } from "./interfaces";
-import Level from "./level";
-import { FullNamed, Serializable } from "./mixins";
-import { applyMixins } from "./utils";
+import { Cube } from "./cube";
+import { PlainMember } from "./interfaces/plain";
+import { Level } from "./level";
+import { applyMixins, FullNamed, Serializable } from "./toolbox/mixins";
 
-interface Member extends FullNamed, Serializable<AdaptedMember> {}
+export interface Member extends FullNamed, Serializable<PlainMember> {}
 
-class Member {
+export class Member {
   private readonly _parent?: Level;
 
-  readonly _source: AdaptedMember;
+  readonly _source: PlainMember;
   readonly ancestors: Member[];
   readonly children: Member[];
 
-  constructor(source: AdaptedMember, parent?: Level) {
+  constructor(source: PlainMember, parent?: Level) {
     this._parent = parent;
     this._source = source;
 
     this.ancestors = source.ancestors.map(
-      (member: AdaptedMember) => new Member(member, parent)
+      (member: PlainMember) => new Member(member, parent)
     );
     this.children = source.children.map(
-      (member: AdaptedMember) => new Member(member, parent)
+      (member: PlainMember) => new Member(member, parent)
     );
   }
 
@@ -35,10 +33,10 @@ class Member {
   }
 
   get level(): Level {
-    if (!this._parent) {
-      throw new ClientError(`Member ${this} doesn't have an associated parent level.`);
+    if (this._parent) {
+      return this._parent;
     }
-    return this._parent;
+    throw new Error(`Member ${this} doesn't have an associated parent level.`);
   }
 
   get parentName(): string | undefined {
@@ -47,5 +45,3 @@ class Member {
 }
 
 applyMixins(Member, [FullNamed, Serializable]);
-
-export default Member;

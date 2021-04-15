@@ -1,7 +1,7 @@
 const assert = require("assert");
-const {Client, TesseractDataSource} = require("..");
-const {randomPick} = require("./utils");
+const {Client} = require("..");
 const {TestDataSource} = require("./datasource");
+const {randomPick, randomLevel, randomQuery} = require("./utils");
 
 const {
   MONDRIAN_SERVER = "https://chilecube.datachile.io/",
@@ -14,45 +14,45 @@ describe("Client", function() {
   describe(".dataSourceFromURL()", function() {
     this.timeout(5000);
 
-    it("should identify a mondrian server", async () => {
+    it("should identify a mondrian server", async function() {
       const ds = await Client.dataSourceFromURL(MONDRIAN_SERVER);
-      assert.equal(ds.constructor.name, "MondrianDataSource");
+      assert.strictEqual(ds.constructor.name, "MondrianDataSource");
     });
 
-    it("should identify a tesseract server", async () => {
+    it("should identify a tesseract server", async function() {
       const ds = await Client.dataSourceFromURL(TESSERACT_SERVER);
-      assert.equal(ds.constructor.name, "TesseractDataSource");
+      assert.strictEqual(ds.constructor.name, "TesseractDataSource");
     });
 
-    it("should reject on invalid servers", () => {
+    it("should reject on invalid servers", function() {
       assert.rejects(Client.dataSourceFromURL("https://httpbin.org/html"));
       assert.rejects(Client.dataSourceFromURL("https://httpbin.org/status/404"));
     });
   });
 
-  describe("#constructor()", () => {
-    it("should construct an empty client instance if no parameters passed", () => {
-      assert.doesNotThrow(() => {
+  describe("#constructor()", function() {
+    it("should construct an empty client instance if no parameters passed", function() {
+      assert.doesNotThrow(function() {
         const client = new Client();
       });
     });
 
-    it("should throw if requesting against a client without datasource", () => {
-      assert.throws(() => {
+    it("should throw if requesting against a client without datasource", function() {
+      assert.throws(function() {
         const client = new Client();
         client.getCubes();
       });
     });
 
-    it("should allow to add new datasources later", () => {
-      assert.doesNotThrow(() => {
+    it("should allow to add new datasources later", function() {
+      assert.doesNotThrow(function() {
         const client = new Client();
         client.setDataSource(ds);
       });
     });
 
-    it("should throw if requesting anything without setting datasource", () => {
-      assert.throws(() => {
+    it("should throw if requesting anything without setting datasource", function() {
+      assert.throws(function() {
         const client = new Client();
         client.checkStatus();
       });
@@ -60,13 +60,13 @@ describe("Client", function() {
   });
 
   describe("#execQuery()", function() {
-    it("should execute a Query correctly", async () => {
+    it("should execute a Query correctly", async function() {
       const client = new Client(ds);
       const cubes = await client.getCubes();
       const cube = randomPick(cubes);
 
       const measure = randomPick(cube.measures);
-      const level = randomPick(randomPick(randomPick(cube.dimensions).hierarchies).levels);
+      const level = randomLevel(cube);
       const query = cube.query
         .addMeasure(measure)
         .addDrilldown(level.name)
@@ -80,7 +80,7 @@ describe("Client", function() {
   });
 
   describe("#getMembers()", function() {
-    it("should retrieve the list of members for a level", async () => {
+    it("should retrieve the list of members for a level", async function() {
       const client = new Client(ds);
       const cubes = await client.getCubes();
       const cube = randomPick(cubes);
@@ -92,19 +92,19 @@ describe("Client", function() {
   });
 
   describe("#parseQueryURL()", function() {
-    it("should parse an url into a query", async () => {
-      const ds = new TesseractDataSource("https://api.oec.world/tesseract/");
+    it("should parse an url into a query", async function() {
       const client = new Client(ds);
 
-      const url2 = "https://api.oec.world/tesseract/data.jsonrecords?HS4=10101&cube=trade_i_baci_a_02&drilldowns=Year&measures=Trade+Value";
-      const query = await client.parseQueryURL(url2);
+      const cubes = await client.getCubes();
+      const cube = randomPick(cubes);
 
-      const generatedUrl =
-        url.indexOf("/aggregate") > -1
-        ? query.toString("aggregate")
-        : query.toString("logiclayer");
+      const queryExpected = randomQuery(cube);
+      const urlExpected = queryExpected.toString("");
 
-      assert.equal(generatedUrl, url);
+      const queryActual = await client.parseQueryURL(urlExpected);
+      const urlActual = queryActual.toString("");
+
+      assert.strictEqual(urlActual, urlExpected);
     })
   })
 });

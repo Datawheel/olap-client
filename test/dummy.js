@@ -10,7 +10,7 @@ module.exports = {
 
 const WORDLIST = ["aardvark", "absurd", "accrue", "acme", "adrift", "adult", "afflict", "ahead", "aimless", "algol", "allow", "alone", "ammo", "ancient", "apple", "artist", "assume", "athens", "atlas", "aztec", "baboon", "backfield", "backward", "banjo", "beaming", "bedlamp", "beehive", "beeswax", "befriend", "belfast", "berserk", "billiard", "bison", "blackjack", "blockade", "blowtorch", "bluebird", "bombast", "bookshelf", "brackish", "breadline", "breakup", "brickyard", "briefcase", "burbank", "button", "buzzard", "cement", "chairlift", "chatter", "checkup", "chisel", "choking", "chopper", "christmas", "clamshell", "classic", "classroom", "cleanup", "clockwork", "cobra", "commence", "concert", "cowbell", "crackdown", "cranky", "crowfoot", "crucial", "crumpled", "crusade", "cubic", "dashboard", "deadbolt", "deckhand", "dogsled", "dragnet", "drainage", "dreadful", "drifter", "dropper", "drumbeat", "drunken", "dupont", "dwelling", "eating", "edict", "egghead", "eightball", "endorse", "endow", "enlist", "erase", "escape", "exceed", "eyeglass", "eyetooth", "facial", "fallout", "flagpole", "flatfoot", "flytrap", "fracture", "framework", "freedom", "frighten", "gazelle", "geiger", "glitter", "glucose", "goggles", "goldfish", "gremlin", "guidance", "hamlet", "highchair", "hockey", "indoors", "indulge", "inverse", "involve", "island", "jawbone", "keyboard", "kickoff", "kiwi", "klaxon", "locale", "lockup", "merit", "minnow", "miser", "mohawk", "mural", "music", "necklace", "neptune", "newborn", "nightbird", "oakland", "obtuse", "offload", "optic", "orca", "payday", "peachy", "pheasant", "physique", "playhouse", "pluto", "preclude", "prefer", "preshrunk", "printer", "prowler", "pupil", "puppy", "python", "quadrant", "quiver", "quota", "ragtime", "ratchet", "rebirth", "reform", "regain", "reindeer", "rematch", "repay", "retouch", "revenge", "reward", "rhythm", "ribcage", "ringbolt", "robust", "rocker", "ruffled", "sailboat", "sawdust", "scallion", "scenic", "scorecard", "scotland", "seabird", "select", "sentence", "shadow", "shamrock", "showgirl", "skullcap", "skydive", "slingshot", "slowdown", "snapline", "snapshot", "snowcap", "snowslide", "solo", "southward", "soybean", "spaniel", "spearhead", "spellbind", "spheroid", "spigot", "spindle", "spyglass", "stagehand", "stagnate", "stairway", "standard", "stapler", "steamship", "sterling", "stockman", "stopwatch", "stormy", "sugar", "surmount", "suspense", "sweatband", "swelter", "tactics", "talon", "tapeworm", "tempest", "tiger", "tissue", "tonic", "topmost", "tracker", "transit", "trauma", "treadmill", "trojan", "trouble", "tumor", "tunnel", "tycoon", "uncut", "unearth", "unwind", "uproot", "upset", "upshot", "vapor", "village", "virus", "vulcan", "waffle", "wallet", "watchword", "wayside", "willow", "woodlark", "zulu"];
 
-/** @return {import("..").AdaptedCube} */
+/** @return {import("..").PlainCube} */
 function dummyCubeBuilder(cubeName = randomString()) {
   const uri = `test://dummy.olap/${cubeName}`;
   const fnIndex = uri.indexOf(cubeName);
@@ -19,14 +19,13 @@ function dummyCubeBuilder(cubeName = randomString()) {
     annotations: {},
     caption: "Cube: " + cubeName,
     dimensions: Array(cubeName.length).fill(uri).map(makeDummyDimension),
-    fullName: `/${cubeName}`,
     measures: Array(2).fill(uri).map(makeDummyMeasure),
     name: cubeName,
     namedsets: [],
     uri,
   }
 
-  /** @return {import("..").AdaptedMeasure} */
+  /** @return {import("..").PlainMeasure} */
   function makeDummyMeasure(parentUri) {
     const name = randomString();
     return {
@@ -41,7 +40,7 @@ function dummyCubeBuilder(cubeName = randomString()) {
     }
   }
 
-  /** @return {import("..").AdaptedDimension} */
+  /** @return {import("..").PlainDimension} */
   function makeDummyDimension(parentUri) {
     const name = randomString();
     const uri = `${parentUri}/DIM${name}`;
@@ -60,7 +59,7 @@ function dummyCubeBuilder(cubeName = randomString()) {
     }
   }
 
-  /** @return {import("..").AdaptedHierarchy} */
+  /** @return {import("..").PlainHierarchy} */
   function makeDummyHierarchy(parentUri) {
     const name = randomString();
     const uri = `${parentUri}/HIE${name}`;
@@ -82,7 +81,7 @@ function dummyCubeBuilder(cubeName = randomString()) {
   /**
    * @param {string} parentUri
    * @param {number} index
-   * @return {import("..").AdaptedLevel}
+   * @return {import("..").PlainLevel}
    */
   function makeDummyLevel(parentUri, index) {
     const name = randomString();
@@ -107,20 +106,17 @@ function dummyCubeBuilder(cubeName = randomString()) {
 
   /**
    * @param {string} parentUri
-   * @return {import("..").AdaptedProperty}
+   * @return {import("..").PlainProperty}
    */
   function makeDummyProperty(parentUri) {
     const name = randomString();
-    const parentFullName = parentUri.slice(fnIndex);
-    const [, dim, hie, lvl] = parentFullName.split("/");
     return {
       _type: "property",
       annotations: {},
-      cube: cubeName,
-      dimension: dim.slice(3),
-      hierarchy: hie.slice(3),
-      level: lvl.slice(3),
-      name
+      captionSet: randomString(),
+      name,
+      uniqueName: randomString(),
+      uri: `${parentUri}/PROP${name}`,
     }
   }
 }
@@ -128,7 +124,7 @@ function dummyCubeBuilder(cubeName = randomString()) {
 /**
  * @param {import("..").Level} level
  * @param {number} index
- * @returns {import("..").AdaptedMember}
+ * @returns {import("..").PlainMember}
  */
 function dummyMemberBuilder(level, index) {
   return {

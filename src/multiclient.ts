@@ -1,38 +1,28 @@
 import { AxiosRequestConfig } from "axios";
-import urljoin from "url-join";
-import { Client } from "./client";
-import Cube from "./cube";
-import { ClientError } from "./errors";
-import {
-  AdaptedCube,
-  AdaptedMember,
-  Aggregation,
-  IClient,
-  IDataSource,
-  LevelDescriptor,
-  ParseURLOptions,
-  ServerStatus
-} from "./interfaces";
-import Level from "./level";
-import Member from "./member";
+import { CacheManager } from "./cache";
+import { Cube } from "./cube";
+import { Aggregation, IClient, IDataSource, ServerStatus } from "./interfaces/contracts";
+import { LevelDescriptor } from "./interfaces/descriptors";
+import { PlainCube, PlainMember } from "./interfaces/plain";
+import { Level } from "./level";
+import { Member } from "./member";
 import { Query } from "./query";
-import { groupBy, levelFinderFactory } from "./utils";
+import { getLevel, inferDataSource, matchCubeNameFromURL, ParseURLOptions, ServerConfig } from "./toolbox/client";
 
-class MultiClient implements IClient {
-  private _cubeCache: Record<string, Promise<Cube[]>> = {};
-  private _cubesCache: Promise<Cube[]> | undefined = undefined;
+export class MultiClient implements IClient {
+  private _cache: Record<string, CacheManager<Cube>> = {};
   private datasources: Record<string, IDataSource | undefined> = {};
 
-  static dataSourcesFromURL(...urls: string[]): Promise<IDataSource[]> {
-    const promises = urls.map((url: string) => {
-      const normalizedUrl = urljoin(url, "/");
-      return Client.dataSourceFromURL(normalizedUrl);
-    });
+  static dataSourcesFromURL(
+    ...configs: ServerConfig[]
+  ): Promise<IDataSource[]> {
+    const promises = configs.map(inferDataSource);
     return Promise.all(promises);
   }
 
-  static fromURL(...urls: string[]): Promise<MultiClient> {
-    return MultiClient.dataSourcesFromURL(...urls).then(
+  static fromURL(...configs: ServerConfig[]): Promise<MultiClient> {
+    const promises = configs.map(inferDataSource);
+    return Promise.all(promises).then(
       (datasources: IDataSource[]) => new MultiClient(...datasources)
     );
   }
@@ -42,28 +32,15 @@ class MultiClient implements IClient {
   }
 
   addDataSource(...datasources: IDataSource[]) {
-    let taintedCache = false;
-
     let n = datasources.length;
     while (n--) {
       const datasource = datasources[n];
-      if (!this.datasources[datasource.serverUrl]) {
-        this.datasources[datasource.serverUrl] = datasource;
-        taintedCache = true;
+      const key = datasource.serverUrl;
+      if (!this.datasources[key]) {
+        this.datasources[key] = datasource;
+        this._cache[key] = new CacheManager(cube => cube.name);
       }
     }
-
-    if (taintedCache) {
-      this._cubeCache = {};
-      this._cubesCache = undefined;
-    }
-  }
-
-  private cacheCube(cubes: Cube[]): void {
-    const cubeMap = groupBy(cubes, "name");
-    Object.keys(cubeMap).forEach((cubeName: string) => {
-      this._cubeCache[cubeName] = Promise.resolve(cubeMap[cubeName]);
-    });
   }
 
   checkStatus(): Promise<ServerStatus[]> {
@@ -74,43 +51,45 @@ class MultiClient implements IClient {
   }
 
   get dataSourceList(): IDataSource[] {
-    const datasources = Object.values(this.datasources).filter(Boolean) as IDataSource[];
-    if (datasources.length === 0) {
-      throw new ClientError(`This Client instance has no DataSource configured.
-Verify the initialization procedure, there might be a race condition.`);
+    const datasources = Object.values(this.datasources)
+      .filter(Boolean) as IDataSource[];
+    if (datasources.length > 0) {
+      return datasources;
     }
-    return datasources;
+    throw new Error(`This Client instance has no DataSource configured. Verify the initialization procedure, there might be a race condition.`);
   }
 
   execQuery(query: Query, endpoint?: string): Promise<Aggregation> {
     const datasource = this.datasources[query.cube.server];
-    if (!datasource) {
-      const reason = `No DataSource matched the parent Cube of your Query object.`;
-      return Promise.reject(new ClientError(reason));
+    if (datasource) {
+      return datasource.execQuery(query, endpoint);
     }
-    return datasource.execQuery(query, endpoint);
+    const err = new Error(`No DataSource matched the parent Cube of your Query object.`);
+    return Promise.reject(err);
   }
 
-  getCube(cubeName: string, selectorFn?: (cubes: Cube[]) => Cube): Promise<Cube> {
-    const promise =
-      this._cubeCache[cubeName] ||
-      Promise.resolve(this.dataSourceList).then((datasources: IDataSource[]) => {
-        const promises = datasources.map((datasource: IDataSource) =>
-          datasource.fetchCube(cubeName).then(
-            (acube: AdaptedCube) => new Cube(acube, datasource),
-            () => undefined
+  getCube(
+    cubeName: string,
+    selectorFn?: (cubes: Cube[]) => Cube
+  ): Promise<Cube> {
+    const maybeCubesPromise = this.dataSourceList.map(
+      (datasource: IDataSource) => {
+        const cache = this._cache[datasource.serverUrl];
+        return cache
+          .getItem(cubeName, () =>
+            datasource
+              .fetchCube(cubeName)
+              .then((cube: PlainCube) => new Cube(cube, datasource))
           )
-        );
-        return Promise.all(promises).then((values: (Cube | undefined)[]) => {
-          const cubes = values.filter(Boolean) as Cube[];
-          this.cacheCube(cubes);
-          return cubes;
-        });
-      });
+          .catch(() => undefined);
+      }
+    );
 
-    this._cubeCache[cubeName] = promise;
+    const cubesPromise = Promise.all(maybeCubesPromise).then(
+      (values: (Cube | undefined)[]) => values.filter(Boolean) as Cube[]
+    );
 
-    return promise.then((cubes: Cube[]) => {
+    return cubesPromise.then((cubes: Cube[]) => {
       if (cubes.length === 1) {
         return cubes[0];
       }
@@ -119,50 +98,24 @@ Verify the initialization procedure, there might be a race condition.`);
       }
       const reason = `There's a cube named ${cubeName} in more than one datasource.
 To prevent this error, pass a selectorFn parameter to the MultiClient#getCube method.`;
-      throw new ClientError(reason);
+      throw new Error(reason);
     });
   }
 
   getCubes(): Promise<Cube[]> {
-    const promise =
-      this._cubesCache ||
-      Promise.resolve(this.dataSourceList).then((datasources: IDataSource[]) => {
-        const promises = datasources.map((datasource: IDataSource) =>
-          datasource
-            .fetchCubes()
-            .then((acubes: AdaptedCube[]) =>
-              Promise.all(acubes.map((acube: AdaptedCube) => new Cube(acube, datasource)))
-            )
-        );
-        return Promise.all(promises).then((cubesList: Cube[][]) => {
-          const cubes = ([] as Cube[]).concat(...cubesList);
-          this.cacheCube(cubes);
-          return cubes;
-        });
-      });
-    this._cubesCache = promise;
-    return promise;
-  }
-
-  private getLevel(identifier: Level | LevelDescriptor): Promise<Level> {
-    if (Level.isLevel(identifier)) {
-      return Promise.resolve(identifier);
-    }
-    const levelFinder = levelFinderFactory(identifier);
-    return identifier.cube
-      ? this.getCube(identifier.cube).then(levelFinder)
-      : this.getCubes().then((cubes: Cube[]) => {
-          let n = cubes.length;
-          while (n--) {
-            try {
-              return levelFinder(cubes[n]);
-            } catch (e) {
-              continue;
-            }
-          }
-          const reason = `No level matched the descriptor ${JSON.stringify(identifier)}`;
-          throw new ClientError(reason);
-        });
+    const cubesPromise = this.dataSourceList.map((datasource: IDataSource) => {
+      const cache = this._cache[datasource.serverUrl];
+      return cache.getAllItems(() =>
+        datasource
+          .fetchCubes()
+          .then((cubes: PlainCube[]) =>
+            cubes.map((cube: PlainCube) => new Cube(cube, datasource))
+          )
+      );
+    });
+    return Promise.all(cubesPromise).then(cubes =>
+      ([] as Cube[]).concat(...cubes)
+    );
   }
 
   getMember(
@@ -170,65 +123,65 @@ To prevent this error, pass a selectorFn parameter to the MultiClient#getCube me
     key: string | number,
     options?: any
   ): Promise<Member> {
-    return this.getLevel(levelRef).then((level: Level) => {
+    return getLevel(this, levelRef).then((level: Level) => {
       const server = level.cube.server;
       const datasource = this.datasources[server];
       if (!datasource) {
         const reason = `No DataSource matched the parent Cube of matching Level:
 LevelDescriptor: ${JSON.stringify(levelRef)}
 Level: ${level}`;
-        return Promise.reject(new ClientError(reason));
+        return Promise.reject(new Error(reason));
       }
       return datasource
         .fetchMember(level, key, options)
-        .then((member: AdaptedMember) => new Member(member, level));
+        .then((member: PlainMember) => new Member(member, level));
     });
   }
 
-  getMembers(levelRef: Level | LevelDescriptor, options?: any): Promise<Member[]> {
-    return this.getLevel(levelRef).then((level: Level) => {
+  getMembers(
+    levelRef: Level | LevelDescriptor,
+    options?: any
+  ): Promise<Member[]> {
+    return getLevel(this, levelRef).then((level: Level) => {
       const server = level.cube.server;
       const datasource = this.datasources[server];
       if (!datasource) {
         const reason = `No DataSource matched the parent Cube of matching Level:
 LevelDescriptor: ${JSON.stringify(levelRef)}
 Level: ${level}`;
-        return Promise.reject(new ClientError(reason));
+        return Promise.reject(new Error(reason));
       }
       return datasource
         .fetchMembers(level, options)
-        .then((members: AdaptedMember[]) =>
-          members.map((member: AdaptedMember) => new Member(member, level))
+        .then((members: PlainMember[]) =>
+          members.map((member: PlainMember) => new Member(member, level))
         );
     });
   }
 
-  parseQueryURL(url: string, options: Partial<ParseURLOptions> = {}): Promise<Query> {
-    const datasource = this.dataSourceList.find((ds: IDataSource) =>
-      url.startsWith(ds.serverUrl)
+  parseQueryURL(
+    url: string,
+    options: Partial<ParseURLOptions> = {}
+  ): Promise<Query> {
+    const datasource = this.dataSourceList.find(
+      (datasource: IDataSource) => url.indexOf(datasource.serverUrl) > -1
     );
     if (!datasource) {
-      const reason = `Provided URL not available on this MultiClient instance: ${url}`;
-      return Promise.reject(new ClientError(reason));
+      const reason = new Error(`Provided URL not available on this MultiClient instance: ${url}`);
+      return Promise.reject(reason);
     }
-
-    const cubeMatch = /\/cubes\/([^\/]+)\/|\bcube=([^&]+)&/.exec(url);
-    if (!cubeMatch) {
-      const reason = `Provided URL is not a valid Query URL: ${url}`;
-      return Promise.reject(new ClientError(reason));
-    }
-    const cubeName = cubeMatch[1] || cubeMatch[2];
     const cubePicker = (cubes: Cube[]) =>
-      cubes.find((cube: Cube) => cube.server === datasource.serverUrl) || cubes[0];
-
-    return this.getCube(cubeName, cubePicker).then((cube: Cube) => {
-      return datasource.parseQueryURL(cube.query, url, options);
-    });
+      cubes.find((cube: Cube) => cube.server === datasource.serverUrl) ||
+      cubes[0];
+    return Promise.resolve(url)
+      .then(matchCubeNameFromURL)
+      .then((cubeName: string) => this.getCube(cubeName, cubePicker))
+      .then((cube: Cube) => datasource.parseQueryURL(cube.query, url, options));
   }
 
   setRequestConfig(config: AxiosRequestConfig): void {
-    this.dataSourceList.forEach((ds: IDataSource) => ds.setRequestConfig(config));
+    this.dataSourceList.forEach((datasource: IDataSource) =>
+      datasource.setRequestConfig(config)
+    );
   }
 }
-
-export default MultiClient;

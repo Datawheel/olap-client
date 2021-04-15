@@ -31,24 +31,23 @@ export interface TesseractAggregateURLSearchParams {
 
 export interface TesseractLogicLayerURLSearchParams {
   cube: string;
-  drilldowns: string;
-  time: string;
-  measures: string;
-  properties: string;
-  filters: string;
-  parents: boolean;
-  top: string;
-  top_where: string;
-  sort: string;
-  limit: string;
-  growth: string;
-  rca: string;
   debug: boolean;
+  drilldowns: string;
   exclude_default_members: boolean;
+  exclude: string;
+  filters: string;
+  growth: string;
+  limit: string;
   locale: string;
-  distinct: boolean;
-  nonempty: boolean;
-  sparse: boolean;
+  measures: string;
+  parents: boolean;
+  properties: string;
   rate: string;
+  rca: string;
+  sort: string;
+  sparse: boolean;
+  time: string;
+  top_where: string;
+  top: string;
   [cut: string]: string | boolean; // actually just string, but (ts2411)
 }

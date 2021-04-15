@@ -1,4 +1,4 @@
-import { Annotations } from "../interfaces";
+import { Annotations } from "../interfaces/plain";
 
 export interface TesseractEndpointCubes {
   annotations: Annotations;
@@ -7,26 +7,42 @@ export interface TesseractEndpointCubes {
 }
 
 export interface TesseractCube {
-  name: string;
+  alias?: string[];
+  annotations: Annotations;
   dimensions: TesseractDimension[];
   measures: TesseractMeasure[];
-  annotations: Annotations;
+  min_auth_level: number;
+  name: string;
 }
 
 export interface TesseractMeasure {
   aggregator: {
-    name: "avg" | "count" | "sum";
+    name: "avg" | "count" | "max" | "min" | "sum";
   };
   annotations: Annotations;
+  measure_type: TesseractMeasureTypeStd | TesseractMeasureTypeErr;
   name: string;
+}
+
+interface TesseractMeasureTypeStd {
+  standard: {
+    units?: string;
+  }
+}
+
+interface TesseractMeasureTypeErr {
+  error: {
+    for_measure?: string;
+    err_type?: string;
+  }
 }
 
 export interface TesseractDimension {
   annotations: Annotations;
+  default_hierarchy?: string;
   hierarchies: TesseractHierarchy[];
   name: string;
   type: "geo" | "standard" | "time";
-  default_hierarchy?: string;
 }
 
 export interface TesseractHierarchy {
@@ -49,5 +65,7 @@ export interface TesseractMember {
 
 export interface TesseractProperty {
   annotations: Annotations;
+  caption_set?: string;
   name: string;
+  unique_name?: string;
 }

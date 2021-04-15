@@ -1,5 +1,4 @@
 // @ts-check
-
 const {default: formUrlEncoded} = require("form-urlencoded");
 const formUrlDecoded = require("form-urldecoded");
 const { dummyCubeBuilder, dummyMemberBuilder, dummyDatumFactory } = require("./dummy");
@@ -28,13 +27,17 @@ const CUBE_NAMES = [
   "uniform",
   "victor",
   "whiskey",
-  "x-ray",
+  "xray",
   "yankee",
   "zulu",
 ];
 
 /**
- * @implements {import("..").IDataSource}
+ * @typedef {import("..").IDataSource} IDataSource
+ */
+
+/**
+ * @implements {IDataSource}
  */
 class TestDataSource {
   cubes = CUBE_NAMES.map(dummyCubeBuilder);
@@ -53,7 +56,6 @@ class TestDataSource {
     });
   }
 
-  /** @returns {Promise<import("..").Aggregation>} */
   execQuery(query) {
     return new Promise(resolve => {
       const amounts = query.getParam("drilldowns").map(dd => {
@@ -74,7 +76,6 @@ class TestDataSource {
     });
   }
 
-  /** @returns {Promise<import("..").AdaptedCube>} */
   fetchCube(cubeName) {
     return new Promise((resolve, reject) => {
       const index = CUBE_NAMES.indexOf(cubeName);
@@ -83,14 +84,12 @@ class TestDataSource {
     });
   }
 
-  /** @returns {Promise<import("..").AdaptedCube[]>} */
   fetchCubes() {
     return new Promise((resolve) => {
       resolve(Object.values(this.cubes));
     });
   }
 
-  /** @returns {Promise<import("..").AdaptedMember>} */
   fetchMember(parent, key, options) {
     return new Promise(resolve => {
       const member = dummyMemberBuilder(parent, key % 255);
@@ -98,7 +97,6 @@ class TestDataSource {
     });
   }
 
-  /** @returns {Promise<import("..").AdaptedMember[]>} */
   fetchMembers(parent, options) {
     return new Promise(resolve => {
       const {name} = parent;
@@ -108,17 +106,16 @@ class TestDataSource {
     });
   }
 
-  /** @returns {import("..").Query} */
   parseQueryURL(query, url, options) {
     const [server, search] = url.split("/query?");
     if (query.cube.server === server) {
       const params = formUrlDecoded(search);
+      query.fromJSON(params);
       return query;
     }
     throw new Error(`URL ${server} doesn't match server URL in Query object provided.`);
   }
 
-  /** @returns {void} */
   setRequestConfig({ url, baseUrl, ...config }) {
     this.config = {
       ...this.config,
@@ -126,11 +123,10 @@ class TestDataSource {
     };
   }
 
-  /** @returns {string} */
   stringifyQueryURL(query) {
     return `${this.serverUrl}/query?${formUrlEncoded(query.toJSON(), {
       ignorenull: true,
-      skipIndex: true,
+      skipIndex: false,
       sorted: true,
     })}`;
   }

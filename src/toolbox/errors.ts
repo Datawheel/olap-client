@@ -1,16 +1,5 @@
 import { AxiosResponse } from "axios";
 
-export class ClientError extends Error {
-  constructor(message: string) {
-    super(message);
-
-    this.name = this.constructor.name;
-    if (typeof Error.captureStackTrace === "function") {
-      Error.captureStackTrace(this, this.constructor);
-    }
-  }
-}
-
 export class ServerError extends Error {
   public readonly body: any;
   public readonly detail: any;

@@ -10,14 +10,18 @@ export enum AggregatorType {
   sum = "SUM",
   SUM = "SUM",
   unknown = "UNKNOWN",
-  UNKNOWN = "UNKNOWN"
+  UNKNOWN = "UNKNOWN",
 }
 
-export enum CalculationName {
+export enum Calculation {
   growth = "growth",
   GROWTH = "growth",
+  rate = "rate",
+  RATE = "rate",
   rca = "rca",
-  RCA = "rca"
+  RCA = "rca",
+  topk = "topk",
+  TOPK = "topk",
 }
 
 export enum Comparison {
@@ -39,7 +43,7 @@ export enum Comparison {
   lte = "lte",
   LTE = "lte",
   NEQ = "neq",
-  neq = "neq"
+  neq = "neq",
 }
 
 export enum DimensionType {
@@ -48,21 +52,21 @@ export enum DimensionType {
   std = "std",
   Standard = "std",
   time = "time",
-  Time = "time"
+  Time = "time",
 }
 
 export enum Format {
   csv = "csv",
   json = "json",
   jsonrecords = "jsonrecords",
-  xls = "xls"
+  xls = "xls",
 }
 
 export enum Direction {
   asc = "asc",
   ASC = "asc",
   desc = "desc",
-  DESC = "desc"
+  DESC = "desc",
 }
 
 export enum TimePrecision {
@@ -72,15 +76,19 @@ export enum TimePrecision {
   MONTH = "month",
   quarter = "quarter",
   QUARTER = "quarter",
+  time = "time",
+  TIME = "time",
   week = "week",
   WEEK = "week",
   year = "year",
-  YEAR = "year"
+  YEAR = "year",
 }
 
 export enum TimeValue {
   latest = "latest",
   LATEST = "latest",
   oldest = "oldest",
-  OLDEST = "oldest"
+  OLDEST = "oldest",
 }
+
+export type TimeValuePoint = TimeValue | number;

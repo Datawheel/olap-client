@@ -1,24 +1,8 @@
 import urljoin from "url-join";
-import { AggregatorType, DimensionType } from "../enums";
-import {
-  AdaptedCube,
-  AdaptedDimension,
-  AdaptedHierarchy,
-  AdaptedLevel,
-  AdaptedMeasure,
-  AdaptedMember,
-  AdaptedProperty
-} from "../interfaces";
-import { ensureArray } from "../utils";
-import {
-  TesseractCube,
-  TesseractDimension,
-  TesseractHierarchy,
-  TesseractLevel,
-  TesseractMeasure,
-  TesseractMember,
-  TesseractProperty
-} from "./schema";
+import { AggregatorType, DimensionType } from "../interfaces/enums";
+import { PlainCube, PlainDimension, PlainHierarchy, PlainLevel, PlainMeasure, PlainMember, PlainProperty } from "../interfaces/plain";
+import { asArray } from "../toolbox/collection";
+import { TesseractCube, TesseractDimension, TesseractHierarchy, TesseractLevel, TesseractMeasure, TesseractMember, TesseractProperty } from "./schema";
 import { joinFullName } from "./utils";
 
 interface TesseractAdapterMeta {
@@ -39,7 +23,7 @@ interface TesseractAdapterMeta {
 
 export function cubeAdapterFactory(
   meta: Pick<TesseractAdapterMeta, "server_uri">
-): (json: TesseractCube) => AdaptedCube {
+): (json: TesseractCube) => PlainCube {
   return (json: TesseractCube) => {
     const cube_uri = urljoin(meta.server_uri, "cubes", encodeURIComponent(json.name));
     const contextMeta = { ...meta, cube_name: json.name, cube_uri };
@@ -57,7 +41,7 @@ export function cubeAdapterFactory(
 
 function dimensionAdapterFactory(
   meta: Pick<TesseractAdapterMeta, "cube_name" | "cube_uri">
-): (json: TesseractDimension) => AdaptedDimension {
+): (json: TesseractDimension) => PlainDimension {
   return (json: TesseractDimension) => {
     const dimension_name = json.name;
     const dimension_fullname = [dimension_name];
@@ -86,7 +70,7 @@ function hierarchyAdapterFactory(
     TesseractAdapterMeta,
     "cube_name" | "dimension_fullname" | "dimension_name" | "dimension_uri"
   >
-): (json: TesseractHierarchy) => AdaptedHierarchy {
+): (json: TesseractHierarchy) => PlainHierarchy {
   return (json: TesseractHierarchy) => {
     const hierarchy_name = json.name;
     const hierarchy_fullname = meta.dimension_fullname.concat(hierarchy_name);
@@ -118,7 +102,7 @@ function levelAdapterFactory(
     | "hierarchy_name"
     | "hierarchy_uri"
   >
-): (json: TesseractLevel, depth: number) => AdaptedLevel {
+): (json: TesseractLevel, depth: number) => PlainLevel {
   return (json: TesseractLevel, depth: number) => {
     const level_name = json.name;
     const level_fullname = meta.hierarchy_fullname.concat(level_name);
@@ -138,7 +122,7 @@ function levelAdapterFactory(
       fullName: joinFullName(level_fullname),
       hierarchy: meta.hierarchy_name,
       name: json.name,
-      properties: ensureArray(json.properties).map(propertyAdapterFactory(contextMeta)),
+      properties: asArray(json.properties).map(propertyAdapterFactory(contextMeta)),
       uniqueName: json.unique_name,
       uri: level_uri
     };
@@ -147,7 +131,7 @@ function levelAdapterFactory(
 
 function measureAdapterFactory(
   meta: Pick<TesseractAdapterMeta, "cube_name" | "cube_uri">
-): (json: TesseractMeasure) => AdaptedMeasure {
+): (json: TesseractMeasure) => PlainMeasure {
   return (json: TesseractMeasure) => {
     const agg = json.aggregator.name?.toUpperCase();
     return {
@@ -164,7 +148,7 @@ function measureAdapterFactory(
 
 export function memberAdapterFactory(
   meta: Pick<TesseractAdapterMeta, "level_name" | "locale" | "server_uri">
-): (json: TesseractMember) => AdaptedMember {
+): (json: TesseractMember) => PlainMember {
   return (json: TesseractMember) => {
     const label = json[`${meta.locale} Label`] || json.Label || `${json.ID}`;
     return {
@@ -189,7 +173,7 @@ function propertyAdapterFactory(
     TesseractAdapterMeta,
     "cube_name" | "dimension_name" | "hierarchy_name" | "level_name" | "level_uri"
   >
-): (json: TesseractProperty) => AdaptedProperty {
+): (json: TesseractProperty) => PlainProperty {
   return (json: TesseractProperty) => {
     return {
       _type: "property",

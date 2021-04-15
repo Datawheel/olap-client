@@ -272,6 +272,7 @@ It is suggested to fill the properties with as much information as possible to p
 
 ```ts
 interface ParseURLOptions {
+  anyServer: boolean;
   exclude: string[];
   include: string[];
   filter: (key: string, value: string | boolean | string[]) => boolean;
@@ -279,7 +280,7 @@ interface ParseURLOptions {
 ```
 
 Gives the directions for the parseQueryURL method to `include` explicitly only some properties, or `exclude` properties from the ones available, or to `filter` on a parameter by parameter basis.  
-The `include` and `exclude` directives supersede the `filter` function.
+Setting the `anyServer` property to `true` bypasses the check for the URL to the server associated to the query object, so only the query params are used to populate query properties. The `include` and `exclude` directives supersede the `filter` function.
 
 ### interface `ServerStatus`
 
@@ -307,17 +308,17 @@ interface IDataSource {
   serverVersion: string;
   checkStatus(): Promise<ServerStatus>;
   execQuery(query: Query, endpoint?: string): Promise<Aggregation>;
-  fetchCube(cubeName: string): Promise<AdaptedCube>;
-  fetchCubes(): Promise<AdaptedCube[]>;
-  fetchMember(parent: Level, key: string | number, options?: any): Promise<AdaptedMember>;
-  fetchMembers(parent: Level, options?: any): Promise<AdaptedMember[]>;
+  fetchCube(cubeName: string): Promise<PlainCube>;
+  fetchCubes(): Promise<PlainCube[]>;
+  fetchMember(parent: Level, key: string | number, options?: any): Promise<PlainMember>;
+  fetchMembers(parent: Level, options?: any): Promise<PlainMember[]>;
   parseQueryURL(query: Query, url: string, options: Partial<ParseURLOptions>): Query;
   setRequestConfig(config: AxiosRequestConfig): void;
   stringifyQueryURL(query: Query, kind: string): string;
 }
 ```
 
-Check the [source code](src/interfaces.ts) to see the requirements of the `AdaptedObjects` interfaces and how the current data sources are implemented.
+Check the [source code](src/interfaces/plain.ts) to see the requirements of the `PlainObject` interfaces and how the current data sources are implemented.
 
 ## Example
 
