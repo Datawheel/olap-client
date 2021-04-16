@@ -178,11 +178,13 @@ function propertyAdapterFactory(
     return {
       _type: "property",
       annotations: json.annotations,
+      captionSet: json.caption_set,
       cube: meta.cube_name,
       dimension: meta.dimension_name,
       hierarchy: meta.hierarchy_name,
       level: meta.level_name,
       name: json.name,
+      uniqueName: json.unique_name,
       uri: urljoin(meta.level_uri, "properties", encodeURIComponent(json.name))
     };
   };

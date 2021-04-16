@@ -197,6 +197,8 @@ export class Query {
   getParam(key: "sorting"): QuerySorting;
   getParam(key: "time"): QueryTimeframe;
   getParam(key: string): any {
+    if (key === "locale") return this.locale;
+    if (key === "format") return this.format;
     if (key === "sorting") {
       return { direction: this.sortDirection, property: this.sortProperty } as QuerySorting;
     }
