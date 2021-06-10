@@ -3,7 +3,7 @@ import { Level } from "../level";
 import { CalcOrMeasure, Measure } from "../measure";
 import { Property } from "../property";
 import { Drillable, Query, QueryCalcGrowth, QueryCalcRca, QueryCalcTopk, QueryCut, QueryFilter } from "../query";
-import { asArray, filterMap } from "../toolbox/collection";
+import { asArray } from "../toolbox/collection";
 import { ifNotEmpty } from "../toolbox/validation";
 import { TesseractAggregateURLSearchParams } from "./interfaces";
 import { joinFullName, parseCut, parseFilterConstraints, splitFullName, stringifyFilter } from "./utils";
@@ -55,7 +55,7 @@ export function extractAggregateSearchParamsFromQuery(
     drilldowns: ifNotEmpty<Drillable>(query.getParam("drilldowns"), item => Level.isLevel(item) ? item.fullName : item.name),
     filters: ifNotEmpty<QueryFilter>(query.getParam("filters"), stringifyFilter),
     measures: ifNotEmpty<Measure>(query.getParam("measures"), (m) => m.name),
-    properties: filterMap<Property, string>(query.getParam("properties"), stringifyProperty),
+    properties: ifNotEmpty<Property>(query.getParam("properties"), stringifyProperty),
 
     // prettier-ignore
     limit:
