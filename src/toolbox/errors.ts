@@ -6,11 +6,12 @@ export class ServerError extends Error {
   public readonly status: number;
 
   constructor(response: AxiosResponse<any>, message?: string) {
-    super(message || response.statusText);
+    const errMessage = message || (
+      response.data ? response.data.error || response.data :
+      /* else */      response.statusText
+    );
 
-    if (response.data) {
-      this.message = response.data.error || response.data;
-    }
+    super(errMessage);
 
     this.status = response.status;
     this.body = response.data;

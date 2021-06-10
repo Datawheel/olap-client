@@ -44,7 +44,7 @@ export function splitPropertyName(fullName: string): [string, string] {
 
 export function stringifyCut(item: QueryCut): string {
   const { drillable, members } = item;
-  const cut = members.map((member: string) => `${drillable}.&[${member}]`).join(",");
+  const cut = members.map((member: string) => `${drillable.fullName}.&[${member}]`).join(",");
   return members.length > 1 ? `{${cut}}` : cut;
 }
 

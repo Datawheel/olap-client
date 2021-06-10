@@ -117,6 +117,14 @@ export class TesseractDataSource implements IDataSource {
         return cubeAdapter(tesseractCube);
       }
       throw new ServerError(response);
+    }, (err: AxiosError) => {
+      if (err.response) {
+        if (err.response.status === 404) {
+          throw new ServerError(err.response, `Cube named "${cubeName}" is not available in server ${this.serverUrl}`);
+        }
+        throw new ServerError(err.response, err.message);
+      }
+      throw err;
     });
   }
 

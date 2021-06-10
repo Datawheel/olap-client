@@ -34,9 +34,8 @@ export class Client implements IClient {
     if (this._ds) {
       return this._ds;
     }
-    throw new Error(
-      `This Client instance has no DataSource configured.\nVerify the initialization procedure, there might be a race condition.`
-    );
+    throw new Error(`This Client instance has no DataSource configured.
+Verify the initialization procedure, there might be a race condition.`);
   }
 
   execQuery(query: Query, endpoint?: string): Promise<Aggregation> {
