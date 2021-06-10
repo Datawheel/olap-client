@@ -158,7 +158,7 @@ export function hydrateQueryFromLogicLayerSearchParams(
 
   Object.keys(params).forEach(key => {
     const level = levels[key];
-    level && exclusions.indexOf(key) > -1 &&
+    level && exclusions.indexOf(key) === -1 &&
       query.addCut(level, `${params[key]}`.split(","));
   });
 
