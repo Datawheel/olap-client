@@ -58,6 +58,7 @@ export enum DimensionType {
 export enum Format {
   csv = "csv",
   json = "json",
+  jsonarrays = "jsonarrays",
   jsonrecords = "jsonrecords",
   xls = "xls",
 }
