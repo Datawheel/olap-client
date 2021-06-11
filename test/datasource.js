@@ -1,5 +1,5 @@
 // @ts-check
-const {default: formUrlEncoded} = require("form-urlencoded");
+const formUrlEncoded = require("form-urlencoded");
 const formUrlDecoded = require("form-urldecoded");
 const { dummyCubeBuilder, dummyMemberBuilder, dummyDatumFactory } = require("./dummy");
 
