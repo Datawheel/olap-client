@@ -6,6 +6,7 @@ import { PlainLevel, PlainProperty } from "./interfaces/plain";
 import { Property } from "./property";
 import { childClassMapper } from "./toolbox/collection";
 import { Annotated, applyMixins, FullNamed, Serializable } from "./toolbox/mixins";
+import { abbreviateFullName } from "./toolbox/strings";
 
 export type LevelReference = string | LevelDescriptor | Level;
 
@@ -66,6 +67,14 @@ export class Level {
       throw new Error(`Level ${this} doesn't have an associated parent hierarchy.`);
     }
     return this._parent;
+  }
+
+  get displayName(): string {
+    return abbreviateFullName([
+      this._source.dimension,
+      this._source.hierarchy,
+      this._source.name,
+    ]);
   }
 
   get uniqueName(): string {

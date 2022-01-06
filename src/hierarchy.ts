@@ -4,6 +4,7 @@ import { PlainHierarchy } from "./interfaces/plain";
 import { Level, LevelReference } from "./level";
 import { childClassMapper } from "./toolbox/collection";
 import { Annotated, applyMixins, FullNamed, Serializable } from "./toolbox/mixins";
+import { abbreviateFullName } from "./toolbox/strings";
 
 export interface Hierarchy extends Annotated, FullNamed, Serializable<PlainHierarchy> {}
 
@@ -36,6 +37,10 @@ export class Hierarchy {
       return this._parent;
     }
     throw new Error(`Hierarchy ${this} doesn't have an associated parent dimension.`);
+  }
+
+  get displayName(): string {
+    return abbreviateFullName([this._source.dimension, this._source.name]);
   }
 
   getLevel(ref: LevelReference): Level {

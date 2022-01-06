@@ -48,6 +48,10 @@ export class Dimension {
     return this._source.dimensionType;
   }
 
+  get displayName(): string {
+    return this._source.name;
+  }
+
   get levelIterator(): IterableIterator<Level> {
     return this.levelIteratorFactory();
   }

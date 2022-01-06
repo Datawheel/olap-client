@@ -35,6 +35,10 @@ export class Measure {
     }
     throw new Error(`Measure ${this} doesn't have an associated parent cube.`);
   }
+
+  get displayName(): string {
+    return this._source.name;
+  }
 }
 
 applyMixins(Measure, [Annotated, FullNamed, Serializable]);
