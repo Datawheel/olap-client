@@ -46,7 +46,6 @@ export interface PlainHierarchy extends IAnnotated, IFullNamed, ISerializable {
 
 export interface PlainLevel extends IAnnotated, IFullNamed, ISerializable {
   readonly _type: "level";
-  readonly caption: string;
   readonly cube: string;
   readonly depth: number;
   readonly dimension: string;

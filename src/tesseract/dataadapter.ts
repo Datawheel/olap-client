@@ -30,6 +30,7 @@ export function cubeAdapterFactory(
     return {
       _type: "cube",
       annotations: json.annotations,
+      caption: json.annotations["caption"],
       dimensions: json.dimensions.map(dimensionAdapterFactory(contextMeta)),
       measures: json.measures.map(measureAdapterFactory(contextMeta)),
       name: json.name,
@@ -54,6 +55,7 @@ function dimensionAdapterFactory(
     return {
       _type: "dimension",
       annotations: json.annotations,
+      caption: json.annotations["caption"],
       cube: meta.cube_name,
       defaultHierarchy: json.default_hierarchy ?? json.hierarchies[0].name,
       dimensionType: DimensionType[json.type] ?? DimensionType.Standard,
@@ -83,6 +85,7 @@ function hierarchyAdapterFactory(
     return {
       _type: "hierarchy",
       annotations: json.annotations,
+      caption: json.annotations["caption"],
       cube: meta.cube_name,
       dimension: meta.dimension_name,
       fullName: joinFullName(hierarchy_fullname),
@@ -115,7 +118,7 @@ function levelAdapterFactory(
     return {
       _type: "level",
       annotations: json.annotations,
-      caption: json.name,
+      caption: json.annotations["caption"],
       cube: meta.cube_name,
       depth: depth + 1,
       dimension: meta.dimension_name,
@@ -138,7 +141,7 @@ function measureAdapterFactory(
       _type: "measure",
       aggregatorType: AggregatorType[agg] ?? AggregatorType.UNKNOWN,
       annotations: json.annotations,
-      caption: json.name,
+      caption: json.annotations["caption"],
       cube: meta.cube_name,
       name: json.name,
       uri: urljoin(meta.cube_uri, "measures", encodeURIComponent(json.name))
