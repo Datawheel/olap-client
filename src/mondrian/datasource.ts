@@ -21,7 +21,7 @@ import {MondrianAggregateURLSearchParams} from "./interfaces";
 import {MondrianCube, MondrianMember} from "./schema";
 
 export class MondrianDataSource implements IDataSource {
-  private _axios: AxiosInstance = Axios.create({});
+  axiosInstance: AxiosInstance = Axios.create({});
   serverOnline: boolean;
   serverSoftware: string = MondrianDataSource.softwareName;
   serverVersion: string = "";
@@ -38,7 +38,7 @@ export class MondrianDataSource implements IDataSource {
 
   checkStatus(): Promise<ServerStatus> {
     const url = urljoin(this.serverUrl, "cubes");
-    return this._axios.get(url).then(
+    return this.axiosInstance.get(url).then(
       () => {
         // mondrian-rest doesn't have a status endpoint
         this.serverOnline = true;
@@ -76,7 +76,7 @@ export class MondrianDataSource implements IDataSource {
       skipIndex: true,
       sorted: true
     });
-    return this._axios.get(url, {params}).then(response => {
+    return this.axiosInstance.get(url, {params}).then(response => {
       const data =
         format === Format.jsonrecords ? response.data.data : response.data;
       return {
@@ -92,7 +92,7 @@ export class MondrianDataSource implements IDataSource {
   fetchCube(cubeName: string): Promise<AdaptedCube> {
     const url = urljoin(this.serverUrl, "cubes", cubeName);
     const cubeAdapter = cubeAdapterFactory({server_uri: this.serverUrl});
-    return this._axios.get<MondrianCube>(url).then(response => {
+    return this.axiosInstance.get<MondrianCube>(url).then(response => {
       const mondrianCube = response.data;
       if (mondrianCube && typeof mondrianCube.name === "string") {
         return cubeAdapter(mondrianCube);
@@ -104,7 +104,7 @@ export class MondrianDataSource implements IDataSource {
   fetchCubes(): Promise<AdaptedCube[]> {
     const url = urljoin(this.serverUrl, "cubes");
     const cubeAdapter = cubeAdapterFactory({server_uri: this.serverUrl});
-    return this._axios.get<{cubes: MondrianCube[]}>(url).then(response => {
+    return this.axiosInstance.get<{cubes: MondrianCube[]}>(url).then(response => {
       const mondrianResponse = response.data;
       if (mondrianResponse && Array.isArray(mondrianResponse.cubes)) {
         return mondrianResponse.cubes.map(cubeAdapter);
@@ -142,7 +142,7 @@ export class MondrianDataSource implements IDataSource {
       children: Boolean(options.children),
       member_properties: options.member_properties
     };
-    return this._axios
+    return this.axiosInstance
       .get<MondrianMember>(url, {params})
       .then(response => memberAdapter(response.data));
   }
@@ -167,7 +167,7 @@ export class MondrianDataSource implements IDataSource {
       children: Boolean(options.children),
       member_properties: options.member_properties
     };
-    return this._axios
+    return this.axiosInstance
       .get<{members: MondrianMember[]}>(url, {params})
       .then(response => response.data.members.map(memberAdapter));
   }
@@ -194,7 +194,7 @@ export class MondrianDataSource implements IDataSource {
   }
 
   setRequestConfig(config: AxiosRequestConfig): void {
-    Object.assign(this._axios.defaults, config);
+    Object.assign(this.axiosInstance.defaults, config);
   }
 
   stringifyQueryURL(query: Query): string {

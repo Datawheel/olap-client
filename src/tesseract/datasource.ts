@@ -30,7 +30,7 @@ interface TesseractServerStatus {
 }
 
 export class TesseractDataSource implements IDataSource {
-  private _axios: AxiosInstance = Axios.create({});
+  axiosInstance: AxiosInstance = Axios.create({});
   serverOnline: boolean;
   serverSoftware: string = TesseractDataSource.softwareName;
   serverVersion: string = "";
@@ -46,7 +46,7 @@ export class TesseractDataSource implements IDataSource {
   }
 
   checkStatus(): Promise<ServerStatus> {
-    return this._axios.get<TesseractServerStatus>(this.serverUrl).then(
+    return this.axiosInstance.get<TesseractServerStatus>(this.serverUrl).then(
       response => {
         const {status, tesseract_version} = response.data;
         this.serverOnline = status === "ok";
@@ -87,7 +87,7 @@ export class TesseractDataSource implements IDataSource {
       skipIndex: true,
       sorted: true
     });
-    return this._axios.get(url, {params}).then(response => {
+    return this.axiosInstance.get(url, {params}).then(response => {
       const data =
         format === Format.jsonrecords ? response.data.data : response.data;
       return {
@@ -109,7 +109,7 @@ export class TesseractDataSource implements IDataSource {
       skipIndex: true,
       sorted: true
     });
-    return this._axios.get(url, {params}).then(response => {
+    return this.axiosInstance.get(url, {params}).then(response => {
       const data =
         format === Format.jsonrecords ? response.data.data : response.data;
       return {
@@ -125,7 +125,7 @@ export class TesseractDataSource implements IDataSource {
   fetchCube(cubeName: string): Promise<AdaptedCube> {
     const url = urljoin(this.serverUrl, "cubes", cubeName);
     const cubeAdapter = cubeAdapterFactory({server_uri: this.serverUrl});
-    return this._axios.get<TesseractCube>(url).then(response => {
+    return this.axiosInstance.get<TesseractCube>(url).then(response => {
       const tesseractCube = response.data;
       if (tesseractCube && typeof tesseractCube.name === "string") {
         return cubeAdapter(tesseractCube);
@@ -137,7 +137,7 @@ export class TesseractDataSource implements IDataSource {
   fetchCubes(): Promise<AdaptedCube[]> {
     const url = urljoin(this.serverUrl, "cubes");
     const cubeAdapter = cubeAdapterFactory({server_uri: this.serverUrl});
-    return this._axios.get<TesseractEndpointCubes>(url).then(response => {
+    return this.axiosInstance.get<TesseractEndpointCubes>(url).then(response => {
       const tesseractResponse = response.data;
       if (tesseractResponse && Array.isArray(tesseractResponse.cubes)) {
         return tesseractResponse.cubes.map(cubeAdapter);
@@ -158,7 +158,7 @@ export class TesseractDataSource implements IDataSource {
       locale: (params.locale || ``).toUpperCase(),
       server_uri: this.serverUrl
     });
-    return this._axios
+    return this.axiosInstance
       .get<{data: TesseractMember[]}>(url, {params})
       .then(response => response.data.data.map(memberAdapter));
   }
@@ -220,7 +220,7 @@ export class TesseractDataSource implements IDataSource {
   }
 
   setRequestConfig(config: AxiosRequestConfig): void {
-    Object.assign(this._axios.defaults, config);
+    Object.assign(this.axiosInstance.defaults, config);
   }
 
   stringifyQueryURL(query: Query, kind: string): string {
