@@ -1,4 +1,4 @@
-import { AxiosRequestConfig } from "axios";
+import { AxiosInstance, AxiosRequestConfig } from "axios";
 import { Cube } from "../cube";
 import { Level } from "../level";
 import { Member } from "../member";
@@ -30,6 +30,7 @@ export interface IClient {
 }
 
 export interface IDataSource {
+  axiosInstance: AxiosInstance;
   checkStatus(): Promise<ServerStatus>;
   execQuery(query: Query, endpoint?: string): Promise<Aggregation>;
   fetchCube(cubeName: string): Promise<PlainCube>;
