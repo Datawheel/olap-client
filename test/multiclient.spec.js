@@ -1,9 +1,11 @@
 const assert = require("assert");
-const { MultiClient, MondrianDataSource } = require("../dist/index.cjs");
+const { MultiClient, MondrianDataSource } = require("..");
+const { randomPick, randomLevel } = require("./utils");
 
 const {
-  MONDRIAN_SERVER = "https://chilecube.datachile.io",
-  TESSERACT_SERVER = "https://api.oec.world/tesseract"
+  MONDRIAN_SERVER = "https://vibranium-api.datausa.io/",
+  MONDRIAN_CUBENAME = "health_medicaid_spending_per_enrolle",
+  TESSERACT_SERVER = "https://oec.world/olap-proxy/",
 } = process.env;
 
 describe("MultiClient", function() {
@@ -80,16 +82,16 @@ describe("MultiClient", function() {
   });
 
   describe("#execQuery()", function () {
-    this.timeout(5000);
+    this.timeout(10000);
 
     it("should pick the right Cube and execute a Query correctly", async function() {
       const client = await MultiClient.fromURL(MONDRIAN_SERVER, TESSERACT_SERVER);
-      const cube = await client.getCube("tax_data");
-      assert.strictEqual(cube.server, "https://chilecube.datachile.io/");
+      const cubes = await client.getCubes();
+      const cube = randomPick(cubes);
 
       const query = cube.query
-        .addMeasure("Labour")
-        .addDrilldown("Year")
+        .addMeasure(randomPick(cube.measures).name)
+        .addDrilldown(randomLevel(cube).descriptor)
         .setOption("debug", false)
         .setOption("distinct", false)
         .setOption("nonempty", true);
