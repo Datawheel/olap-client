@@ -95,7 +95,7 @@ export class Query {
   addCalculation(kind: "growth", params: {category: LevelReference, value: string | Measure}): this;
   addCalculation(kind: "rca", params: {location: LevelReference, category: LevelReference, value: string | Measure}): this;
   addCalculation(kind: "topk", params: {amount: number, category: LevelReference, value: string | CalcOrMeasure, order?: string}): this;
-  addCalculation(kind: string, params: any): this {
+  addCalculation(kind: "growth" | "rca" | "topk", params: any): this {
     const builder = calculationBuilders[kind];
     if (builder == null) {
       throw new TypeError(`Invalid calculation type: ${kind} is not supported`);
@@ -146,7 +146,7 @@ export class Query {
     if (!isQueryFilterConstraint(constraint)) {
       throw new Error(`Invalid filter constraint: "${asArray(constraint).join(" ")}"`);
     }
-    const calculation = Calculation[`${calcRef}`] || this.cube.getMeasure(calcRef);
+    const calculation = Calculation[`${calcRef}` as Calculation] || this.cube.getMeasure(calcRef);
 
     if (joint && !["and", "or"].includes(joint)) {
       throw new Error(`Invalid filter joint: options are "and"/"or", used: "${joint}"`);
@@ -211,7 +211,7 @@ export class Query {
     if (key === "captions" || key === "cuts" || key === "properties") {
       return Object.values(this[key]);
     }
-    const value = this[key];
+    const value = this[key as keyof this];
     return Array.isArray(value)
       ? value.slice()
       : typeof value === "object"
@@ -260,7 +260,7 @@ export class Query {
 
     // prettier-ignore
     this.sortProperty =
-      typeof sortProperty === "string" ? Calculation[sortProperty] ||
+      typeof sortProperty === "string" ? Calculation[sortProperty as Calculation] ||
                                          cube.measuresByName[sortProperty] ||
                                          cube.getProperty(sortProperty) :
       Measure.isMeasure(sortProperty)  ? sortProperty :

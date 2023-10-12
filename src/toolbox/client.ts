@@ -17,7 +17,7 @@ export interface ParseURLOptions {
 
 export type ServerConfig = string | AxiosRequestConfig;
 
-export function applyParseUrlRules<T>(
+export function applyParseUrlRules<T extends Record<string, any>>(
   qp: T,
   options: Partial<ParseURLOptions> = {}
 ): Partial<T> {

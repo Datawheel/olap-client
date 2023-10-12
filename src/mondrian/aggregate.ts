@@ -94,7 +94,7 @@ export function hydrateQueryFromAggregateSearchParams(
   asArray(params.filter).forEach((item) => {
     const [, measureName, operator, value] = item.match(/^(.+)\s(>|<|>=|<=|=|<>)\s(.+)$/) || [];
     const measure = cube.measuresByName[measureName];
-    const comparison = Comparison[operator];
+    const comparison = Comparison[operator as Comparison];
     measure && comparison &&
       query.addFilter(measure, [comparison, Number.parseFloat(value)]);
   });

@@ -58,7 +58,7 @@ function dimensionAdapterFactory(
       caption: json.annotations["caption"],
       cube: meta.cube_name,
       defaultHierarchy: json.default_hierarchy ?? json.hierarchies[0].name,
-      dimensionType: DimensionType[json.type] ?? DimensionType.Standard,
+      dimensionType: DimensionType[json.type as DimensionType] || DimensionType.Standard,
       fullName: joinFullName(dimension_fullname),
       hierarchies: json.hierarchies.map(hierarchyAdapterFactory(contextMeta)),
       name: json.name,
@@ -136,7 +136,7 @@ function measureAdapterFactory(
   meta: Pick<TesseractAdapterMeta, "cube_name" | "cube_uri">
 ): (json: TesseractMeasure) => PlainMeasure {
   return (json: TesseractMeasure) => {
-    const agg = json.aggregator.name?.toUpperCase();
+    const agg = json.aggregator.name?.toUpperCase() as AggregatorType;
     return {
       _type: "measure",
       aggregatorType: AggregatorType[agg] ?? AggregatorType.UNKNOWN,
@@ -153,7 +153,7 @@ export function memberAdapterFactory(
   meta: Pick<TesseractAdapterMeta, "level_name" | "locale" | "server_uri">
 ): (json: TesseractMember) => PlainMember {
   return (json: TesseractMember) => {
-    const label = json[`${meta.locale} Label`] || json.Label || `${json.ID}`;
+    const label = json[`${meta.locale as "EN"} Label`] || json.Label || `${json.ID}`;
     return {
       _type: "member",
       ancestors: [],

@@ -4,7 +4,7 @@
   "description": "A multiclient library to handle requests with mondrian-rest and tesseract servers",
   "main": "./dist/index.cjs.js",
   "module": "./dist/index.esm.js",
-  "types": "./types/index.d.ts",
+  "types": "./dist/index.d.ts",
   "readme": "README.md",
   "exports": {
     ".": {
@@ -14,18 +14,13 @@
     }
   },
   "files": [
-    "dist",
-    "types"
+    "dist"
   ],
   "scripts": {
-    "build:library": "rollup --config rollup.config.js --environment NODE_ENV:production,BABEL_ENV:production",
-    "build:typings": "tsc --esModuleInterop --emitDeclarationOnly --declaration --project .",
-    "build": "npm run build:library && npm run build:typings",
-    "dev": "rollup --config rollup.config.js --watch --environment NODE_ENV:development,BABEL_ENV:development",
-    "format": "prettier --write src/*.ts",
-    "prepublishOnly": "npm run build && mocha",
-    "pretest": "rollup --config rollup.config.js --environment NODE_ENV:test,BABEL_ENV:test",
-    "test": "mocha"
+    "build": "tsup",
+    "pretest": "npm run build",
+    "test": "mocha ./test",
+    "prepublishOnly": "npm run test"
   },
   "author": "Francisco Abarzua <francisco@datawheel.us>",
   "license": "MIT",
@@ -47,26 +42,15 @@
     "mondrian-rest-client"
   ],
   "dependencies": {
-    "axios": "^0.27.2",
-    "form-urldecoded": "^1.2.1",
-    "form-urlencoded": "^6.0.7",
-    "url-join": "^4.0.1"
+    "axios": "^1.0.0",
+    "form-urldecoded": "^1.2.0",
+    "form-urlencoded": "^6.0.0",
+    "url-join": "^4.0.0"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^22.0.1",
-    "@rollup/plugin-node-resolve": "^13.3.0",
-    "@rollup/plugin-replace": "^4.0.0",
-    "@rollup/plugin-typescript": "^8.3.4",
-    "@types/url-join": "^4.0.1",
+    "@types/url-join": "^4.0.0",
     "mocha": "^10.0.0",
-    "rollup": "^2.77.2",
-    "rollup-plugin-cleanup": "^3.2.1",
-    "rollup-plugin-delete": "^2.0.0",
-    "rollup-plugin-license": "^2.8.1",
-    "tslib": "^2.4.0",
-    "typescript": "^4.7.4"
-  },
-  "prettier": {
-    "arrowParens": "avoid"
+    "tsup": "^7.0.0",
+    "typescript": "^5.0.0"
   }
 }

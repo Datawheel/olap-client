@@ -17,7 +17,7 @@ export class ServerError extends Error {
     this.body = response.data;
 
     this.name = this.constructor.name;
-    if (typeof Error.captureStackTrace === "function") {
+    if ("captureStackTrace" in Error && typeof Error.captureStackTrace === "function") {
       Error.captureStackTrace(this, this.constructor);
     }
   }

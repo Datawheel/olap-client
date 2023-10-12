@@ -20,7 +20,7 @@ export function filterMap<T, U>(
   return mappedList;
 }
 
-export function forEach<T>(collection: T, predicate: (item: T[keyof T], index: keyof T, collection: T) => any): void {
+export function forEach<T extends any[] | Record<string, any>>(collection: T, predicate: (item: T[keyof T], index: keyof T, collection: T) => any): void {
   const iterable = Object(collection) as T;
   const keys = Object.keys(collection) as (keyof T)[];
   let index = -1;

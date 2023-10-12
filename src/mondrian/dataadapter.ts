@@ -53,7 +53,7 @@ function dimensionAdapterFactory(
       annotations: json.annotations,
       cube: meta.cube_name,
       defaultHierarchy: json.hierarchies[0].name,
-      dimensionType: DimensionType[json.type] ?? DimensionType.Standard,
+      dimensionType: DimensionType[json.type as DimensionType] ?? DimensionType.Standard,
       hierarchies: json.hierarchies.map(hierarchyAdapterFactory(contextMeta)),
       name: json.name,
       uri: dimension_uri

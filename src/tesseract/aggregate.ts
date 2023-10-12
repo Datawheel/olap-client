@@ -140,7 +140,7 @@ export function hydrateQueryFromAggregateSearchParams(
 
   asArray(params.filters).forEach((item: string) => {
     const index = item.indexOf(".");
-    const measureName = item.substr(0, index);
+    const measureName = item.slice(0, index) as Calculation;
     const measure = Calculation[measureName] || cube.measuresByName[measureName];
     if (measure) {
       const { constraints, joint } = parseFilterConstraints(item);
@@ -184,12 +184,13 @@ export function hydrateQueryFromAggregateSearchParams(
     const [amountRaw, lvlFullName, calcName, order] = params.top.split(",");
     const amount = Number.parseInt(amountRaw);
     const level = levels[lvlFullName];
-    const calculation: CalcOrMeasure = Calculation[calcName] || cube.measuresByName[calcName];
+    const calculation: CalcOrMeasure =
+      Calculation[calcName as Calculation] || cube.measuresByName[calcName];
     amount > 0 && level && calculation && query.addCalculation("topk", {
       amount,
       category: level,
       value: calculation,
-      order: Direction[order] || Direction.DESC,
+      order: Direction[order as "asc" | "desc"] || Direction.DESC,
     });
   }
 
@@ -202,8 +203,8 @@ export function hydrateQueryFromAggregateSearchParams(
 
   if (params.sort) {
     const index = params.sort.lastIndexOf(".");
-    const sortProperty = params.sort.slice(0, index);
-    const sortOrder = params.sort.slice(index + 1);
+    const sortProperty = params.sort.slice(0, index) as Calculation;
+    const sortOrder = params.sort.slice(index + 1) as "asc" | "desc";
     const calculation = Calculation[sortProperty] || cube.measuresByName[sortProperty];
     calculation && query.setSorting(calculation, Direction[sortOrder] || Direction.DESC);
   }

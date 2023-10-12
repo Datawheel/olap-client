@@ -61,6 +61,7 @@ export interface TesseractLevel {
 export interface TesseractMember {
   ID: number | string;
   Label?: string;
+  "EN Label"?: string;
 }
 
 export interface TesseractProperty {

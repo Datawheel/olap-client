@@ -10,6 +10,7 @@ import { isNumeric } from "./validation";
 
 export const calculationBuilders = {
   [Calculation.GROWTH]: buildGrowthCalculation,
+  [Calculation.RATE]: buildRateCalculation,
   [Calculation.RCA]: buildRcaCalculation,
   [Calculation.TOPK]: buildTopkCalculation,
 };
@@ -35,7 +36,7 @@ export function buildGrowthCalculation(
  * @param cube The cube where the information comes from
  * @param params The parameters required for the struct
  */
-export function buildRateCalculation(_cube: Cube, _params: any) {
+export function buildRateCalculation(cube: Cube, params: any) {
   throw new Error("Not implemented");
 }
 
@@ -82,9 +83,9 @@ export function buildTopkCalculation(
     amount: params.amount,
     category: cube.getLevel(params.category),
     value:
-      Calculation[params.value as string] ||
+      Calculation[params.value as Calculation] ||
       cube.getMeasure(params.value as string | Measure),
-    order: Direction[params.order as string] || Direction.desc,
+    order: Direction[params.order as Direction] || Direction.desc,
   };
 }
 
@@ -130,7 +131,7 @@ export function hydrateQueryFromJSON<T extends Query>(
     );
   }
 
-  typeof json.format === "string" && query.setFormat(Format[json.format]);
+  typeof json.format === "string" && query.setFormat(Format[json.format as Format]);
 
   typeof json.locale === "string" && query.setLocale(json.locale);
 
@@ -173,17 +174,18 @@ export function hydrateQueryFromJSON<T extends Query>(
     query.setPagination(json.page_limit, json.page_offset);
 
   json.sort_property &&
-    query.setSorting(json.sort_property, Direction[json.sort_direction || "desc"]);
+    query.setSorting(json.sort_property, Direction[json.sort_direction as Direction || "desc"]);
 
   json.time &&
     query.setTime(
-      TimePrecision[json.time[0]],
-      isNumeric(json.time[1]) ? json.time[1] : TimeValue[json.time[1]]
+      TimePrecision[json.time[0] as TimePrecision],
+      isNumeric(json.time[1]) ? json.time[1] : TimeValue[json.time[1] as TimeValue]
     );
 
-  forEach(json.options, (value, key) => {
-    query.setOption(key, value);
-  });
+  json.options &&
+    forEach(json.options, (value, key) => {
+      value != null && query.setOption(key, value);
+    });
 
   return query;
 }
@@ -268,7 +270,7 @@ export function extractQueryToSearchParams(query: Query): any {
     calculations: query.getParam("calculations")
       .map(item =>
         `${item.kind}:${filterMap(Object.keys(item).sort(), token =>
-          token === "kind" ? null : plainRef(item[token])
+          token === "kind" ? null : plainRef(item[token as keyof QueryCalc])
         )}`
       ),
     captions: query.getParam("captions")

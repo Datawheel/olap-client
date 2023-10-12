@@ -7,7 +7,7 @@ import { Format } from "../interfaces/enums";
 import { PlainCube, PlainMember } from "../interfaces/plain";
 import { Level } from "../level";
 import { Query } from "../query";
-import { applyParseUrlRules, ParseURLOptions } from "../toolbox/client";
+import { ParseURLOptions, applyParseUrlRules } from "../toolbox/client";
 import { ServerError } from "../toolbox/errors";
 import { extractAggregateSearchParamsFromQuery, hydrateQueryFromAggregateSearchParams } from "./aggregate";
 import { cubeAdapterFactory, memberAdapterFactory } from "./dataadapter";
@@ -19,20 +19,24 @@ interface TesseractServerStatus {
   tesseract_version: string;
 }
 
+const softwareName = "tesseract-olap"
+
 export class TesseractDataSource implements IDataSource {
   axiosInstance: AxiosInstance = Axios.create({});
   serverOnline: boolean;
-  serverSoftware: string = TesseractDataSource.softwareName;
+  serverSoftware: string = softwareName;
   serverVersion: string = "";
   serverUrl: string = "/";
 
-  static softwareName = "tesseract-olap";
+  static softwareName = softwareName;
 
   constructor(serverUrl: string) {
     if (!serverUrl || typeof serverUrl !== "string") {
       throw new Error(`Invalid Tesseract OLAP server URL: ${serverUrl}`);
     }
-    this.serverUrl = urljoin(serverUrl, "/");
+    const baseURL = urljoin(serverUrl, "/");
+    this.serverUrl = baseURL;
+    this.setRequestConfig({baseURL: serverUrl});
   }
 
   checkStatus(): Promise<ServerStatus> {
@@ -79,7 +83,7 @@ export class TesseractDataSource implements IDataSource {
       const data = format === Format.jsonrecords ? response.data.data : response.data;
       return {
         data,
-        headers: response.headers,
+        headers: response.headers as {},
         query,
         status: response.status,
         url: `${url}?${searchParams}`
@@ -100,7 +104,7 @@ export class TesseractDataSource implements IDataSource {
       const data = format === Format.jsonrecords ? response.data.data : response.data;
       return {
         data,
-        headers: response.headers,
+        headers: response.headers as {},
         query,
         status: response.status,
         url: `${url}?${searchParams}`

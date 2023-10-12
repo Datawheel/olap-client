@@ -14,21 +14,23 @@ import { cubeAdapterFactory, memberAdapterFactory } from "./dataadapter";
 import { MondrianAggregateURLSearchParams } from "./interfaces";
 import { MondrianCube, MondrianMember } from "./schema";
 
+const softwareName = "mondrian-rest";
 
 export class MondrianDataSource implements IDataSource {
   axiosInstance: AxiosInstance = Axios.create({});
   serverOnline: boolean;
-  serverSoftware: string = MondrianDataSource.softwareName;
+  serverSoftware = softwareName;
   serverVersion: string = "";
   serverUrl: string = "/";
 
-  static softwareName = "mondrian-rest";
+  static softwareName = softwareName;
 
   constructor(serverUrl: string) {
     if (!serverUrl || typeof serverUrl !== "string") {
       throw new Error(`Invalid Mondrian REST server URL: ${serverUrl}`);
     }
     this.serverUrl = urljoin(serverUrl, "/");
+    this.setRequestConfig({baseURL: serverUrl});
   }
 
   checkStatus(): Promise<ServerStatus> {
@@ -72,7 +74,7 @@ export class MondrianDataSource implements IDataSource {
       const data = format === Format.jsonrecords ? response.data.data : response.data;
       return {
         data,
-        headers: response.headers,
+        headers: response.headers as {},
         query,
         status: response.status,
         url: `${url}?${searchParams}`
@@ -174,7 +176,7 @@ export class MondrianDataSource implements IDataSource {
   parseQueryURL(query: Query, url: string, options: Partial<ParseURLOptions>): Query {
     const searchIndex = url.indexOf("?");
     const searchParams = url.slice(searchIndex + 1);
-    const qp: Partial<MondrianAggregateURLSearchParams> = formUrlDecoded(searchParams);
+    const qp: Partial<MondrianAggregateURLSearchParams & {format: string}> = formUrlDecoded(searchParams);
 
     const formatMatch = url.match(/^.+\/aggregate(\.[a-z]+)\?.+$/);
     if (formatMatch) {

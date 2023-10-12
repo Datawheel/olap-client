@@ -174,8 +174,8 @@ export function hydrateQueryFromLogicLayerSearchParams(
   });
 
   filters.split(",").forEach(item => {
-    const measureName = item.substr(0, item.indexOf("."));
-    const measure = Calculation[measureName] || cube.measuresByName[measureName];
+    const measureName = item.slice(0, item.indexOf("."));
+    const measure = Calculation[measureName as Calculation] || cube.measuresByName[measureName];
     if (measure) {
       const { constraints: [constraint, constraint2], joint } = parseFilterConstraints(item);
       query.addFilter(measure, constraint, joint, constraint2);
@@ -238,7 +238,7 @@ export function hydrateQueryFromLogicLayerSearchParams(
     amount && level && measure && query.addCalculation("topk", {
       amount,
       category: level,
-      order: Direction[order] || Direction.DESC,
+      order: Direction[order as Direction] || Direction.DESC,
       value: measure,
     });
   }
@@ -255,13 +255,14 @@ export function hydrateQueryFromLogicLayerSearchParams(
   if (params.sort) {
     const orderIndex = params.sort.lastIndexOf(".");
     json.sort_property = params.sort.slice(0, orderIndex);
-    json.sort_direction = Direction[params.sort.slice(orderIndex + 1)];
+    json.sort_direction = Direction[params.sort.slice(orderIndex + 1) as Direction];
   }
 
   if (params.time) {
     const period = filterMap(params.time.split("."), item => item || null);
-    const precision: TimePrecision | undefined = TimePrecision[period[0]];
-    const value: TimeValuePoint | undefined = isNumeric(period[1]) ? period[1] : TimeValue[period[1]];
+    const precision: TimePrecision | undefined = TimePrecision[period[0] as TimePrecision];
+    const value: TimeValuePoint | undefined =
+      isNumeric(period[1]) ? period[1] : TimeValue[period[1] as TimeValue];
     if (precision && value != null) {
       query.setTime(precision, value);
     }
