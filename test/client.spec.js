@@ -1,5 +1,5 @@
 const assert = require("assert");
-const {Client} = require("..");
+const {Client, TesseractDataSource, MondrianDataSource} = require("..");
 const {TestDataSource} = require("./datasource");
 const {randomPick, randomLevel, randomQuery} = require("./utils");
 
@@ -16,12 +16,12 @@ describe("Client", function() {
 
     it("should identify a mondrian server", async function() {
       const ds = await Client.dataSourceFromURL(MONDRIAN_SERVER);
-      assert.strictEqual(ds.constructor.name, "MondrianDataSource");
+      assert.strictEqual(ds.constructor.name, MondrianDataSource.name);
     });
 
     it("should identify a tesseract server", async function() {
       const ds = await Client.dataSourceFromURL(TESSERACT_SERVER);
-      assert.strictEqual(ds.constructor.name, "TesseractDataSource");
+      assert.strictEqual(ds.constructor.name, TesseractDataSource.name);
     });
 
     it("should reject on invalid servers", function() {

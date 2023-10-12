@@ -39,15 +39,14 @@ describe("MultiClient", function() {
 
   describe(".fromURL()", function() {
     it("should deduplicate servers", async function() {
-      /** @type {import("../src").MultiClient} */
       const client = await MultiClient.fromURL(
         MONDRIAN_SERVER,
         `${MONDRIAN_SERVER}/`,
         TESSERACT_SERVER,
         `${TESSERACT_SERVER}/`
       );
-      assert.equal(typeof client, "object");
-      assert.equal(Object.keys(client.datasources).length, 2);
+      assert.strictEqual(typeof client, "object");
+      assert.strictEqual(client.dataSourceList.length, 2);
     });
   });
 

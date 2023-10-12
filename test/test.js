@@ -1,12 +1,17 @@
 const assert = require('assert');
 const OlapClient = require('../dist/index.cjs.js');
 
+const {
+  MONDRIAN_SERVER = "https://vibranium-api.datausa.io/",
+  TESSERACT_SERVER = "https://oec.world/olap-proxy/",
+} = process.env;
+
 //Tesseract datasource
-const tDatasource = new OlapClient.TesseractDataSource("https://oec.world/olap-proxy/");
+const tDatasource = new OlapClient.TesseractDataSource(TESSERACT_SERVER);
 const tClient = new OlapClient.Client(tDatasource);
 
 //Mondrian datasource
-const mDatasource = new OlapClient.MondrianDataSource("https://vibranium-api.datausa.io/");
+const mDatasource = new OlapClient.MondrianDataSource(MONDRIAN_SERVER);
 const mClient = new OlapClient.Client(mDatasource);
 
 describe('Status', function () {
