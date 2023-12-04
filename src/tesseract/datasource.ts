@@ -32,15 +32,15 @@ export class TesseractDataSource implements IDataSource {
 
   constructor(serverUrl: string) {
     if (!serverUrl || typeof serverUrl !== "string") {
-      throw new Error(`Invalid Tesseract OLAP server URL: ${serverUrl}`);
+      throw new TypeError(`Invalid Tesseract OLAP server URL: ${serverUrl}`);
     }
     const baseURL = urljoin(serverUrl, "/");
     this.serverUrl = baseURL;
-    this.setRequestConfig({baseURL: serverUrl});
+    this.setRequestConfig({baseURL});
   }
 
   checkStatus(): Promise<ServerStatus> {
-    return this.axiosInstance.get<TesseractServerStatus>(this.serverUrl).then(
+    return this.axiosInstance.get<TesseractServerStatus>("/").then(
       (response) => {
         const { status, tesseract_version } = response.data;
         this.serverOnline = status === "ok";
@@ -73,7 +73,7 @@ export class TesseractDataSource implements IDataSource {
   private execQueryAggregate(query: Query): Promise<Aggregation> {
     const params = extractAggregateSearchParamsFromQuery(query);
     const format = query.getParam("format");
-    const url = urljoin(query.cube.toString(), `aggregate.${format}`);
+    const url = `cubes/${query.cube.name}/aggregate.${format}`;
     const searchParams = formUrlEncoded(params, {
       ignorenull: true,
       skipIndex: true,
@@ -86,7 +86,7 @@ export class TesseractDataSource implements IDataSource {
         headers: response.headers as {},
         query,
         status: response.status,
-        url: `${url}?${searchParams}`
+        url: `${urljoin(this.serverUrl, url)}?${searchParams}`
       };
     });
   }
@@ -94,7 +94,7 @@ export class TesseractDataSource implements IDataSource {
   private execQueryLogicLayer(query: Query): Promise<Aggregation> {
     const params = extractLogicLayerSearchParamsFromQuery(query);
     const format = query.getParam("format");
-    const url = urljoin(this.serverUrl, `data.${format}`);
+    const url = `data.${format}`;
     const searchParams = formUrlEncoded(params, {
       ignorenull: true,
       skipIndex: true,
@@ -107,15 +107,14 @@ export class TesseractDataSource implements IDataSource {
         headers: response.headers as {},
         query,
         status: response.status,
-        url: `${url}?${searchParams}`
+        url: `${urljoin(this.serverUrl, url)}?${searchParams}`
       };
     });
   }
 
   fetchCube(cubeName: string): Promise<PlainCube> {
-    const url = urljoin(this.serverUrl, "cubes", cubeName);
     const cubeAdapter = cubeAdapterFactory({ server_uri: this.serverUrl });
-    return this.axiosInstance.get<TesseractCube>(url).then((response) => {
+    return this.axiosInstance.get<TesseractCube>(`cubes/${cubeName}`).then((response) => {
       const tesseractCube = response.data;
       if (tesseractCube && typeof tesseractCube.name === "string") {
         return cubeAdapter(tesseractCube);
@@ -133,9 +132,8 @@ export class TesseractDataSource implements IDataSource {
   }
 
   fetchCubes(): Promise<PlainCube[]> {
-    const url = urljoin(this.serverUrl, "cubes");
     const cubeAdapter = cubeAdapterFactory({ server_uri: this.serverUrl });
-    return this.axiosInstance.get<TesseractEndpointCubes>(url).then((response) => {
+    return this.axiosInstance.get<TesseractEndpointCubes>("cubes").then((response) => {
       const tesseractResponse = response.data;
       if (tesseractResponse && Array.isArray(tesseractResponse.cubes)) {
         return tesseractResponse.cubes.map(cubeAdapter);
@@ -145,7 +143,6 @@ export class TesseractDataSource implements IDataSource {
   }
 
   fetchMembers(parent: Level, options: any = {}): Promise<PlainMember[]> {
-    const url = urljoin(this.serverUrl, `members`);
     const params = {
       cube: parent.cube.name,
       level: parent.name,
@@ -157,14 +154,10 @@ export class TesseractDataSource implements IDataSource {
       server_uri: this.serverUrl
     });
     return this.axiosInstance
-      .get<{ data: unknown[] }>(url, { params })
+      .get<{ data: TesseractMember[] }>("members.jsonrecords", { params })
       .then((response) => {
         const {data} = response.data;
-        let i = data.length;
-        while (i--) {
-          data[i] = memberAdapter(data[i] as TesseractMember);
-        }
-        return data as PlainMember[];
+        return data.map(memberAdapter);
       });
   }
 

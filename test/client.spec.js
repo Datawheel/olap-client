@@ -4,7 +4,7 @@ const {TestDataSource} = require("./datasource");
 const {randomPick, randomLevel, randomQuery} = require("./utils");
 
 const {
-  MONDRIAN_SERVER = "https://vibranium-api.datausa.io/",
+  MONDRIAN_SERVER = "https://zircon-api.datausa.io/",
   TESSERACT_SERVER = "https://oec.world/olap-proxy/",
 } = process.env;
 
