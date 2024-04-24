@@ -1,84 +1,133 @@
-import { Annotations } from "../interfaces/plain";
+import type {Annotations} from "../interfaces/plain";
 
 export interface TesseractStatus {
-    module: string;
-    version: string;
-    debug: false | Record<string, string>;
-    extras: Record<string, string>;
+  module: string;
+  version: string;
+  debug: false | Record<string, string>;
+  extras: Record<string, string>;
 }
 
 export interface TesseractSchema {
-    name: string;
-    locales: string[];
-    default_locale: string;
-    annotations: Annotations;
-    cubes: TesseractCube[];
+  name: string;
+  locales: string[];
+  default_locale: string;
+  annotations: Annotations;
+  cubes: TesseractCube[];
 }
 
 export interface TesseractCube {
-    name: string;
-    caption: string;
-    annotations: Annotations;
-    dimensions: TesseractDimension[];
-    measures: TesseractMeasure[];
+  name: string;
+  caption: string;
+  annotations: Annotations;
+  dimensions: TesseractDimension[];
+  measures: TesseractMeasure[];
 }
 
-interface TesseractMeasure {
-    name: string;
-    caption: string;
-    annotations: Annotations;
-    aggregator: string;
-    attached: TesseractMeasure[];
+export interface TesseractMeasure {
+  name: string;
+  caption: string;
+  annotations: Annotations;
+  aggregator:
+    | "sum"
+    | "count"
+    | "avg"
+    | "max"
+    | "min"
+    | "mode"
+    | "basic_grouped_median"
+    | "weighted_sum"
+    | "weighted_avg"
+    | "replicate_weight_moe"
+    | "moe"
+    | "weighted_average_moe"
+    | "median"
+    | "quantile";
+  attached: TesseractMeasure[];
 }
 
-interface TesseractDimension {
-    name: string;
-    caption: string;
-    annotations: Annotations;
-    type: "standard" | "time" | "geo";
-    hierarchies: TesseractHierarchy[];
-    default_hierarchy: string;
+export interface TesseractDimension {
+  name: string;
+  caption: string;
+  annotations: Annotations;
+  type: "standard" | "time" | "geo";
+  hierarchies: TesseractHierarchy[];
+  default_hierarchy: string;
 }
 
-interface TesseractHierarchy {
-    name: string;
-    caption: string;
-    annotations: Annotations;
-    levels: TesseractLevel[];
+export interface TesseractHierarchy {
+  name: string;
+  caption: string;
+  annotations: Annotations;
+  levels: TesseractLevel[];
 }
 
-interface TesseractLevel {
-    name: string;
-    caption: string;
-    annotations: Annotations;
-    depth: number;
-    properties: TesseractProperty[];
+export interface TesseractLevel {
+  name: string;
+  caption: string;
+  annotations: Annotations;
+  depth: number;
+  properties: TesseractProperty[];
 }
 
-interface TesseractProperty {
-    name: string;
-    caption: string;
-    annotations: Annotations;
-    type: string;
+export interface TesseractProperty {
+  name: string;
+  caption: string;
+  annotations: Annotations;
+  type: string;
 }
 
 export interface TesseractDataRequest {
-    cube: string;
-    drilldowns: string | string[];
-    measures: string | string[];
-    locale?: string;
-    limit?: string;
-    properties?: string | string[];
-    sort?: string;
-    time?: string;
-    exclude?: string | string[];
-    include?: string | string[];
-    filters?: string | string[];
-    parents?: boolean | string;
-    ranking?: boolean | string;
+  cube: string;
+  drilldowns: string | string[];
+  measures: string | string[];
+  exclude?: string | string[];
+  filters?: string | string[];
+  include?: string | string[];
+  limit?: string;
+  locale?: string;
+  parents?: boolean | string;
+  properties?: string | string[];
+  ranking?: boolean | string;
+  sort?: string;
+  time?: string;
 }
 
 export interface TesseractDataResponse {
-    columns: string[];
-    data: string[][];
+  columns: string[];
+  data: string[][];
+}
+
+export interface TesseractMembersRequest {
+  cube: string;
+  level: string;
+  limit?: string;
+  locale?: string;
+  parents?: boolean;
+  search?: string;
+}
+
+export interface TesseractMembersResponse {
+  /** Name of the relevant level */
+  name: string;
+  /** Public localized name of the relevant level */
+  caption: string;
+  /** Depth of the level in its Hierarchy */
+  depth: number;
+  /** Metadata for the level */
+  annotations: Annotations;
+  /** Child Properties from this level */
+  properties: TesseractProperty[];
+  /** Data type of each column in the members array */
+  dtypes: {[K in keyof MemberRow]: string};
+  /** The actual list of members for the level */
+  members: MemberRow[];
+}
+
+export interface MemberRow {
+  /** The unique ID for this member */
+  key: string | number;
+  /** The localized label for this member */
+  caption?: string;
+  /** A list of direct ancestor members, one per level above this one */
+  ancestor?: MemberRow[];
 }

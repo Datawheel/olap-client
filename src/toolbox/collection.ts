@@ -4,6 +4,13 @@ export function asArray<T>(value: T[] | T | undefined | null): T[] {
   return value == null ? [] : ([] as T[]).concat(value);
 }
 
+export function splitTokens(
+  value: undefined | null | string | string[],
+  partition: string = ",",
+): string[] {
+  return typeof value === "string" ? value.split(partition) : value || [];
+}
+
 export function filterMap<T, U>(
   list: T[],
   predicate: (item: T, index: number, collection: T[]) => U | null
