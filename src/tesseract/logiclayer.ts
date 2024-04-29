@@ -177,8 +177,8 @@ export function hydrateQueryFromLogicLayerSearchParams(
     const measureName = item.slice(0, item.indexOf("."));
     const measure = Calculation[measureName as Calculation] || cube.measuresByName[measureName];
     if (measure) {
-      const { constraints: [constraint, constraint2], joint } = parseFilterConstraints(item);
-      query.addFilter(measure, constraint, joint, constraint2);
+      const { const1, const2, joint } = parseFilterConstraints(item);
+      query.addFilter(measure, const1, joint, const2);
     }
   });
 

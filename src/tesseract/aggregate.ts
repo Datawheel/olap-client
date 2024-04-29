@@ -143,8 +143,8 @@ export function hydrateQueryFromAggregateSearchParams(
     const measureName = item.slice(0, index) as Calculation;
     const measure = Calculation[measureName] || cube.measuresByName[measureName];
     if (measure) {
-      const { constraints, joint } = parseFilterConstraints(item);
-      query.addFilter(measure, constraints[0], joint, constraints[1]);
+      const { const1, const2, joint } = parseFilterConstraints(item);
+      query.addFilter(measure, const1, joint, const2);
     }
   });
 

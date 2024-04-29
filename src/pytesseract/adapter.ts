@@ -1,7 +1,11 @@
-import formUrlEncoded from "form-urlencoded";
 import urljoin from "url-join";
 import type {QueryDescriptor} from "../interfaces/descriptors";
-import {type AggregatorType, DimensionType} from "../interfaces/enums";
+import {
+  type AggregatorType,
+  DimensionType,
+  TimePrecision,
+  TimeValue,
+} from "../interfaces/enums";
 import type {
   PlainCube,
   PlainDimension,
@@ -11,8 +15,11 @@ import type {
   PlainMember,
   PlainProperty,
 } from "../interfaces/plain";
+import type {Level} from "../level";
 import type {Query} from "../query";
+import {parseFilterConstraints} from "../tesseract/utils";
 import {filterMap, splitTokens} from "../toolbox/collection";
+import {hasProperty, isIn, isNumeric} from "../toolbox/validation";
 import type {
   MemberRow,
   TesseractCube,
@@ -21,8 +28,6 @@ import type {
   TesseractHierarchy,
   TesseractLevel,
   TesseractMeasure,
-  TesseractMembersRequest,
-  TesseractMembersResponse,
   TesseractProperty,
 } from "./schema";
 
@@ -167,10 +172,7 @@ export function propertyAdapter(
   };
 }
 
-export function memberAdapter(
-  this: TesseractMembersResponse,
-  item: MemberRow,
-): PlainMember {
+export function memberAdapter(this: Level, item: MemberRow): PlainMember {
   return {
     _type: "member",
     ancestors: [],
@@ -180,42 +182,67 @@ export function memberAdapter(
     key: item.key,
     level: this.name,
     name: `${item.key}`,
-    uri: urljoin("/", this.name, `${item.key}`),
+    uri: urljoin(this.toString(), `_member?key=${item.key}`),
   };
-}
-
-export function stringifyRequest(
-  request: TesseractDataRequest | TesseractMembersRequest,
-): string {
-  return formUrlEncoded(request, {
-    ignoreEmptyArray: true,
-    ignorenull: true,
-    sorted: true,
-  });
 }
 
 export function hydrateQueryFromRequest(
   query: Query,
   request: Partial<TesseractDataRequest>,
 ): void {
-  if (request.cube && request.cube !== query.cube.name) {
-    throw new Error("Provided Query object doesn't match cube in request.");
-  }
+  const cutsInclude = splitTokens(request.include, ";").map((token) => {
+    const [level, members] = splitTokens(token, ":");
+    return {level, members: members.split(","), exclusive: false};
+  });
+  const cutsExclude = splitTokens(request.exclude, ";").map((token) => {
+    const [level, members] = splitTokens(token, ":");
+    return {level, members: members.split(","), exclusive: true};
+  });
+
+  const [pagiLimit = "0", pagiOffset = "0"] = splitTokens(request.limit);
+  const [sortProp, sortDir] = splitTokens(request.sort);
+  const [timeScale, timeAge] = splitTokens(request.time);
 
   const params: Partial<QueryDescriptor> = {
-    drilldowns: splitTokens(request.drilldowns, ","),
-    measures: splitTokens(request.measures, ","),
+    cube: request.cube,
     locale: request.locale,
+    drilldowns: splitTokens(request.drilldowns).map((level) => ({level})),
+    measures: splitTokens(request.measures),
+    properties: splitTokens(request.properties).map((property) => ({property})),
+    page_limit: Number.parseInt(pagiLimit),
+    page_offset: Number.parseInt(pagiOffset),
+    cuts: cutsInclude.concat(cutsExclude),
+    filters: splitTokens(request.filters).map((token) => {
+      const [measure, ...conditions] = token.split(".");
+      const {const1, const2, joint} = parseFilterConstraints(conditions.join("."));
+      return {measure, constraint: const1, joint, constraint2: const2};
+    }),
+    options: {
+      parents: !!request.parents,
+    },
   };
+
+  if (sortProp) {
+    params.sort_property = sortProp;
+    params.sort_direction = sortDir || "asc";
+  }
+
+  if (timeScale && timeAge) {
+    const scale = isIn(timeScale, TimePrecision) && TimePrecision[timeScale];
+    const age = isIn(timeAge, TimeValue)
+      ? TimeValue[timeAge]
+      : isNumeric(timeAge) && timeAge;
+    params.time = scale && age ? [scale, age] : undefined;
+  }
 
   query.fromJSON(params);
 }
 
 export function isDataRequest(obj: unknown): obj is TesseractDataRequest {
   return (
-    typeof obj === "object" &&
-    Object.prototype.hasOwnProperty.call(obj, "cube") &&
-    Object.prototype.hasOwnProperty.call(obj, "drilldowns") &&
-    Object.prototype.hasOwnProperty.call(obj, "measures")
+    obj != null &&
+    hasProperty(obj, "cube") &&
+    hasProperty(obj, "drilldowns") &&
+    hasProperty(obj, "measures")
   );
 }
