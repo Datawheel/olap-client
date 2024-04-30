@@ -1,12 +1,13 @@
-import Axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
+import Axios, {type AxiosError, type AxiosRequestConfig, type AxiosResponse} from "axios";
 import urljoin from "url-join";
-import { Cube } from "../cube";
-import { IClient, IDataSource } from "../interfaces/contracts";
-import { Level, LevelReference } from "../level";
-import { MondrianDataSource } from "../mondrian/datasource";
-import { TesseractDataSource } from "../tesseract/datasource";
-import { iteratorMatch } from "./collection";
-import { ServerError } from "./errors";
+import type {Cube} from "../cube";
+import type {IClient, IDataSource} from "../interfaces/contracts";
+import {Level, type LevelReference} from "../level";
+import {MondrianDataSource} from "../mondrian/datasource";
+import {PyTesseractDataSource} from "../pytesseract/datasource";
+import {TesseractDataSource} from "../tesseract/datasource";
+import {iteratorMatch} from "./collection";
+import {ServerError} from "./errors";
 
 export interface ParseURLOptions {
   anyServer: boolean;
@@ -19,9 +20,9 @@ export type ServerConfig = string | AxiosRequestConfig;
 
 export function applyParseUrlRules<T extends Record<string, any>>(
   qp: T,
-  options: Partial<ParseURLOptions> = {}
+  options: Partial<ParseURLOptions> = {},
 ): Partial<T> {
-  const { exclude, include, filter } = options;
+  const {exclude, include, filter} = options;
 
   const always = () => true;
   let tester = typeof filter === "function" ? filter : always;
@@ -42,8 +43,7 @@ export function applyParseUrlRules<T extends Record<string, any>>(
   const qpFinal: Partial<T> = {};
   Object.keys(qp).forEach((key) => {
     const value = qp[key];
-    tester(key, value) &&
-      Object.defineProperty(qpFinal, key, { enumerable: true, value });
+    tester(key, value) && Object.defineProperty(qpFinal, key, {enumerable: true, value});
   });
 
   return qpFinal;
@@ -52,18 +52,17 @@ export function applyParseUrlRules<T extends Record<string, any>>(
 export function getLevel(
   client: IClient,
   levelRef: LevelReference,
-  selectorFn?: (cubes: Cube[]) => Cube
+  selectorFn?: (cubes: Cube[]) => Cube,
 ): Promise<Level> {
   // prettier-ignore
-  const cubeName =
-    Level.isLevel(levelRef)           ? levelRef.cube.name :
-    Level.isLevelDescriptor(levelRef) ? levelRef.cube :
-    /* else */                          undefined;
+  const cubeName = Level.isLevel(levelRef)
+    ? levelRef.cube.name
+    : Level.isLevelDescriptor(levelRef)
+      ? levelRef.cube
+      : /* else */ undefined;
 
   if (cubeName) {
-    return client
-      .getCube(cubeName, selectorFn)
-      .then(cube => cube.getLevel(levelRef));
+    return client.getCube(cubeName, selectorFn).then((cube) => cube.getLevel(levelRef));
   }
 
   return client.getCubes().then((cubes: Cube[]) => {
@@ -81,9 +80,9 @@ export function getLevel(
 
 export function inferDataSource(config: ServerConfig): Promise<IDataSource> {
   if (typeof config === "string") {
-    config = { url: config };
+    config = {url: config};
   }
-  const { url, ...reqConfig } = config;
+  const {url, ...reqConfig} = config;
 
   if (!url) {
     const reason = `DataSource can be built with a string URL or an object with the 'url' property.
@@ -93,13 +92,17 @@ Received ${JSON.stringify(config)}`;
 
   const cubesUrl = urljoin(url, "cubes");
 
-  return Axios({ ...reqConfig, url: cubesUrl }).then(
+  return Axios({...reqConfig, url: cubesUrl}).then(
     (response: AxiosResponse) => {
       if (response.status === 200 && "cubes" in response.data) {
-        const ds =
-          "name" in response.data
-            ? new TesseractDataSource(url)
-            : new MondrianDataSource(url);
+        let ds: IDataSource;
+        if ("module" in response.data) {
+          ds = new PyTesseractDataSource(url);
+        } else if ("name" in response.data) {
+          ds = new TesseractDataSource(url);
+        } else {
+          ds = new MondrianDataSource(url);
+        }
         ds.setRequestConfig(reqConfig);
         return ds;
       }
@@ -108,7 +111,7 @@ Received ${JSON.stringify(config)}`;
     (error: AxiosError) => {
       error.message += `\nURL is not a known OLAP server: ${url}`;
       throw error;
-    }
+    },
   );
 }
 

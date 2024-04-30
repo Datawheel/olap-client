@@ -1,12 +1,20 @@
-import { INamed } from "../interfaces/plain";
+import type {INamed} from "../interfaces/plain";
+import {isIn} from "./validation";
 
 export function asArray<T>(value: T[] | T | undefined | null): T[] {
   return value == null ? [] : ([] as T[]).concat(value);
 }
 
+export function splitTokens(
+  value: undefined | null | string | string[],
+  partition = ",",
+): string[] {
+  return typeof value === "string" ? value.split(partition) : value || [];
+}
+
 export function filterMap<T, U>(
   list: T[],
-  predicate: (item: T, index: number, collection: T[]) => U | null
+  predicate: (item: T, index: number, collection: T[]) => U | null,
 ): U[] {
   let index = -1;
   const length = list.length;
@@ -20,7 +28,10 @@ export function filterMap<T, U>(
   return mappedList;
 }
 
-export function forEach<T extends any[] | Record<string, any>>(collection: T, predicate: (item: T[keyof T], index: keyof T, collection: T) => any): void {
+export function forEach<T extends unknown[] | Record<string, unknown>>(
+  collection: T,
+  predicate: (item: T[keyof T], index: keyof T, collection: T) => any,
+): void {
   const iterable = Object(collection) as T;
   const keys = Object.keys(collection) as (keyof T)[];
   let index = -1;
@@ -37,19 +48,16 @@ export function forEach<T extends any[] | Record<string, any>>(collection: T, pr
 export function groupBy<T>(
   list: T[],
   property: keyof T,
-  targetMap: Record<string, T[]> = {}
+  targetMap: Record<string, T[]> = {},
 ) {
-  const hasOwnProperty = Object.prototype.hasOwnProperty;
-
-  for (let item of list) {
+  for (const item of list) {
     const key = `${item[property]}`;
-    if (hasOwnProperty.call(targetMap, key)) {
+    if (isIn(key, targetMap)) {
       targetMap[key].push(item);
     } else {
       targetMap[key] = [item];
     }
   }
-
   return targetMap;
 }
 
@@ -62,7 +70,10 @@ export function pushUnique<T>(target: T[], item: T) {
  * @param ref The reference object to match against
  * @returns The matching object from the iterator results, or undefined is there's no match
  */
-export function iteratorMatch<T extends { matches: (ref: U) => boolean }, U>(iterator: IterableIterator<T>, ref: U) {
+export function iteratorMatch<T extends {matches: (ref: U) => boolean}, U>(
+  iterator: IterableIterator<T>,
+  ref: U,
+) {
   while (true) {
     const iteration = iterator.next();
     if (iteration.done) break;
@@ -78,7 +89,7 @@ export function iteratorMatch<T extends { matches: (ref: U) => boolean }, U>(ite
 export function childClassMapper<C, T extends INamed, P>(
   ctor: new (...args: any[]) => C,
   list: T[],
-  parent: P
+  parent: P,
 ): [C[], Record<string, C>] {
   const targetList: C[] = [];
   const targetMap: Record<string, C> = {};

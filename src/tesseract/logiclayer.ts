@@ -1,35 +1,48 @@
-import { QueryDescriptor } from "../interfaces/descriptors";
-import { Calculation, Direction, TimePrecision, TimeValue, TimeValuePoint } from "../interfaces/enums";
-import { Level } from "../level";
-import { Measure } from "../measure";
-import { Property } from "../property";
-import { Drillable, Query, QueryCalcGrowth, QueryCalcRca, QueryCalcTopk, QueryCut, QueryFilter } from "../query";
-import { filterMap } from "../toolbox/collection";
-import { hydrateQueryFromJSON } from "../toolbox/query";
-import { isNumeric } from "../toolbox/validation";
-import { TesseractLogicLayerURLSearchParams } from "./interfaces";
-import { parseFilterConstraints, stringifyFilter } from "./utils";
+import type {CutDescriptor, QueryDescriptor} from "../interfaces/descriptors";
+import {
+  Calculation,
+  Direction,
+  TimePrecision,
+  TimeValue,
+  type TimeValuePoint,
+} from "../interfaces/enums";
+import {Level} from "../level";
+import {Measure} from "../measure";
+import type {Property} from "../property";
+import type {
+  Drillable,
+  Query,
+  QueryCalcGrowth,
+  QueryCalcRca,
+  QueryCalcTopk,
+  QueryCut,
+  QueryFilter,
+} from "../query";
+import {filterMap, splitTokens} from "../toolbox/collection";
+import {hydrateQueryFromJSON} from "../toolbox/query";
+import {isNumeric} from "../toolbox/validation";
+import type {TesseractLogicLayerURLSearchParams} from "./interfaces";
+import {parseFilterConstraints, stringifyFilter} from "./utils";
 
 export function extractLogicLayerSearchParamsFromQuery(
-  query: Query
+  query: Query,
 ): Partial<TesseractLogicLayerURLSearchParams> {
   const cube = query.cube;
 
-  const drilldowns = filterMap<Drillable, string>(
-    query.getParam("drilldowns"),
-    item => Level.isLevel(item) ? item.uniqueName : null
+  const drilldowns = filterMap<Drillable, string>(query.getParam("drilldowns"), (item) =>
+    Level.isLevel(item) ? item.uniqueName : null,
   );
   const filters = filterMap<QueryFilter, string>(
     query.getParam("filters"),
-    stringifyFilter
+    stringifyFilter,
   );
   const measures = filterMap<Measure, string>(
     query.getParam("measures"),
-    item => item.name
+    (item) => item.name,
   );
   const properties = filterMap<Property, string>(
     query.getParam("properties"),
-    item => item.uniqueName
+    (item) => item.uniqueName,
   );
   const options = query.getParam("options");
   const pagination = query.getParam("pagination");
@@ -52,9 +65,15 @@ export function extractLogicLayerSearchParamsFromQuery(
   // aggregate uses Level#fullName, logiclayer uses Level#uniqueName
 
   const calculations = query.getParam("calculations").reverse();
-  const growth = calculations.find(calc => calc.kind === "growth") as QueryCalcGrowth | undefined;
-  const rca = calculations.find(calc => calc.kind === "rca") as QueryCalcRca | undefined;
-  const topk = calculations.find(calc => calc.kind === "topk") as QueryCalcTopk | undefined;
+  const growth = calculations.find((calc) => calc.kind === "growth") as
+    | QueryCalcGrowth
+    | undefined;
+  const rca = calculations.find((calc) => calc.kind === "rca") as
+    | QueryCalcRca
+    | undefined;
+  const topk = calculations.find((calc) => calc.kind === "topk") as
+    | QueryCalcTopk
+    | undefined;
 
   const tesseractQuery: Partial<TesseractLogicLayerURLSearchParams> = {
     cube: cube.name,
@@ -64,22 +83,22 @@ export function extractLogicLayerSearchParamsFromQuery(
     measures: measures.join(",") || undefined,
     filters: filters.join(",") || undefined,
 
-    // prettier-ignore
-    limit:
-      !pagination.limit     ? undefined :
-      pagination.offset > 0 ? `${pagination.offset},${pagination.limit}` :
-      /* else */              `${pagination.limit}`,
+    limit: !pagination.limit
+      ? undefined
+      : pagination.offset > 0
+        ? `${pagination.offset},${pagination.limit}`
+        : /* else */ `${pagination.limit}`,
 
-    // prettier-ignore
-    sort:
-      Measure.isMeasure(sorting.property)   ? `${sorting.property.name}.${sorting.direction}` :
-      typeof sorting.property === "string"  ? `${sorting.property}.${sorting.direction}` :
-      /* else */                              undefined,
+    sort: Measure.isMeasure(sorting.property)
+      ? `${sorting.property.name}.${sorting.direction}`
+      : typeof sorting.property === "string"
+        ? `${sorting.property}.${sorting.direction}`
+        : /* else */ undefined,
 
-    // prettier-ignore
-    time: timeframe.precision != null && timeframe.value != null
-      ? `${timeframe.precision}.${timeframe.value}`
-      : undefined,
+    time:
+      timeframe.precision != null && timeframe.value != null
+        ? `${timeframe.precision}.${timeframe.value}`
+        : undefined,
 
     // booleans
     debug: options.debug,
@@ -90,16 +109,18 @@ export function extractLogicLayerSearchParamsFromQuery(
     // calculations
     growth: growth && `${growth.category.uniqueName},${growth.value.name}`,
     rca: rca && `${rca.location.uniqueName},${rca.category.uniqueName},${rca.value.name}`,
-    top: topk && (topk => {
-      const calculation = Measure.isMeasure(topk.value) ? topk.value.name : topk.value;
-      return `${topk.amount},${topk.category.uniqueName},${calculation},${topk.order}`;
-    })(topk),
+    top:
+      topk &&
+      ((topk) => {
+        const calculation = Measure.isMeasure(topk.value) ? topk.value.name : topk.value;
+        return `${topk.amount},${topk.category.uniqueName},${calculation},${topk.order}`;
+      })(topk),
   };
 
   const excluded_cuts = filterMap<QueryCut, string>(
     query.getParam("cuts"),
     (item: QueryCut) => {
-      const { drillable } = item;
+      const {drillable} = item;
       const level = Level.isLevel(drillable) ? drillable : undefined;
       if (!level) return null;
       if (!item.isExclusive) {
@@ -107,7 +128,7 @@ export function extractLogicLayerSearchParamsFromQuery(
         return null;
       }
       return `${level.uniqueName}:${item.members.join(",")}`;
-    }
+    },
   );
   tesseractQuery.exclude = excluded_cuts.join(";") || undefined;
 
@@ -116,17 +137,17 @@ export function extractLogicLayerSearchParamsFromQuery(
 
 export function hydrateQueryFromLogicLayerSearchParams(
   query: Query,
-  params: Partial<TesseractLogicLayerURLSearchParams>
+  params: Partial<TesseractLogicLayerURLSearchParams>,
 ): Query {
   const cube = query.cube;
 
   const levels: Record<string, Level> = {};
-  for (let level of cube.levelIterator) {
+  for (const level of cube.levelIterator) {
     levels[level.uniqueName] = level;
   }
 
   const props: Record<string, Property> = {};
-  for (let prop of cube.propertyIterator) {
+  for (const prop of cube.propertyIterator) {
     props[prop.uniqueName] = prop;
   }
 
@@ -154,57 +175,53 @@ export function hydrateQueryFromLogicLayerSearchParams(
     "sparse",
   ];
 
-  const { drilldowns = "", measures = "", exclude = "", filters = "", properties = "" } = params;
-
-  Object.keys(params).forEach(key => {
-    const level = levels[key];
-    level && exclusions.indexOf(key) === -1 &&
-      query.addCut(level, `${params[key]}`.split(","));
-  });
-
-  exclude.split(";").forEach(item => {
-    const [key, members] = item.split(":");
-    const level = levels[key];
-    level && query.addCut(level, members.split(","), {exclusive: true});
-  });
-
-  drilldowns.split(",").forEach(item => {
-    const level = levels[item];
-    level && query.addDrilldown(level);
-  });
-
-  filters.split(",").forEach(item => {
-    const measureName = item.slice(0, item.indexOf("."));
-    const measure = Calculation[measureName as Calculation] || cube.measuresByName[measureName];
-    if (measure) {
-      const { constraints: [constraint, constraint2], joint } = parseFilterConstraints(item);
-      query.addFilter(measure, constraint, joint, constraint2);
-    }
-  });
-
-  measures.split(",").forEach(item => {
-    const measure = cube.measuresByName[item];
-    measure && query.addMeasure(measure);
-  });
-
-  properties.split(",").forEach(item => {
-    const property = props[item];
-    property && query.addProperty(property);
-  });
+  const cutsInclude: CutDescriptor[] = filterMap(Object.keys(params), (level) =>
+    level in levels && !exclusions.includes(level)
+      ? {level, members: splitTokens(`${params[level] || ""}`)}
+      : null,
+  );
+  const cutsExclude: CutDescriptor[] = filterMap(
+    splitTokens(params.exclude, ";"),
+    (token) => {
+      const [level, members] = splitTokens(token, ":");
+      return level in levels
+        ? {level, members: members.split(","), exclusive: true}
+        : null;
+    },
+  );
+  const [limit, offset] = splitTokens(params.limit);
+  const [sortProp, sortDir] = splitTokens(params.sort);
 
   const json: Partial<QueryDescriptor> = {
     cube: params.cube,
     locale: params.locale || "",
+    drilldowns: filterMap(splitTokens(params.drilldowns), (level) =>
+      level in levels ? {level} : null,
+    ),
+    measures: filterMap(splitTokens(params.measures), (measure) =>
+      measure in cube.measuresByName ? measure : null,
+    ),
+    properties: filterMap(splitTokens(params.properties), (property) =>
+      property in props ? {property} : null,
+    ),
+    filters: filterMap(splitTokens(params.filters), (item) => {
+      const [name, ...parts] = splitTokens(item, ".");
+      const measure = Calculation[name as Calculation] || cube.measuresByName[name];
+      if (!measure) return null;
+      const {const1, const2, joint} = parseFilterConstraints(parts.join("."));
+      return {measure, constraint: const1, joint, constraint2: const2};
+    }),
+    cuts: cutsInclude.concat(cutsExclude),
     options: {
       debug: params.debug,
       exclude_default_members: params.exclude_default_members,
       parents: params.parents,
       sparse: params.sparse,
     },
-    page_limit: 0,
-    page_offset: 0,
-    sort_direction: Direction.DESC,
-    sort_property: "",
+    page_limit: Number.parseInt(limit) || 0,
+    page_offset: Number.parseInt(offset) || 0,
+    sort_property: sortProp,
+    sort_direction: Direction[sortDir as Direction] || Direction.ASC,
     time: undefined,
   };
 
@@ -212,10 +229,12 @@ export function hydrateQueryFromLogicLayerSearchParams(
     const [lvlUniqueName, measureName] = params.growth.split(",");
     const level = levels[lvlUniqueName];
     const measure = cube.measuresByName[measureName];
-    level && measure && query.addCalculation("growth", {
-      category: level,
-      value: measure,
-    });
+    level &&
+      measure &&
+      query.addCalculation("growth", {
+        category: level,
+        value: measure,
+      });
   }
 
   if (params.rca) {
@@ -223,11 +242,14 @@ export function hydrateQueryFromLogicLayerSearchParams(
     const level1 = levels[lvl1UniqueName];
     const level2 = levels[lvl2UniqueName];
     const measure = cube.measuresByName[measureName];
-    level1 && level2 && measure && query.addCalculation("rca", {
-      category: level1,
-      location: level2,
-      value: measure,
-    });
+    level1 &&
+      level2 &&
+      measure &&
+      query.addCalculation("rca", {
+        category: level1,
+        location: level2,
+        value: measure,
+      });
   }
 
   if (params.top) {
@@ -235,34 +257,24 @@ export function hydrateQueryFromLogicLayerSearchParams(
     const amount = Number.parseInt(amountRaw);
     const level = levels[lvlUniqueName];
     const measure = cube.measuresByName[measureName];
-    amount && level && measure && query.addCalculation("topk", {
-      amount,
-      category: level,
-      order: Direction[order as Direction] || Direction.DESC,
-      value: measure,
-    });
-  }
-
-  if (params.limit) {
-    const pagination = filterMap<string, number>(
-      params.limit.split(","),
-      item => Number.parseInt(item) || null
-    );
-    json.page_limit = pagination.length === 2 ? pagination[1] : pagination[0];
-    json.page_offset = pagination.length === 2 ? pagination[0] : 0;
-  }
-
-  if (params.sort) {
-    const orderIndex = params.sort.lastIndexOf(".");
-    json.sort_property = params.sort.slice(0, orderIndex);
-    json.sort_direction = Direction[params.sort.slice(orderIndex + 1) as Direction];
+    amount &&
+      level &&
+      measure &&
+      query.addCalculation("topk", {
+        amount,
+        category: level,
+        order: Direction[order as Direction] || Direction.DESC,
+        value: measure,
+      });
   }
 
   if (params.time) {
-    const period = filterMap(params.time.split("."), item => item || null);
-    const precision: TimePrecision | undefined = TimePrecision[period[0] as TimePrecision];
-    const value: TimeValuePoint | undefined =
-      isNumeric(period[1]) ? period[1] : TimeValue[period[1] as TimeValue];
+    const period = filterMap(params.time.split("."), (item) => item || null);
+    const precision: TimePrecision | undefined =
+      TimePrecision[period[0] as TimePrecision];
+    const value: TimeValuePoint | undefined = isNumeric(period[1])
+      ? period[1]
+      : TimeValue[period[1] as TimeValue];
     if (precision && value != null) {
       query.setTime(precision, value);
     }
