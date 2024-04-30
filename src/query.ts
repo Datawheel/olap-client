@@ -1,14 +1,27 @@
 import formUrlEncoded from "form-urlencoded";
-import { Cube } from "./cube";
-import { QueryDescriptor } from "./interfaces/descriptors";
-import { Calculation, Comparison, Direction, Format, TimePrecision, TimeValuePoint } from "./interfaces/enums";
-import { Level, LevelReference } from "./level";
-import { CalcOrMeasure, Measure } from "./measure";
-import { NamedSet } from "./namedset";
-import { Property, PropertyReference } from "./property";
-import { asArray, pushUnique } from "./toolbox/collection";
-import { calculationBuilders, extractQueryToJSON, extractQueryToSearchParams, getSourceForQuery, hydrateQueryFromJSON } from "./toolbox/query";
-import { isNumeric, isQueryFilterConstraint } from "./toolbox/validation";
+import type {Cube} from "./cube";
+import type {QueryDescriptor} from "./interfaces/descriptors";
+import {
+  Calculation,
+  Comparison,
+  Direction,
+  Format,
+  type TimePrecision,
+  type TimeValuePoint,
+} from "./interfaces/enums";
+import type {Level, LevelReference} from "./level";
+import {type CalcOrMeasure, Measure} from "./measure";
+import type {NamedSet} from "./namedset";
+import type {Property, PropertyReference} from "./property";
+import {asArray, pushUnique} from "./toolbox/collection";
+import {
+  calculationBuilders,
+  extractQueryToJSON,
+  extractQueryToSearchParams,
+  getSourceForQuery,
+  hydrateQueryFromJSON,
+} from "./toolbox/query";
+import {isQueryFilterConstraint} from "./toolbox/validation";
 
 export type Drillable = Level | NamedSet;
 
@@ -77,11 +90,11 @@ export class Query {
   private drilldowns: Drillable[] = [];
   private filters: QueryFilter[] = [];
   private format: Format = Format.jsonrecords;
-  private locale: string = "";
+  private locale = "";
   private measures: Measure[] = [];
   private options: QueryOptions = {};
-  private pageLimit: number = 0;
-  private pageOffset: number = 0;
+  private pageLimit = 0;
+  private pageOffset = 0;
   private properties: Record<string, Property> = {};
   private sortDirection: Direction | undefined;
   private sortProperty: CalcOrMeasure | Property | undefined;
@@ -92,9 +105,23 @@ export class Query {
     this.cube = cube;
   }
 
-  addCalculation(kind: "growth", params: {category: LevelReference, value: string | Measure}): this;
-  addCalculation(kind: "rca", params: {location: LevelReference, category: LevelReference, value: string | Measure}): this;
-  addCalculation(kind: "topk", params: {amount: number, category: LevelReference, value: string | CalcOrMeasure, order?: string}): this;
+  addCalculation(
+    kind: "growth",
+    params: {category: LevelReference; value: string | Measure},
+  ): this;
+  addCalculation(
+    kind: "rca",
+    params: {location: LevelReference; category: LevelReference; value: string | Measure},
+  ): this;
+  addCalculation(
+    kind: "topk",
+    params: {
+      amount: number;
+      category: LevelReference;
+      value: string | CalcOrMeasure;
+      order?: string;
+    },
+  ): this;
   addCalculation(kind: "growth" | "rca" | "topk", params: any): this {
     const builder = calculationBuilders[kind];
     if (builder == null) {
@@ -113,7 +140,7 @@ export class Query {
   addCut(
     drillableRef: DrillableReference,
     memberList: string[] | number[] = [],
-    options: { exclusive?: boolean, forMatch?: boolean } = {}
+    options: {exclusive?: boolean; forMatch?: boolean} = {},
   ): this {
     const drillable = this.cube.getDrillable(drillableRef);
     const cut = this.cuts[drillable.fullName] || {
@@ -122,11 +149,9 @@ export class Query {
       isForMatch: options.forMatch != null ? Boolean(options.forMatch) : undefined,
       members: [],
     };
-    // must address if key is 0
-    memberList.forEach(
-      (member: string | number) =>
-        (member || isNumeric(member)) && pushUnique(cut.members, `${member}`)
-    );
+    for (let index = 0; index < memberList.length; index++) {
+      pushUnique(cut.members, `${memberList[index]}`);
+    }
     this.cuts[drillable.fullName] = cut;
     return this;
   }
@@ -141,12 +166,13 @@ export class Query {
     calcRef: string | Measure,
     constraint: [Comparison, number],
     joint?: "and" | "or",
-    constraint2?: [Comparison, number]
+    constraint2?: [Comparison, number],
   ): this {
     if (!isQueryFilterConstraint(constraint)) {
       throw new Error(`Invalid filter constraint: "${asArray(constraint).join(" ")}"`);
     }
-    const calculation = Calculation[`${calcRef}` as Calculation] || this.cube.getMeasure(calcRef);
+    const calculation =
+      Calculation[`${calcRef}` as Calculation] || this.cube.getMeasure(calcRef);
 
     if (joint && !["and", "or"].includes(joint)) {
       throw new Error(`Invalid filter joint: options are "and"/"or", used: "${joint}"`);
@@ -160,9 +186,8 @@ export class Query {
       const1: [Comparison[constraint[0]], constraint[1]],
       joint: joint && constraint2 ? joint : undefined,
       // prettier-ignore
-      const2: joint && constraint2
-            ? [Comparison[constraint2[0]], constraint2[1]]
-            : undefined,
+      const2:
+        joint && constraint2 ? [Comparison[constraint2[0]], constraint2[1]] : undefined,
     });
     return this;
   }
@@ -200,13 +225,13 @@ export class Query {
     if (key === "locale") return this.locale;
     if (key === "format") return this.format;
     if (key === "sorting") {
-      return { direction: this.sortDirection, property: this.sortProperty } as QuerySorting;
+      return {direction: this.sortDirection, property: this.sortProperty} as QuerySorting;
     }
     if (key === "pagination") {
-      return { limit: this.pageLimit, offset: this.pageOffset } as QueryPagination;
+      return {limit: this.pageLimit, offset: this.pageOffset} as QueryPagination;
     }
     if (key === "time") {
-      return { precision: this.timePrecision, value: this.timeValue } as QueryTimeframe;
+      return {precision: this.timePrecision, value: this.timeValue} as QueryTimeframe;
     }
     if (key === "captions" || key === "cuts" || key === "properties") {
       return Object.values(this[key]);
@@ -215,8 +240,8 @@ export class Query {
     return Array.isArray(value)
       ? value.slice()
       : typeof value === "object"
-      ? { ...value }
-      : value;
+        ? {...value}
+        : value;
   }
 
   setFormat(format: Format | `${Format}`): this {
@@ -232,8 +257,7 @@ export class Query {
   setOption(option: string, value: boolean): this {
     if (value != null) {
       this.options[option] = Boolean(value);
-    }
-    else {
+    } else {
       delete this.options[option];
     }
     return this;
@@ -241,14 +265,14 @@ export class Query {
 
   setPagination(limit: number, offset?: number): this {
     const isValid = limit > 0;
-    this.pageLimit  = isValid ? Math.max(0, limit)       : 0;
+    this.pageLimit = isValid ? Math.max(0, limit) : 0;
     this.pageOffset = isValid ? Math.max(0, offset || 0) : 0;
     return this;
   }
 
   setSorting(
     sortProperty: string | CalcOrMeasure | PropertyReference,
-    direction?: boolean | Direction | "asc" | "desc"
+    direction?: boolean | Direction | "asc" | "desc",
   ): this {
     if (!sortProperty) {
       this.sortDirection = undefined;
@@ -258,20 +282,22 @@ export class Query {
 
     const cube = this.cube;
 
-    // prettier-ignore
     this.sortProperty =
-      typeof sortProperty === "string" ? Calculation[sortProperty as Calculation] ||
-                                         cube.measuresByName[sortProperty] ||
-                                         cube.getProperty(sortProperty) :
-      Measure.isMeasure(sortProperty)  ? sortProperty :
-      /* else */                         cube.getProperty(sortProperty);
+      typeof sortProperty === "string"
+        ? Calculation[sortProperty as Calculation] ||
+          cube.measuresByName[sortProperty] ||
+          cube.getProperty(sortProperty)
+        : Measure.isMeasure(sortProperty)
+          ? sortProperty
+          : cube.getProperty(sortProperty);
 
     // cube.getProperty throws if invalid, so this area is safe
-    // prettier-ignore
     this.sortDirection =
-      typeof direction === "string" ? Direction[direction] || Direction.DESC :
-      direction === false           ? Direction.ASC :
-      /* else */                      Direction.DESC;
+      typeof direction === "string"
+        ? Direction[direction] || Direction.DESC
+        : direction === false
+          ? Direction.ASC
+          : Direction.DESC;
 
     return this;
   }
@@ -293,15 +319,13 @@ export class Query {
 
   toString(kind?: string): string {
     if (typeof kind === "string") {
-      const { datasource } = this.cube;
+      const {datasource} = this.cube;
       return datasource.stringifyQueryURL(this, kind);
     }
-    else {
-      return formUrlEncoded(extractQueryToSearchParams(this), {
-        ignorenull: true,
-        skipIndex: true,
-        sorted: true,
-      });
-    }
+    return formUrlEncoded(extractQueryToSearchParams(this), {
+      ignorenull: true,
+      skipIndex: true,
+      sorted: true,
+    });
   }
 }

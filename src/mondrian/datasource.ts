@@ -1,27 +1,30 @@
-import Axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
+import Axios, {type AxiosError, type AxiosInstance, type AxiosRequestConfig} from "axios";
 import formUrlDecoded from "form-urldecoded";
 import formUrlEncoded from "form-urlencoded";
 import urljoin from "url-join";
-import { Aggregation, IDataSource, ServerStatus } from "../interfaces/contracts";
-import { Format } from "../interfaces/enums";
-import { PlainCube, PlainMember } from "../interfaces/plain";
-import { Level } from "../level";
-import { Query } from "../query";
-import { applyParseUrlRules, ParseURLOptions } from "../toolbox/client";
-import { ServerError } from "../toolbox/errors";
-import { extractAggregateSearchParamsFromQuery, hydrateQueryFromAggregateSearchParams } from "./aggregate";
-import { cubeAdapterFactory, memberAdapterFactory } from "./dataadapter";
-import { MondrianAggregateURLSearchParams } from "./interfaces";
-import { MondrianCube, MondrianMember } from "./schema";
+import type {Aggregation, IDataSource, ServerStatus} from "../interfaces/contracts";
+import {Format} from "../interfaces/enums";
+import type {PlainCube, PlainMember} from "../interfaces/plain";
+import type {Level} from "../level";
+import type {Query} from "../query";
+import {type ParseURLOptions, applyParseUrlRules} from "../toolbox/client";
+import {ServerError} from "../toolbox/errors";
+import {
+  extractAggregateSearchParamsFromQuery,
+  hydrateQueryFromAggregateSearchParams,
+} from "./aggregate";
+import {cubeAdapterFactory, memberAdapterFactory} from "./dataadapter";
+import type {MondrianAggregateURLSearchParams} from "./interfaces";
+import type {MondrianCube, MondrianMember} from "./schema";
 
 const softwareName = "mondrian-rest";
 
 export class MondrianDataSource implements IDataSource {
-  axiosInstance: AxiosInstance = Axios.create({});
-  serverOnline: boolean;
+  axiosInstance: AxiosInstance;
+  serverOnline = false;
   serverSoftware = softwareName;
-  serverVersion: string = "";
-  serverUrl: string = "/";
+  serverUrl: string;
+  serverVersion: string;
 
   static softwareName = softwareName;
 
@@ -30,7 +33,7 @@ export class MondrianDataSource implements IDataSource {
       throw new Error(`Invalid Mondrian REST server URL: ${serverUrl}`);
     }
     this.serverUrl = urljoin(serverUrl, "/");
-    this.setRequestConfig({baseURL: serverUrl});
+    this.axiosInstance = Axios.create({baseURL: this.serverUrl});
   }
 
   checkStatus(): Promise<ServerStatus> {
@@ -41,20 +44,20 @@ export class MondrianDataSource implements IDataSource {
         this.serverOnline = true;
         this.serverVersion = "1.0.4";
         return {
-          software: this.serverSoftware,
+          software: softwareName,
           online: this.serverOnline,
           url: this.serverUrl,
-          version: this.serverVersion
+          version: this.serverVersion,
         };
       },
       (err: AxiosError) => {
         this.serverOnline = false;
         throw err;
-      }
+      },
     );
   }
 
-  execQuery(query: Query, endpoint: string = "aggregate"): Promise<Aggregation> {
+  execQuery(query: Query, endpoint = "aggregate"): Promise<Aggregation> {
     if (endpoint === "aggregate") {
       return this.execQueryAggregate(query);
     }
@@ -68,44 +71,50 @@ export class MondrianDataSource implements IDataSource {
     const searchParams = formUrlEncoded(params, {
       ignorenull: true,
       skipIndex: true,
-      sorted: true
+      sorted: true,
     });
-    return this.axiosInstance.get(url, { params }).then((response) => {
+    return this.axiosInstance.get(url, {params}).then((response) => {
       const data = format === Format.jsonrecords ? response.data.data : response.data;
       return {
         data,
-        headers: response.headers as {},
+        headers: {...response.headers} as Record<string, string>,
         query,
         status: response.status,
-        url: `${url}?${searchParams}`
+        url: `${url}?${searchParams}`,
       };
     });
   }
 
   fetchCube(cubeName: string): Promise<PlainCube> {
     const url = urljoin(this.serverUrl, "cubes", cubeName);
-    const cubeAdapter = cubeAdapterFactory({ server_uri: this.serverUrl });
-    return this.axiosInstance.get<MondrianCube>(url).then((response) => {
-      const mondrianCube = response.data;
-      if (mondrianCube && typeof mondrianCube.name === "string") {
-        return cubeAdapter(mondrianCube);
-      }
-      throw new ServerError(response);
-    }, (err: AxiosError) => {
-      if (err.response) {
-        if (err.response.status === 404) {
-          throw new ServerError(err.response, `Cube named "${cubeName}" is not available in server ${this.serverUrl}`);
+    const cubeAdapter = cubeAdapterFactory({server_uri: this.serverUrl});
+    return this.axiosInstance.get<MondrianCube>(url).then(
+      (response) => {
+        const mondrianCube = response.data;
+        if (mondrianCube && typeof mondrianCube.name === "string") {
+          return cubeAdapter(mondrianCube);
         }
-        throw new ServerError(err.response, err.message);
-      }
-      throw err;
-    });
+        throw new ServerError(response);
+      },
+      (err: AxiosError) => {
+        if (err.response) {
+          if (err.response.status === 404) {
+            throw new ServerError(
+              err.response,
+              `Cube named "${cubeName}" is not available in server ${this.serverUrl}`,
+            );
+          }
+          throw new ServerError(err.response, err.message);
+        }
+        throw err;
+      },
+    );
   }
 
   fetchCubes(): Promise<PlainCube[]> {
     const url = urljoin(this.serverUrl, "cubes");
-    const cubeAdapter = cubeAdapterFactory({ server_uri: this.serverUrl });
-    return this.axiosInstance.get<{ cubes: MondrianCube[] }>(url).then((response) => {
+    const cubeAdapter = cubeAdapterFactory({server_uri: this.serverUrl});
+    return this.axiosInstance.get<{cubes: MondrianCube[]}>(url).then((response) => {
       const mondrianResponse = response.data;
       if (mondrianResponse && Array.isArray(mondrianResponse.cubes)) {
         return mondrianResponse.cubes.map(cubeAdapter);
@@ -121,11 +130,11 @@ export class MondrianDataSource implements IDataSource {
   fetchMember(
     parent: Level,
     key: number | string,
-    options: any = {}
+    options: any = {},
   ): Promise<PlainMember> {
-    const { dimension, name } = parent;
+    const {dimension, name} = parent;
     const memberAdapter = memberAdapterFactory({
-      level_uri: parent.toString()
+      level_uri: parent.toString(),
     });
 
     let caption: string = options.caption;
@@ -141,16 +150,24 @@ export class MondrianDataSource implements IDataSource {
     const params = {
       caption: caption || undefined,
       children: Boolean(options.children),
-      member_properties: options.member_properties
+      member_properties: options.member_properties,
     };
-    return this.axiosInstance
-      .get<MondrianMember>(url, { params })
-      .then((response) => memberAdapter(response.data));
+    return this.axiosInstance.get<MondrianMember>(url, {params}).then(
+      (response) => memberAdapter(response.data),
+      (err) => {
+        if (err.status === 404) {
+          throw new Error(
+            `Can't find member with key '${key}' for level '${parent.name}'`,
+          );
+        }
+        throw err;
+      },
+    );
   }
 
   fetchMembers(parent: Level, options: any = {}): Promise<PlainMember[]> {
     const memberAdapter = memberAdapterFactory({
-      level_uri: parent.toString()
+      level_uri: parent.toString(),
     });
 
     let caption: string = options.caption;
@@ -166,17 +183,18 @@ export class MondrianDataSource implements IDataSource {
     const params = {
       caption: caption || undefined,
       children: Boolean(options.children),
-      member_properties: options.member_properties
+      member_properties: options.member_properties,
     };
     return this.axiosInstance
-      .get<{ members: MondrianMember[] }>(url, { params })
+      .get<{members: MondrianMember[]}>(url, {params})
       .then((response) => response.data.members.map(memberAdapter));
   }
 
   parseQueryURL(query: Query, url: string, options: Partial<ParseURLOptions>): Query {
     const searchIndex = url.indexOf("?");
     const searchParams = url.slice(searchIndex + 1);
-    const qp: Partial<MondrianAggregateURLSearchParams & {format: string}> = formUrlDecoded(searchParams);
+    const qp: Partial<MondrianAggregateURLSearchParams & {format: string}> =
+      formUrlDecoded(searchParams);
 
     const formatMatch = url.match(/^.+\/aggregate(\.[a-z]+)\?.+$/);
     if (formatMatch) {
@@ -208,7 +226,7 @@ export class MondrianDataSource implements IDataSource {
     const parameters = formUrlEncoded(paramObject, {
       ignorenull: true,
       skipIndex: true,
-      sorted: true
+      sorted: true,
     });
     return urljoin(query.cube.toString(), `aggregate.${format}?${parameters}`);
   }

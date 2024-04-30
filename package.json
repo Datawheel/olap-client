@@ -19,7 +19,7 @@
   "scripts": {
     "build": "tsup",
     "pretest": "npm run build",
-    "test": "mocha ./test",
+    "test": "mocha ./tests",
     "prepublishOnly": "npm run test"
   },
   "author": "Francisco Abarzua <francisco@datawheel.us>",
@@ -45,10 +45,12 @@
     "axios": "^1.6.0",
     "form-urldecoded": "^1.2.0",
     "form-urlencoded": "^6.1.0",
-    "url-join": "^5.0.0"
+    "url-join": "^4.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.7.1",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.12.7",
     "@types/url-join": "^4.0.0",
     "mocha": "^10.0.0",
     "tsup": "^8.0.0",

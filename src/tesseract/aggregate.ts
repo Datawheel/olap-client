@@ -1,11 +1,11 @@
 import { Calculation, Direction } from "../interfaces/enums";
 import { Level } from "../level";
-import { CalcOrMeasure, Measure } from "../measure";
-import { Property } from "../property";
-import { Drillable, Query, QueryCalcGrowth, QueryCalcRca, QueryCalcTopk, QueryCut, QueryFilter } from "../query";
+import { type CalcOrMeasure, Measure } from "../measure";
+import type { Property } from "../property";
+import type { Drillable, Query, QueryCalcGrowth, QueryCalcRca, QueryCalcTopk, QueryCut, QueryFilter } from "../query";
 import { asArray } from "../toolbox/collection";
 import { ifNotEmpty } from "../toolbox/validation";
-import { TesseractAggregateURLSearchParams } from "./interfaces";
+import type { TesseractAggregateURLSearchParams } from "./interfaces";
 import { joinFullName, parseCut, parseFilterConstraints, splitFullName, stringifyFilter } from "./utils";
 
 export function extractAggregateSearchParamsFromQuery(
@@ -113,12 +113,12 @@ export function hydrateQueryFromAggregateSearchParams(
   const cube = query.cube;
 
   const levels: Record<string, Level> = {};
-  for (let level of cube.levelIterator) {
+  for (const level of cube.levelIterator) {
     levels[level.fullName] = level;
   }
 
   const props: Record<string, Property> = {};
-  for (let prop of cube.propertyIterator) {
+  for (const prop of cube.propertyIterator) {
     props[prop.fullName] = prop;
   }
 

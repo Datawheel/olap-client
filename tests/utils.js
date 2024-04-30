@@ -1,4 +1,4 @@
-const {Comparison, Format, Direction, TimePrecision} = require("..");
+const {Comparison, Format, Direction, TimePrecision} = require("../dist/index.cjs");
 
 /**
  * @param {string} string

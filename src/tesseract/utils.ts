@@ -1,7 +1,7 @@
-import { Comparison } from "../interfaces/enums";
-import { Measure } from "../measure";
-import { QueryFilter } from "../query";
-import { isNumeric } from "../toolbox/validation";
+import {Comparison} from "../interfaces/enums";
+import {Measure} from "../measure";
+import type {QueryFilter} from "../query";
+import {isIn} from "../toolbox/validation";
 
 export function normalizeFullName(fullname: string): string {
   return joinFullName(splitFullName(fullname));
@@ -13,16 +13,12 @@ export function joinFullName(nameParts: string[]): string {
     : nameParts.join(".");
 }
 
-export function splitFullName(fullname: string): string[] {
-  fullname = fullname.replace(/^\[|\]$/g, "");
-  return fullname.indexOf("].[") > -1
-    ? fullname.split(/\]\.\[?/)
-    : fullname.split(".");
+export function splitFullName(fullName: string): string[] {
+  const name = fullName.replace(/^\[|\]$/g, "");
+  return name.indexOf("].[") > -1 ? name.split(/\]\.\[?/) : name.split(".");
 }
 
-export function parseCut(
-  cut: string
-): {
+export function parseCut(cut: string): {
   drillable: string;
   members: string[];
   exclusive: boolean;
@@ -36,7 +32,7 @@ export function parseCut(
   const memberList = nameParts.pop() || "";
   const drillable = joinFullName(nameParts);
   const members = memberList.split(",");
-  return { drillable, members, exclusive, forMatch };
+  return {drillable, members, exclusive, forMatch};
 }
 
 export function parseFilterConstraints(token: string): {
@@ -76,10 +72,8 @@ export function parseFilterCondition(token: string): [Comparison, number] {
 }
 
 export function stringifyFilter(item: QueryFilter): string {
-  return ([
+  const tokens: (string | number | undefined)[] = [
     Measure.isMeasure(item.measure) ? item.measure.name : item.measure,
-  ] as any[])
-    .concat(item.const1, item.joint, item.const2)
-    .filter(Boolean)
-    .join(".");
+  ];
+  return tokens.concat(item.const1, item.joint, item.const2).filter(Boolean).join(".");
 }

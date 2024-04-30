@@ -1,11 +1,11 @@
-import { AxiosInstance, AxiosRequestConfig } from "axios";
-import { Cube } from "../cube";
-import { Level } from "../level";
-import { Member } from "../member";
-import { Query } from "../query";
-import { ParseURLOptions } from "../toolbox/client";
-import { LevelDescriptor } from "./descriptors";
-import { PlainCube, PlainMember } from "./plain";
+import type {AxiosInstance, AxiosRequestConfig} from "axios";
+import type {Cube} from "../cube";
+import type {Level} from "../level";
+import type {Member} from "../member";
+import type {Query} from "../query";
+import type {ParseURLOptions} from "../toolbox/client";
+import type {LevelDescriptor} from "./descriptors";
+import type {PlainCube, PlainMember} from "./plain";
 
 export interface Aggregation<T = any> {
   data: T;
@@ -22,7 +22,7 @@ export interface IClient {
   getMember(
     parent: Level | LevelDescriptor,
     key: string | number,
-    options?: any
+    options?: any,
   ): Promise<Member>;
   getMembers(parent: Level | LevelDescriptor, options?: any): Promise<Member[]>;
   parseQueryURL(url: string, options?: Partial<ParseURLOptions>): Promise<Query>;

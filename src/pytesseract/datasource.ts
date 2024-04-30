@@ -24,7 +24,7 @@ import type {
   TesseractStatus,
 } from "./schema";
 
-const softwareName = "python:tesseract-olap";
+const softwareName = "tesseract-olap[python]";
 
 export class PyTesseractDataSource implements IDataSource {
   axiosInstance: AxiosInstance;
