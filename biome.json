@@ -10,5 +10,17 @@
       "bracketSpacing": false,
       "trailingComma": "all"
     }
-  }
+  },
+  "overrides": [
+    {
+      "include": ["test/**"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "useArrowFunction": "off"
+          }
+        }
+      }
+    }
+  ]
 }
