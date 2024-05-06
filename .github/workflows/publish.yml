@@ -18,6 +18,9 @@ jobs:
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+          MONDRIAN_SERVER: https://arkansas-api.datausa.io/
+          TESSERACT_SERVER: https://api-yak.oec.world/tesseract/
+          PYTESSERACT_SERVER: https://pytesseract-dev.oec.world/tesseract/
 
   # publish-gpr:
   #   runs-on: ubuntu-latest
