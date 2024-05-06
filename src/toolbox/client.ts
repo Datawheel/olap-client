@@ -96,7 +96,7 @@ Received ${JSON.stringify(config)}`;
     (response: AxiosResponse) => {
       if (response.status === 200 && "cubes" in response.data) {
         let ds: IDataSource;
-        if ("module" in response.data) {
+        if ("locales" in response.data) {
           ds = new PyTesseractDataSource(url);
         } else if ("name" in response.data) {
           ds = new TesseractDataSource(url);
