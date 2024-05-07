@@ -51,28 +51,29 @@ export function buildSearchParams(query: Query): TesseractDataRequest {
   return {
     cube: query.cube.name,
     locale: query.getParam("locale"),
-    drilldowns: query.getParam("drilldowns").map(getName),
-    measures: query.getParam("measures").map(getName),
-    properties: query.getParam("properties").map(getName),
+    drilldowns: query.getParam("drilldowns").map(getName).join(","),
+    measures: query.getParam("measures").map(getName).join(","),
+    properties: query.getParam("properties").map(getName).join(","),
     exclude: filterMap(cuts, (item) => {
       if (!item.isExclusive) return null;
       return `${item.drillable.name}:${item.members.join(",")}`;
-    }),
+    }).join(","),
     include: filterMap(cuts, (item) => {
       if (item.isExclusive) return null;
       return `${item.drillable.name}:${item.members.join(",")}`;
-    }),
+    }).join(","),
     filters: query.getParam("filters").map((item) => {
-      const filter = `${item.measure}.${item.const1.join(".")}`;
+      const measure = typeof item.measure === "string" ? item.measure : item.measure.name;
+      const filter = `${measure}.${item.const1.join(".")}`;
       return item.const2 ? `${filter}.${item.joint}.${item.const2.join(".")}` : filter;
-    }),
+    }).join(","),
     limit: `${pagination.limit},${pagination.offset}`,
     sort: !sorting.property
       ? undefined
       : typeof sorting.property === "string"
         ? `${sorting.property}.${sorting.direction}`
         : `${sorting.property.name}.${sorting.direction}`,
-    time: time.value ? `${time.value}.${time.precision}` : undefined,
+    time: time.precision ? `${time.precision}.${time.value}` : undefined,
     parents: options.parents || undefined,
   };
 }
@@ -200,15 +201,15 @@ export function hydrateQueryFromRequest(
   });
 
   const [pagiLimit = "0", pagiOffset = "0"] = splitTokens(request.limit);
-  const [sortProp, sortDir] = splitTokens(request.sort);
-  const [timeScale, timeAge] = splitTokens(request.time);
+  const [sortProp, sortDir] = splitTokens(request.sort, ".");
+  const [timeScale, timeAge] = splitTokens(request.time, ".");
 
   const params: Partial<QueryDescriptor> = {
     cube: request.cube,
     locale: request.locale,
-    drilldowns: splitTokens(request.drilldowns).map((level) => ({level})),
+    drilldowns: splitTokens(request.drilldowns).map((level) => ({level, toString: () => level})),
     measures: splitTokens(request.measures),
-    properties: splitTokens(request.properties).map((property) => ({property})),
+    properties: splitTokens(request.properties).map((property) => ({property, toString: () => property})),
     page_limit: Number.parseInt(pagiLimit),
     page_offset: Number.parseInt(pagiOffset),
     cuts: cutsInclude.concat(cutsExclude),

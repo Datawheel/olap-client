@@ -19,7 +19,7 @@
   "scripts": {
     "build": "tsup",
     "pretest": "npm run build",
-    "test": "mocha ./tests",
+    "test": "mocha ./tests/**/*.js",
     "prepublishOnly": "npm run test"
   },
   "author": "Francisco Abarzua <francisco@datawheel.us>",
