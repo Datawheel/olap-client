@@ -27,7 +27,7 @@
   "homepage": "https://github.com/Datawheel/olap-client",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Datawheel/olap-client.git"
+    "url": "git+https://github.com/Datawheel/olap-client.git"
   },
   "bugs": {
     "url": "https://github.com/Datawheel/olap-client/issues"
