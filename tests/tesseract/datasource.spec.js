@@ -1,6 +1,9 @@
 const assert = require("node:assert");
 const {TesseractDataSource, Cube} = require("../../dist/index.cjs");
 
+// Ensure online test runs before
+require("../online.spec");
+
 const {TESSERACT_SERVER} = process.env;
 
 describe("TesseractDataSource", function () {

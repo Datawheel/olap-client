@@ -1,6 +1,9 @@
 const assert = require("node:assert");
 const {PyTesseractDataSource, Cube} = require("../../dist/index.cjs");
 
+// Ensure online test runs before
+require("../online.spec");
+
 const {PYTESSERACT_SERVER} = process.env;
 
 describe("PyTesseractDataSource", function () {
@@ -245,7 +248,7 @@ describe("PyTesseractDataSource", function () {
 
     it("should stringify a Query into a search string", () => {
       const query = cube.query
-        .setFormat("jsonrecords")
+        .setFormat("csv")
         .setLocale("es")
         .addMeasure("Measure")
         .addDrilldown("Year")
@@ -259,7 +262,7 @@ describe("PyTesseractDataSource", function () {
         .setTime("year", "latest")
         .setOption("parents", false);
 
-      const url = ds.stringifyQueryURL(query, "csv");
+      const url = ds.stringifyQueryURL(query);
 
       const parsedURL = new URL(url);
       const parsedSearch = Object.fromEntries(parsedURL.searchParams);

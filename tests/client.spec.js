@@ -8,6 +8,9 @@ const {
 const {TestDataSource} = require("./datasource");
 const {randomPick, randomLevel, randomQuery} = require("./utils");
 
+// Ensure online test runs before
+require("./online.spec");
+
 const {MONDRIAN_SERVER, TESSERACT_SERVER, PYTESSERACT_SERVER} = process.env;
 
 const ds = new TestDataSource();

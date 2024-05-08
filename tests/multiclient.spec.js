@@ -6,6 +6,9 @@ const {
 } = require("../dist/index.cjs");
 const {randomPick, randomLevel} = require("./utils");
 
+// Ensure online test runs before
+require("./online.spec");
+
 const {MONDRIAN_SERVER, TESSERACT_SERVER} = process.env;
 
 describe("MultiClient", () => {

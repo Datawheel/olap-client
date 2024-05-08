@@ -1,6 +1,9 @@
 const assert = require("node:assert");
 const {MondrianDataSource, Cube} = require("../../dist/index.cjs");
 
+// Ensure online test runs before
+require("../online.spec");
+
 const {MONDRIAN_SERVER} = process.env;
 
 describe("MondrianDataSource", function () {

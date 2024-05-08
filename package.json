@@ -18,9 +18,9 @@
   ],
   "scripts": {
     "build": "tsup",
-    "pretest": "npm run build",
-    "test": "mocha ./tests/**/*.js",
-    "prepublishOnly": "npm run test"
+    "pretest": "tsup",
+    "test": "mocha --recursive tests",
+    "prepublishOnly": "tsup && mocha --bail --recursive tests"
   },
   "author": "Francisco Abarzua <francisco@datawheel.us>",
   "license": "MIT",
