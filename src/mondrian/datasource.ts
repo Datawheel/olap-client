@@ -63,30 +63,17 @@ export class MondrianDataSource implements IDataSource {
     );
   }
 
-  execQuery(query: Query, endpoint = "aggregate"): Promise<Aggregation> {
-    if (endpoint === "aggregate") {
-      return this.execQueryAggregate(query);
-    }
-    return Promise.reject(new Error(`Invalid endpoint type: ${endpoint}`));
-  }
-
-  private execQueryAggregate(query: Query): Promise<Aggregation> {
-    const params = extractAggregateSearchParamsFromQuery(query);
+  execQuery(query: Query): Promise<Aggregation> {
     const format = query.getParam("format");
-    const url = urljoin(query.cube.toString(), `aggregate.${format}`);
-    const searchParams = formUrlEncoded(params, {
-      ignorenull: true,
-      skipIndex: true,
-      sorted: true,
-    });
-    return this.axiosInstance.get(url, {params}).then((response) => {
+    const url = this.stringifyQueryURL(query);
+    return this.axiosInstance.get(url).then((response) => {
       const data = format === Format.jsonrecords ? response.data.data : response.data;
       return {
         data,
         headers: {...response.headers} as Record<string, string>,
         query,
         status: response.status,
-        url: `${url}?${searchParams}`,
+        url,
       };
     });
   }

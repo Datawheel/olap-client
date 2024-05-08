@@ -18,12 +18,12 @@ import {
   extractLogicLayerSearchParamsFromQuery,
   hydrateQueryFromLogicLayerSearchParams,
 } from "./logiclayer";
-import type {TesseractCube, TesseractEndpointCubes, TesseractMember} from "./schema";
-
-interface TesseractServerStatus {
-  status: string;
-  tesseract_version: string;
-}
+import type {
+  TesseractCube,
+  TesseractMember,
+  TesseractSchema,
+  TesseractStatus,
+} from "./schema";
 
 const softwareName = "tesseract-olap";
 
@@ -53,7 +53,7 @@ export class TesseractDataSource implements IDataSource {
   }
 
   checkStatus(): Promise<ServerStatus> {
-    return this.axiosInstance.get<TesseractServerStatus>("/").then(
+    return this.axiosInstance.get<TesseractStatus>("/").then(
       (response) => {
         const {status, tesseract_version} = response.data;
         this.serverOnline = status === "ok";
@@ -72,15 +72,17 @@ export class TesseractDataSource implements IDataSource {
     );
   }
 
-  execQuery(query: Query, endpoint = "aggregate"): Promise<Aggregation> {
-    if (endpoint === "aggregate") {
+  execQuery(
+    query: Query,
+    endpoint: TesseractEndpoint | `${TesseractEndpoint}` = "aggregate",
+  ): Promise<Aggregation> {
+    if (endpoint === TesseractEndpoint.aggregate) {
       return this.execQueryAggregate(query);
     }
-    if (endpoint === "logiclayer") {
+    if (endpoint === TesseractEndpoint.logiclayer) {
       return this.execQueryLogicLayer(query);
     }
-    const reason = `Invalid endpoint type: ${endpoint}`;
-    return Promise.reject(new Error(reason));
+    return Promise.reject(new Error(`Invalid endpoint type: ${endpoint}`));
   }
 
   private execQueryAggregate(query: Query): Promise<Aggregation> {
@@ -152,7 +154,7 @@ export class TesseractDataSource implements IDataSource {
 
   fetchCubes(): Promise<PlainCube[]> {
     const cubeAdapter = cubeAdapterFactory({server_uri: this.serverUrl});
-    return this.axiosInstance.get<TesseractEndpointCubes>("cubes").then((response) => {
+    return this.axiosInstance.get<TesseractSchema>("cubes").then((response) => {
       const tesseractResponse = response.data;
       if (tesseractResponse && Array.isArray(tesseractResponse.cubes)) {
         return tesseractResponse.cubes.map(cubeAdapter);
@@ -193,9 +195,7 @@ export class TesseractDataSource implements IDataSource {
       if (member) {
         return member;
       }
-      throw new Error(
-        `Can't find member with key '${key}' for level '${parent.name}'`,
-      );
+      throw new Error(`Can't find member with key '${key}' for level '${parent.name}'`);
     });
   }
 

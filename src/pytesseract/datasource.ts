@@ -71,14 +71,14 @@ export class PyTesseractDataSource implements IDataSource {
 
   execQuery(query: Query): Promise<Aggregation> {
     const format = query.getParam("format");
-    const url = this._buildDataEndpoint(query, format);
+    const url = this.stringifyQueryURL(query);
     return this.axiosInstance.get<TesseractDataResponse>(url).then((response) => {
       return {
-        data: format.includes("json") ? response.data.data : response.data,
+        data: format.startsWith("json") ? response.data.data : response.data,
         headers: {...response.headers} as Record<string, string>,
         query,
         status: response.status,
-        url: urljoin(this.serverUrl, url),
+        url,
       };
     });
   }
@@ -163,21 +163,16 @@ export class PyTesseractDataSource implements IDataSource {
     Object.assign(this.axiosInstance.defaults, config);
   }
 
-  stringifyQueryURL(query: Query, format?: string): string {
-    const format_ = format || query.getParam("format") || "jsonrecords";
-    const endpoint = this._buildDataEndpoint(query, format_);
-    return urljoin(this.serverUrl, endpoint);
-  }
-
-  private _buildDataEndpoint(query: Query, format: string): string {
-    const request = buildSearchParams(query);
-    const search = formUrlEncode(request, {
+  stringifyQueryURL(query: Query): string {
+    const format = query.getParam("format") || Format.jsonrecords;
+    const urlSearchParams = buildSearchParams(query);
+    const urlSearch = formUrlEncode(urlSearchParams, {
       ignoreEmptyArray: true,
       ignorenull: true,
       skipBracket: true,
       skipIndex: true,
       sorted: true,
     });
-    return `data.${format}?${search}`;
+    return urljoin(this.serverUrl, `data.${format}?${urlSearch}`);
   }
 }

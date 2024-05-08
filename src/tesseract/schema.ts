@@ -1,6 +1,11 @@
-import { Annotations } from "../interfaces/plain";
+import type { Annotations } from "../interfaces/plain";
 
-export interface TesseractEndpointCubes {
+export interface TesseractStatus {
+  status: string;
+  tesseract_version: string;
+}
+
+export interface TesseractSchema {
   annotations: Annotations;
   cubes: TesseractCube[];
   name: string;
