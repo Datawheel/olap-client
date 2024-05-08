@@ -3,7 +3,7 @@ import formUrlDecode from "form-urldecoded";
 import formUrlEncode from "form-urlencoded";
 import urljoin from "url-join";
 import type {Aggregation, IDataSource, ServerStatus} from "../interfaces/contracts";
-import type {Format} from "../interfaces/enums";
+import {Format} from "../interfaces/enums";
 import type {PlainCube, PlainMember} from "../interfaces/plain";
 import type {Level} from "../level";
 import type {Query} from "../query";
@@ -26,6 +26,10 @@ import type {
 
 const softwareName = "tesseract-olap[python]";
 
+export enum PyTesseractEndpoint {
+  logiclayer = "",
+}
+
 export class PyTesseractDataSource implements IDataSource {
   axiosInstance: AxiosInstance;
   serverOnline = false;
@@ -33,6 +37,8 @@ export class PyTesseractDataSource implements IDataSource {
   serverUrl: string;
   serverVersion: string;
 
+  static endpoints = [PyTesseractEndpoint.logiclayer];
+  static formats = [Format.csv, Format.tsv, Format.jsonarrays, Format.jsonrecords, Format.xlsx];
   static softwareName = softwareName;
 
   constructor(url: string) {

@@ -27,6 +27,11 @@ interface TesseractServerStatus {
 
 const softwareName = "tesseract-olap";
 
+export enum TesseractEndpoint {
+  aggregate = "aggregate",
+  logiclayer = "logiclayer",
+}
+
 export class TesseractDataSource implements IDataSource {
   axiosInstance: AxiosInstance = Axios.create({});
   serverOnline: boolean;
@@ -34,6 +39,8 @@ export class TesseractDataSource implements IDataSource {
   serverVersion = "";
   serverUrl = "/";
 
+  static endpoints = [TesseractEndpoint.logiclayer, TesseractEndpoint.aggregate];
+  static formats = [Format.csv, Format.jsonarrays, Format.jsonrecords];
   static softwareName = softwareName;
 
   constructor(serverUrl: string) {

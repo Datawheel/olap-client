@@ -60,7 +60,10 @@ export enum Format {
   json = "json",
   jsonarrays = "jsonarrays",
   jsonrecords = "jsonrecords",
+  parquet = "parquet",
+  tsv = "tsv",
   xls = "xls",
+  xlsx = "xlsx",
 }
 
 export enum Direction {

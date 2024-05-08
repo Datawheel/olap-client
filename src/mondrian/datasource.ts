@@ -19,6 +19,10 @@ import type {MondrianCube, MondrianMember} from "./schema";
 
 const softwareName = "mondrian-rest";
 
+export enum MondrianEndpoint {
+  aggregate = "",
+}
+
 export class MondrianDataSource implements IDataSource {
   axiosInstance: AxiosInstance;
   serverOnline = false;
@@ -26,6 +30,8 @@ export class MondrianDataSource implements IDataSource {
   serverUrl: string;
   serverVersion: string;
 
+  static endpoints = [MondrianEndpoint.aggregate];
+  static formats = [Format.csv, Format.json, Format.jsonrecords, Format.xls];
   static softwareName = softwareName;
 
   constructor(serverUrl: string) {
