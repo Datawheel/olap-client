@@ -3,7 +3,13 @@
  * in the Cube schema.
  */
 
-import { Calculation, Comparison, Direction, TimePrecision, TimeValuePoint } from "./enums";
+import type {
+  Calculation,
+  Comparison,
+  Direction,
+  TimePrecision,
+  TimeValuePoint,
+} from "./enums";
 
 export interface CalculationGrowthDescriptor {
   kind: "growth";

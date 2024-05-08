@@ -1,7 +1,8 @@
-import { Cube } from "./cube";
-import { AggregatorType, Calculation } from "./interfaces/enums";
-import { PlainMeasure } from "./interfaces/plain";
-import { Annotated, applyMixins, FullNamed, Serializable } from "./toolbox/mixins";
+import type {Cube} from "./cube";
+import {type AggregatorType, Calculation} from "./interfaces/enums";
+import type {PlainMeasure} from "./interfaces/plain";
+import {Annotated, FullNamed, Serializable, applyMixins} from "./toolbox/mixins";
+import {hasProperty} from "./toolbox/validation";
 
 export type CalcOrMeasure = Calculation | Measure;
 
@@ -12,12 +13,18 @@ export class Measure {
 
   readonly _source: PlainMeasure;
 
-  static isCalcOrMeasure(obj: any): obj is CalcOrMeasure {
-    return Calculation.hasOwnProperty(obj) || Measure.isMeasure(obj);
+  static isCalcOrMeasure(obj: unknown): obj is CalcOrMeasure {
+    return (typeof obj === "string" && obj in Calculation) || Measure.isMeasure(obj);
   }
 
-  static isMeasure(obj: any): obj is Measure {
-    return Boolean(obj && obj._source && obj._source._type === "measure");
+  static isMeasure(obj: unknown): obj is Measure {
+    return (
+      obj != null &&
+      hasProperty(obj, "_source") &&
+      obj._source != null &&
+      hasProperty(obj._source, "_type") &&
+      obj._source._type === "measure"
+    );
   }
 
   constructor(source: PlainMeasure, parent?: Cube) {

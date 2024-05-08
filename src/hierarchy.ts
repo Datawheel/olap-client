@@ -1,10 +1,11 @@
-import { Cube } from "./cube";
-import { Dimension } from "./dimension";
-import { PlainHierarchy } from "./interfaces/plain";
-import { Level, LevelReference } from "./level";
-import { childClassMapper } from "./toolbox/collection";
-import { Annotated, applyMixins, FullNamed, Serializable } from "./toolbox/mixins";
-import { abbreviateFullName } from "./toolbox/strings";
+import type {Cube} from "./cube";
+import type {Dimension} from "./dimension";
+import type {PlainHierarchy} from "./interfaces/plain";
+import {Level, type LevelReference} from "./level";
+import {childClassMapper} from "./toolbox/collection";
+import {Annotated, FullNamed, Serializable, applyMixins} from "./toolbox/mixins";
+import {abbreviateFullName} from "./toolbox/strings";
+import {hasProperty} from "./toolbox/validation";
 
 export interface Hierarchy extends Annotated, FullNamed, Serializable<PlainHierarchy> {}
 
@@ -15,8 +16,14 @@ export class Hierarchy {
   readonly levels: Level[] = [];
   readonly levelsByName: Readonly<Record<string, Level>> = {};
 
-  static isHierarchy(obj: any): obj is Hierarchy {
-    return Boolean(obj && obj._source && obj._source._type === "hierarchy");
+  static isHierarchy(obj: unknown): obj is Hierarchy {
+    return (
+      obj != null &&
+      hasProperty(obj, "_source") &&
+      obj._source != null &&
+      hasProperty(obj._source, "_type") &&
+      obj._source._type === "hierarchy"
+    );
   }
 
   constructor(source: PlainHierarchy, parent?: Dimension) {
@@ -44,10 +51,11 @@ export class Hierarchy {
   }
 
   getLevel(ref: LevelReference): Level {
-    const levelName =
-      Level.isLevel(ref)           ? ref.name :
-      Level.isLevelDescriptor(ref) ? ref.level :
-      /* else */                     ref;
+    const levelName = Level.isLevel(ref)
+      ? ref.name
+      : Level.isLevelDescriptor(ref)
+        ? ref.level
+        : ref;
     const level = this.levelsByName[levelName];
     if (level) {
       return level;

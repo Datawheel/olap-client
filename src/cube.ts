@@ -1,14 +1,15 @@
-import { Dimension } from "./dimension";
-import { IDataSource } from "./interfaces/contracts";
-import { DimensionType } from "./interfaces/enums";
-import { PlainCube } from "./interfaces/plain";
-import { Level, LevelReference } from "./level";
-import { Measure } from "./measure";
-import { NamedSet } from "./namedset";
-import { Property, PropertyReference } from "./property";
-import { Drillable, DrillableReference, Query } from "./query";
-import { childClassMapper, iteratorMatch } from "./toolbox/collection";
-import { Annotated, applyMixins, FullNamed, Serializable } from "./toolbox/mixins";
+import {Dimension} from "./dimension";
+import type {IDataSource} from "./interfaces/contracts";
+import {DimensionType} from "./interfaces/enums";
+import type {PlainCube} from "./interfaces/plain";
+import {Level, type LevelReference} from "./level";
+import {Measure} from "./measure";
+import {NamedSet} from "./namedset";
+import type {Property, PropertyReference} from "./property";
+import {type Drillable, type DrillableReference, Query} from "./query";
+import {childClassMapper, iteratorMatch} from "./toolbox/collection";
+import {Annotated, FullNamed, Serializable, applyMixins} from "./toolbox/mixins";
+import {hasProperty} from "./toolbox/validation";
 
 export interface Cube extends Annotated, FullNamed, Serializable<PlainCube> {}
 
@@ -23,8 +24,14 @@ export class Cube {
   readonly namedsets: NamedSet[] = [];
   readonly namedsetsByName: Readonly<Record<string, NamedSet>> = {};
 
-  static isCube(obj: any): obj is Cube {
-    return Boolean(obj && obj._source && obj._source._type === "cube");
+  static isCube(obj: unknown): obj is Cube {
+    return (
+      obj != null &&
+      hasProperty(obj, "_source") &&
+      obj._source != null &&
+      hasProperty(obj._source, "_type") &&
+      obj._source._type === "cube"
+    );
   }
 
   constructor(source: PlainCube, parent?: IDataSource) {
@@ -45,7 +52,7 @@ export class Cube {
   }
 
   get caption(): string {
-    return this._source.annotations["caption"] || this._source.name;
+    return this._source.annotations.caption || this._source.name;
   }
 
   get datasource(): IDataSource {
@@ -56,7 +63,7 @@ export class Cube {
   }
 
   get defaultMeasure(): Measure {
-    const measureName = this._source.annotations["default"] || "undefined";
+    const measureName = this._source.annotations.default || "undefined";
     return this.measuresByName[measureName] || this.measures[0];
   }
 
@@ -148,13 +155,13 @@ export class Cube {
   }
 
   private levelIteratorFactory(): IterableIterator<Level> {
-    const { dimensions } = this;
+    const {dimensions} = this;
     let levelIterator = dimensions[0].levelIterator;
     let d = 0;
 
     function next(): IteratorResult<Level, undefined> {
       if (d === dimensions.length) {
-        return { value: undefined, done: true };
+        return {value: undefined, done: true};
       }
       const nextIteration = levelIterator.next();
       if (nextIteration.done) {
@@ -164,7 +171,7 @@ export class Cube {
       return nextIteration;
     }
 
-    const iterator = { next, [Symbol.iterator]: () => iterator };
+    const iterator = {next, [Symbol.iterator]: () => iterator};
     return iterator;
   }
 
@@ -175,7 +182,7 @@ export class Cube {
 
     function next(): IteratorResult<Property, undefined> {
       if (d === dimensions.length) {
-        return { value: undefined, done: true };
+        return {value: undefined, done: true};
       }
       const nextProperty = propertyIterator.next();
       if (nextProperty.done) {
@@ -185,7 +192,7 @@ export class Cube {
       return nextProperty;
     }
 
-    const iterator = { next, [Symbol.iterator]: () => iterator };
+    const iterator = {next, [Symbol.iterator]: () => iterator};
     return iterator;
   }
 }

@@ -1,8 +1,9 @@
-import { Cube } from "./cube";
-import { PropertyDescriptor } from "./interfaces/descriptors";
-import { PlainProperty } from "./interfaces/plain";
-import { Level } from "./level";
-import { Annotated, applyMixins, Named, Serializable } from "./toolbox/mixins";
+import type {Cube} from "./cube";
+import type {PropertyDescriptor} from "./interfaces/descriptors";
+import type {PlainProperty} from "./interfaces/plain";
+import type {Level} from "./level";
+import {Annotated, Named, Serializable, applyMixins} from "./toolbox/mixins";
+import {hasProperty} from "./toolbox/validation";
 
 export type PropertyReference = string | PropertyDescriptor | Property;
 
@@ -12,16 +13,22 @@ export class Property {
   readonly _source: PlainProperty;
   private readonly _parent?: Level;
 
-  static isProperty(obj: any): obj is Property {
-    return Boolean(obj && obj._source && obj._source._type === "property");
+  static isProperty(obj: unknown): obj is Property {
+    return (
+      obj != null &&
+      hasProperty(obj, "_source") &&
+      obj._source != null &&
+      hasProperty(obj._source, "_type") &&
+      obj._source._type === "property"
+    );
   }
 
-  static isPropertyDescriptor(obj: any): obj is PropertyDescriptor {
-    return Boolean(
-      obj &&
-      obj.property &&
+  static isPropertyDescriptor(obj: unknown): obj is PropertyDescriptor {
+    return (
+      obj != null &&
+      hasProperty(obj, "property") &&
       typeof obj.property === "string" &&
-      (!obj.level || typeof obj.level === "string")
+      (!hasProperty(obj, "level") || typeof obj.level === "string")
     );
   }
 
@@ -46,7 +53,7 @@ export class Property {
   }
 
   get fullName(): string {
-    return this.level.fullName + "." + this.name;
+    return `${this.level.fullName}.${this.name}`;
   }
 
   get level(): Level {
@@ -62,22 +69,25 @@ export class Property {
 
   matches(ref: PropertyReference): boolean {
     if (typeof ref === "string") {
-      return this._source.uniqueName === ref ||
+      return (
+        this._source.uniqueName === ref ||
         this.fullName === ref ||
-        this._source.name === ref;
-    }
-    else if (Property.isPropertyDescriptor(ref)) {
-      const level = this._parent ? this.level : undefined;
-      return this.matches(ref.property) && (!level || (
-          (!ref.level || level.matches(ref.level)) &&
-          (!ref.hierarchy || ref.hierarchy === level.hierarchy.name) &&
-          (!ref.dimension || ref.dimension === level.dimension.name) &&
-          (!ref.cube || ref.cube === level.cube.name) &&
-          (!ref.server || ref.server === level.cube.server)
-        )
+        this._source.name === ref
       );
     }
-    else if (Property.isProperty(ref)) {
+    if (Property.isPropertyDescriptor(ref)) {
+      const level = this._parent ? this.level : undefined;
+      return (
+        this.matches(ref.property) &&
+        (!level ||
+          ((!ref.level || level.matches(ref.level)) &&
+            (!ref.hierarchy || ref.hierarchy === level.hierarchy.name) &&
+            (!ref.dimension || ref.dimension === level.dimension.name) &&
+            (!ref.cube || ref.cube === level.cube.name) &&
+            (!ref.server || ref.server === level.cube.server)))
+      );
+    }
+    if (Property.isProperty(ref)) {
       return this === ref || this.matches(ref.descriptor);
     }
     return false;

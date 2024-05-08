@@ -142,7 +142,7 @@ export class MondrianDataSource implements IDataSource {
     const url = urljoin(dimension.toString(), "levels", name, "members", `${key}`);
     const params = {
       caption: caption || undefined,
-      children: Boolean(options.children),
+      children: !!options.children,
       member_properties: options.member_properties,
     };
     return this.axiosInstance.get<MondrianMember>(url, {params}).then(
@@ -175,7 +175,7 @@ export class MondrianDataSource implements IDataSource {
     const url = urljoin(parent.toString(), "members");
     const params = {
       caption: caption || undefined,
-      children: Boolean(options.children),
+      children: !!options.children,
       member_properties: options.member_properties,
     };
     return this.axiosInstance
@@ -191,7 +191,7 @@ export class MondrianDataSource implements IDataSource {
 
     const formatMatch = url.match(/^.+\/aggregate(\.[a-z]+)\?.+$/);
     if (formatMatch) {
-      qp["format"] = formatMatch[1].slice(1);
+      qp.format = formatMatch[1].slice(1);
     }
 
     const qpFinal = applyParseUrlRules(qp, options);

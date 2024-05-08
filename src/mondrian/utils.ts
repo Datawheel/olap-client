@@ -1,15 +1,15 @@
-import { QueryCut, QueryFilter } from "../query";
-import { MondrianFilterOperator } from "./interfaces";
+import type {QueryCut, QueryFilter} from "../query";
+import {MondrianFilterOperator} from "./interfaces";
 
 export function joinFullName(nameParts: string[]): string {
   return nameParts.map((token: string) => `[${token}]`).join(".");
 }
 
-export function parseCut(cut: string): [string, string[]] {
-  if (cut.indexOf("].&[") === -1) {
-    throw TypeError(`Couldn't parse cut: ${cut}`);
+export function parseCut(rawCut: string): [string, string[]] {
+  if (rawCut.indexOf("].&[") === -1) {
+    throw TypeError(`Couldn't parse cut: ${rawCut}`);
   }
-  cut = `${cut}`.replace(/^\{|\}$/g, "");
+  const cut = `${rawCut}`.replace(/^\{|\}$/g, "");
   const [drillable] = cut.split(".&", 1);
   const members = cut
     .split(",")
@@ -22,14 +22,14 @@ export function parseCut(cut: string): [string, string[]] {
 }
 
 export function rangeify(list: number[]) {
-  const groups: { [diff: string]: number[] } = {};
+  const groups: {[diff: string]: number[]} = {};
   list.sort().forEach((item: number, i: number) => {
     const diff = item - i;
     groups[diff] = groups[diff] || [];
     groups[diff].push(item);
   });
   return Object.values(groups).map((group) =>
-    group.length > 1 ? [group[0], group[group.length - 1]] : group[0]
+    group.length > 1 ? [group[0], group[group.length - 1]] : group[0],
   );
 }
 
@@ -39,12 +39,14 @@ export function splitFullName(fullName: string): string[] {
 
 export function splitPropertyName(fullName: string): [string, string] {
   const propIndex = fullName.lastIndexOf(".");
-  return [fullName.slice(0, propIndex), fullName.slice(propIndex + 1)]
+  return [fullName.slice(0, propIndex), fullName.slice(propIndex + 1)];
 }
 
 export function stringifyCut(item: QueryCut): string {
-  const { drillable, members } = item;
-  const cut = members.map((member: string) => `${drillable.fullName}.&[${member}]`).join(",");
+  const {drillable, members} = item;
+  const cut = members
+    .map((member: string) => `${drillable.fullName}.&[${member}]`)
+    .join(",");
   return members.length > 1 ? `{${cut}}` : cut;
 }
 

@@ -1,11 +1,12 @@
-import { Cube } from "./cube";
-import { Hierarchy } from "./hierarchy";
-import { DimensionType } from "./interfaces/enums";
-import { PlainDimension } from "./interfaces/plain";
-import { Level, LevelReference } from "./level";
-import { Property, PropertyReference } from "./property";
-import { childClassMapper, iteratorMatch } from "./toolbox/collection";
-import { Annotated, applyMixins, FullNamed, Serializable } from "./toolbox/mixins";
+import type {Cube} from "./cube";
+import {Hierarchy} from "./hierarchy";
+import type {DimensionType} from "./interfaces/enums";
+import type {PlainDimension} from "./interfaces/plain";
+import type {Level, LevelReference} from "./level";
+import type {Property, PropertyReference} from "./property";
+import {childClassMapper, iteratorMatch} from "./toolbox/collection";
+import {Annotated, FullNamed, Serializable, applyMixins} from "./toolbox/mixins";
+import {hasProperty} from "./toolbox/validation";
 
 export interface Dimension extends Annotated, FullNamed, Serializable<PlainDimension> {}
 
@@ -16,8 +17,14 @@ export class Dimension {
   readonly hierarchies: Hierarchy[] = [];
   readonly hierarchiesByName: Readonly<Record<string, Hierarchy>> = {};
 
-  static isDimension(obj: any): obj is Dimension {
-    return Boolean(obj && obj._source && obj._source._type === "dimension");
+  static isDimension(obj: unknown): obj is Dimension {
+    return (
+      obj != null &&
+      hasProperty(obj, "_source") &&
+      obj._source != null &&
+      hasProperty(obj._source, "_type") &&
+      obj._source._type === "dimension"
+    );
   }
 
   constructor(source: PlainDimension, parent?: Cube) {
@@ -30,7 +37,7 @@ export class Dimension {
   }
 
   get caption(): string {
-    return this._source.annotations["caption"] || this._source.name;
+    return this._source.annotations.caption || this._source.name;
   }
 
   get cube(): Cube {
@@ -88,13 +95,13 @@ export class Dimension {
   }
 
   private levelIteratorFactory(): IterableIterator<Level> {
-    const { hierarchies } = this;
+    const {hierarchies} = this;
     let h = 0;
     let l = 0;
 
     function next(): IteratorResult<Level, undefined> {
       if (h === hierarchies.length) {
-        return { value: undefined, done: true };
+        return {value: undefined, done: true};
       }
       const {levels} = hierarchies[h];
       if (l === levels.length) {
@@ -102,10 +109,10 @@ export class Dimension {
         l = 0;
         return next();
       }
-      return { value: levels[l++], done: false };
+      return {value: levels[l++], done: false};
     }
 
-    const iterator = { next, [Symbol.iterator]: () => iterator };
+    const iterator = {next, [Symbol.iterator]: () => iterator};
     return iterator;
   }
 
@@ -116,7 +123,7 @@ export class Dimension {
 
     function next(): IteratorResult<Property, undefined> {
       if (currentLevel.done) {
-        return { value: undefined, done: true };
+        return {value: undefined, done: true};
       }
       const {properties} = currentLevel.value;
       if (p === properties.length) {
@@ -124,10 +131,10 @@ export class Dimension {
         p = 0;
         return next();
       }
-      return { value: properties[p++], done: false };
+      return {value: properties[p++], done: false};
     }
 
-    const iterator = { next, [Symbol.iterator]: () => iterator };
+    const iterator = {next, [Symbol.iterator]: () => iterator};
     return iterator;
   }
 }

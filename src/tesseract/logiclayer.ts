@@ -87,13 +87,13 @@ export function extractLogicLayerSearchParamsFromQuery(
       ? undefined
       : pagination.offset > 0
         ? `${pagination.offset},${pagination.limit}`
-        : /* else */ `${pagination.limit}`,
+        : `${pagination.limit}`,
 
     sort: Measure.isMeasure(sorting.property)
       ? `${sorting.property.name}.${sorting.direction}`
       : typeof sorting.property === "string"
         ? `${sorting.property}.${sorting.direction}`
-        : /* else */ undefined,
+        : undefined,
 
     time:
       timeframe.precision != null && timeframe.value != null

@@ -1,15 +1,15 @@
-import { Comparison, Direction } from "../interfaces/enums";
-import { Level } from "../level";
-import { Measure } from "../measure";
-import { Property } from "../property";
-import { Drillable, Query, QueryCut, QueryFilter } from "../query";
-import { asArray } from "../toolbox/collection";
-import { ifNotEmpty } from "../toolbox/validation";
-import { MondrianAggregateURLSearchParams } from "./interfaces";
-import { parseCut, splitPropertyName, stringifyCut, stringifyFilter } from "./utils";
+import {Comparison, Direction} from "../interfaces/enums";
+import {Level} from "../level";
+import {Measure} from "../measure";
+import {Property} from "../property";
+import type {Drillable, Query, QueryCut, QueryFilter} from "../query";
+import {asArray} from "../toolbox/collection";
+import {ifNotEmpty} from "../toolbox/validation";
+import type {MondrianAggregateURLSearchParams} from "./interfaces";
+import {parseCut, splitPropertyName, stringifyCut, stringifyFilter} from "./utils";
 
 export function extractAggregateSearchParamsFromQuery(
-  query: Query
+  query: Query,
 ): Partial<MondrianAggregateURLSearchParams> {
   const captions = query.getParam("captions");
   const pagination = query.getParam("pagination");
@@ -29,33 +29,30 @@ export function extractAggregateSearchParamsFromQuery(
   }
 
   return {
-    caption:
-         ifNotEmpty<Property>(captions, stringifyProperty),
-    cut:
-         ifNotEmpty<QueryCut>(query.getParam("cuts"), stringifyCut),
-    drilldown:
-        ifNotEmpty<Drillable>(query.getParam("drilldowns"), item => item.fullName),
-    filter:
-      ifNotEmpty<QueryFilter>(query.getParam("filters"), stringifyFilter),
-    measures:
-          ifNotEmpty<Measure>(query.getParam("measures"), item => item.name),
-    properties:
-         ifNotEmpty<Property>(query.getParam("properties"), stringifyProperty),
+    caption: ifNotEmpty<Property>(captions, stringifyProperty),
+    cut: ifNotEmpty<QueryCut>(query.getParam("cuts"), stringifyCut),
+    drilldown: ifNotEmpty<Drillable>(
+      query.getParam("drilldowns"),
+      (item) => item.fullName,
+    ),
+    filter: ifNotEmpty<QueryFilter>(query.getParam("filters"), stringifyFilter),
+    measures: ifNotEmpty<Measure>(query.getParam("measures"), (item) => item.name),
+    properties: ifNotEmpty<Property>(query.getParam("properties"), stringifyProperty),
 
     limit: pagination.limit || undefined,
     offset: pagination.offset || undefined,
-    // prettier-ignore
-    order:
-      Measure.isMeasure(sorting.property)   ? sorting.property.fullName :
-      Property.isProperty(sorting.property) ? stringifyProperty(sorting.property) :
-      /* else */                              undefined,
+    order: Measure.isMeasure(sorting.property)
+      ? sorting.property.fullName
+      : Property.isProperty(sorting.property)
+        ? stringifyProperty(sorting.property)
+        : undefined,
     order_desc: sorting.direction === Direction.DESC || undefined,
 
     debug: options.debug,
     distinct: options.distinct,
     nonempty: options.nonempty,
     parents: options.parents,
-    sparse: options.sparse
+    sparse: options.sparse,
   };
 
   function stringifyProperty(item: Property): string {
@@ -65,20 +62,22 @@ export function extractAggregateSearchParamsFromQuery(
 
 export function hydrateQueryFromAggregateSearchParams(
   query: Query,
-  params: Partial<MondrianAggregateURLSearchParams>
+  params: Partial<MondrianAggregateURLSearchParams>,
 ): Query {
   const cube = query.cube;
 
   const levels: Record<string, Level> = {};
-  for (let level of cube.levelIterator) {
+  for (const level of cube.levelIterator) {
     levels[level.fullName] = level;
   }
 
   asArray(params.caption).forEach((item) => {
     const [levelFullName, propName] = splitPropertyName(item);
     const level = levels[levelFullName];
-    const property = level && level.propertiesByName[propName];
-    property && query.addCaption(property);
+    if (level) {
+      const property = level.propertiesByName[propName];
+      property && query.addCaption(property);
+    }
   });
 
   asArray(params.cut).forEach((item) => {
@@ -92,10 +91,12 @@ export function hydrateQueryFromAggregateSearchParams(
   });
 
   asArray(params.filter).forEach((item) => {
-    const [, measureName, operator, value] = item.match(/^(.+)\s(>|<|>=|<=|=|<>)\s(.+)$/) || [];
+    const [, measureName, operator, value] =
+      item.match(/^(.+)\s(>|<|>=|<=|=|<>)\s(.+)$/) || [];
     const measure = cube.measuresByName[measureName];
     const comparison = Comparison[operator as Comparison];
-    measure && comparison &&
+    measure &&
+      comparison &&
       query.addFilter(measure, [comparison, Number.parseFloat(value)]);
   });
 
@@ -107,8 +108,10 @@ export function hydrateQueryFromAggregateSearchParams(
   asArray(params.properties).forEach((item) => {
     const [levelFullName, propName] = splitPropertyName(item);
     const level = levels[levelFullName];
-    const property = level && level.propertiesByName[propName];
-    property && query.addProperty(property);
+    if (level) {
+      const property = level.propertiesByName[propName];
+      property && query.addProperty(property);
+    }
   });
 
   if (params.limit != null) {

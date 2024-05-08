@@ -1,4 +1,4 @@
-import type { Annotations } from "../interfaces/plain";
+import type {Annotations} from "../interfaces/plain";
 
 export interface TesseractStatus {
   status: string;
@@ -32,14 +32,14 @@ export interface TesseractMeasure {
 interface TesseractMeasureTypeStd {
   standard: {
     units?: string;
-  }
+  };
 }
 
 interface TesseractMeasureTypeErr {
   error: {
     for_measure?: string;
     err_type?: string;
-  }
+  };
 }
 
 export interface TesseractDimension {

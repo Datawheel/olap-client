@@ -5,6 +5,17 @@
     "indentWidth": 2,
     "lineWidth": 90
   },
+  "linter": {
+    "rules": {
+      "complexity": {
+        "noForEach": "off"
+      },
+      "suspicious": {
+        "noExplicitAny": "off",
+        "noUnsafeDeclarationMerging": "off"
+      }
+    }
+  },
   "javascript": {
     "formatter": {
       "bracketSpacing": false,

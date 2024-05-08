@@ -1,4 +1,4 @@
-import { AggregatorType, DimensionType } from "./enums";
+import type {AggregatorType, DimensionType} from "./enums";
 
 export interface Annotations {
   [key: string]: string | undefined;

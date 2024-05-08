@@ -1,15 +1,26 @@
-import { AxiosRequestConfig } from "axios";
-import { CacheManager } from "./cache";
-import { Cube } from "./cube";
-import { Aggregation, IClient, IDataSource, ServerStatus } from "./interfaces/contracts";
-import { PlainCube, PlainMember } from "./interfaces/plain";
-import { Level, LevelReference } from "./level";
-import { Member } from "./member";
-import { Query } from "./query";
-import { getLevel, inferDataSource, matchCubeNameFromURL, ParseURLOptions, ServerConfig } from "./toolbox/client";
+import type {AxiosRequestConfig} from "axios";
+import {CacheManager} from "./cache";
+import {Cube} from "./cube";
+import type {
+  Aggregation,
+  IClient,
+  IDataSource,
+  ServerStatus,
+} from "./interfaces/contracts";
+import type {PlainCube, PlainMember} from "./interfaces/plain";
+import type {Level, LevelReference} from "./level";
+import {Member} from "./member";
+import type {Query} from "./query";
+import {
+  type ParseURLOptions,
+  type ServerConfig,
+  getLevel,
+  inferDataSource,
+  matchCubeNameFromURL,
+} from "./toolbox/client";
 
 export class Client implements IClient {
-  private _cache: CacheManager<Cube> = new CacheManager(cube => cube.name);
+  private _cache: CacheManager<Cube> = new CacheManager((cube) => cube.name);
   private _ds: IDataSource | undefined;
 
   static dataSourceFromURL(config: ServerConfig): Promise<IDataSource> {
@@ -18,7 +29,7 @@ export class Client implements IClient {
 
   static fromURL(config: ServerConfig): Promise<Client> {
     return inferDataSource(config).then(
-      (datasource: IDataSource) => new Client(datasource)
+      (datasource: IDataSource) => new Client(datasource),
     );
   }
 
@@ -47,7 +58,7 @@ Verify the initialization procedure, there might be a race condition.`);
     return this._cache.getItem(cubeName, () =>
       datasource
         .fetchCube(cubeName)
-        .then((cube: PlainCube) => new Cube(cube, datasource))
+        .then((cube: PlainCube) => new Cube(cube, datasource)),
     );
   }
 
@@ -57,20 +68,20 @@ Verify the initialization procedure, there might be a race condition.`);
       datasource
         .fetchCubes()
         .then((cubes: PlainCube[]) =>
-          cubes.map((cube: PlainCube) => new Cube(cube, datasource))
-        )
+          cubes.map((cube: PlainCube) => new Cube(cube, datasource)),
+        ),
     );
   }
 
   getMember(
     levelRef: LevelReference,
     key: string | number,
-    options?: any
+    options?: any,
   ): Promise<Member> {
     return getLevel(this, levelRef).then((level: Level) =>
       this.datasource
         .fetchMember(level, key, options)
-        .then((member: PlainMember) => new Member(member, level))
+        .then((member: PlainMember) => new Member(member, level)),
     );
   }
 
@@ -79,16 +90,13 @@ Verify the initialization procedure, there might be a race condition.`);
       this.datasource
         .fetchMembers(level, options)
         .then((members: PlainMember[]) =>
-          members.map((member: PlainMember) => new Member(member, level))
-        )
+          members.map((member: PlainMember) => new Member(member, level)),
+        ),
     );
   }
 
-  parseQueryURL(
-    url: string,
-    options: Partial<ParseURLOptions> = {}
-  ): Promise<Query> {
-    const { serverUrl } = this.datasource;
+  parseQueryURL(url: string, options: Partial<ParseURLOptions> = {}): Promise<Query> {
+    const {serverUrl} = this.datasource;
     if (!options.anyServer && url.indexOf(serverUrl) === -1) {
       const reason = `Provided URL doesn't belong to the datasource set on this client instance:
 DataSource server: ${serverUrl}
@@ -99,15 +107,13 @@ Provided server: ${url.slice(0, url.indexOf("/", 10))}
     return Promise.resolve(url)
       .then(matchCubeNameFromURL)
       .then((cubeName: string) => this.getCube(cubeName))
-      .then((cube: Cube) =>
-        this.datasource.parseQueryURL(cube.query, url, options)
-      );
+      .then((cube: Cube) => this.datasource.parseQueryURL(cube.query, url, options));
   }
 
   setDataSource(datasource: IDataSource): void {
     if (datasource !== this._ds) {
       this._ds = datasource;
-      this._cache = new CacheManager(cube => cube.name);
+      this._cache = new CacheManager((cube) => cube.name);
     }
   }
 

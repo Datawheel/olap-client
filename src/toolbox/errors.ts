@@ -1,4 +1,4 @@
-import { AxiosResponse } from "axios";
+import type {AxiosResponse} from "axios";
 
 export class ServerError extends Error {
   public readonly body: any;
@@ -6,10 +6,9 @@ export class ServerError extends Error {
   public readonly status: number;
 
   constructor(response: AxiosResponse<any>, message?: string) {
-    const errMessage = message || (
-      response.data ? response.data.error || response.data :
-      /* else */      response.statusText
-    );
+    const errMessage =
+      message ||
+      (response.data ? response.data.error || response.data : response.statusText);
 
     super(errMessage);
 

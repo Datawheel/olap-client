@@ -1,4 +1,10 @@
-import { Annotations, IAnnotated, IFullNamed, INamed, ISerializable } from "../interfaces/plain";
+import type {
+  Annotations,
+  IAnnotated,
+  IFullNamed,
+  INamed,
+  ISerializable,
+} from "../interfaces/plain";
 
 export function applyMixins(derivedCtor: any, baseCtors: any[]) {
   baseCtors.forEach((baseCtor) => {
@@ -28,7 +34,9 @@ export class Annotated {
     if (defaultValue !== undefined) {
       return defaultValue;
     }
-    throw new Error(`Annotation ${key} does not exist in ${this.constructor.name} ${this}.`);
+    throw new Error(
+      `Annotation ${key} does not exist in ${this.constructor.name} ${this}.`,
+    );
   }
 
   getLocaleAnnotation(key: string, locale: string, defaultValue?: string): string {

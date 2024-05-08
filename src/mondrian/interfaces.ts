@@ -4,7 +4,7 @@ export enum MondrianFilterOperator {
   gte = ">=",
   lt = "<",
   lte = "<=",
-  neq = "<>"
+  neq = "<>",
 }
 
 export interface MondrianAggregateURLSearchParams {

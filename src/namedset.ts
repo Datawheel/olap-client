@@ -1,7 +1,8 @@
-import { Cube } from "./cube";
-import { PlainNamedSet } from "./interfaces/plain";
-import { Level } from "./level";
-import { Annotated, applyMixins, FullNamed, Serializable } from "./toolbox/mixins";
+import type {Cube} from "./cube";
+import type {PlainNamedSet} from "./interfaces/plain";
+import type {Level} from "./level";
+import {Annotated, FullNamed, Serializable, applyMixins} from "./toolbox/mixins";
+import {hasProperty} from "./toolbox/validation";
 
 export interface NamedSet extends Annotated, FullNamed, Serializable<PlainNamedSet> {}
 
@@ -11,8 +12,14 @@ export class NamedSet {
   readonly _source: PlainNamedSet;
   readonly level?: Level;
 
-  static isNamedset(obj: any): obj is NamedSet {
-    return Boolean(obj && obj._source && obj._source._type === "namedset");
+  static isNamedset(obj: unknown): obj is NamedSet {
+    return (
+      obj != null &&
+      hasProperty(obj, "_source") &&
+      obj._source != null &&
+      hasProperty(obj._source, "_type") &&
+      obj._source._type === "namedset"
+    );
   }
 
   constructor(source: PlainNamedSet, parent?: Cube) {
@@ -20,7 +27,7 @@ export class NamedSet {
     this._source = source;
 
     const [dimension, hierarchy, level] = source.level;
-    this.level = parent ? parent.getLevel({ dimension, hierarchy, level }) : undefined;
+    this.level = parent ? parent.getLevel({dimension, hierarchy, level}) : undefined;
   }
 
   get cube(): Cube {

@@ -145,8 +145,8 @@ export class Query {
     const drillable = this.cube.getDrillable(drillableRef);
     const cut = this.cuts[drillable.fullName] || {
       drillable,
-      isExclusive: options.exclusive != null ? Boolean(options.exclusive) : undefined,
-      isForMatch: options.forMatch != null ? Boolean(options.forMatch) : undefined,
+      isExclusive: options.exclusive != null ? !!options.exclusive : undefined,
+      isForMatch: options.forMatch != null ? !!options.forMatch : undefined,
       members: [],
     };
     for (let index = 0; index < memberList.length; index++) {
@@ -185,7 +185,6 @@ export class Query {
       measure: calculation,
       const1: [Comparison[constraint[0]], constraint[1]],
       joint: joint && constraint2 ? joint : undefined,
-      // prettier-ignore
       const2:
         joint && constraint2 ? [Comparison[constraint2[0]], constraint2[1]] : undefined,
     });
@@ -256,7 +255,7 @@ export class Query {
 
   setOption(option: string, value: boolean): this {
     if (value != null) {
-      this.options[option] = Boolean(value);
+      this.options[option] = !!value;
     } else {
       delete this.options[option];
     }

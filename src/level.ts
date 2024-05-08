@@ -1,12 +1,13 @@
-import { Cube } from "./cube";
-import { Dimension } from "./dimension";
-import { Hierarchy } from "./hierarchy";
-import { LevelDescriptor } from "./interfaces/descriptors";
-import { PlainLevel, PlainProperty } from "./interfaces/plain";
-import { Property } from "./property";
-import { childClassMapper } from "./toolbox/collection";
-import { Annotated, applyMixins, FullNamed, Serializable } from "./toolbox/mixins";
-import { abbreviateFullName } from "./toolbox/strings";
+import type {Cube} from "./cube";
+import type {Dimension} from "./dimension";
+import type {Hierarchy} from "./hierarchy";
+import type {LevelDescriptor} from "./interfaces/descriptors";
+import type {PlainLevel, PlainProperty} from "./interfaces/plain";
+import {Property} from "./property";
+import {childClassMapper} from "./toolbox/collection";
+import {Annotated, FullNamed, Serializable, applyMixins} from "./toolbox/mixins";
+import {abbreviateFullName} from "./toolbox/strings";
+import {hasProperty} from "./toolbox/validation";
 
 export type LevelReference = string | LevelDescriptor | Level;
 
@@ -19,12 +20,18 @@ export class Level {
   readonly properties: Property[] = [];
   readonly propertiesByName: Readonly<Record<string, Property>> = {};
 
-  static isLevel(obj: any): obj is Level {
-    return Boolean(obj && obj._source && obj._source._type === "level");
+  static isLevel(obj: unknown): obj is Level {
+    return (
+      obj != null &&
+      hasProperty(obj, "_source") &&
+      obj._source != null &&
+      hasProperty(obj._source, "_type") &&
+      obj._source._type === "level"
+    );
   }
 
-  static isLevelDescriptor(obj: any): obj is LevelDescriptor {
-    return Boolean(obj && obj.level && typeof obj.level === "string");
+  static isLevelDescriptor(obj: unknown): obj is LevelDescriptor {
+    return obj != null && hasProperty(obj, "level") && typeof obj.level === "string";
   }
 
   constructor(source: PlainLevel, parent?: Hierarchy) {
@@ -53,8 +60,7 @@ export class Level {
     };
     try {
       descriptor.server = this.cube.server;
-    }
-    catch (e) {}
+    } catch (e) {}
     return descriptor;
   }
 
@@ -91,18 +97,22 @@ export class Level {
 
   matches(ref: LevelReference): boolean {
     if (typeof ref === "string") {
-      return this._source.uniqueName === ref ||
+      return (
+        this._source.uniqueName === ref ||
         this._source.fullName === ref ||
-        this._source.name === ref;
+        this._source.name === ref
+      );
     }
-    else if (Level.isLevelDescriptor(ref)) {
-      return this.matches(ref.level) &&
+    if (Level.isLevelDescriptor(ref)) {
+      return (
+        this.matches(ref.level) &&
         (!ref.hierarchy || ref.hierarchy === this._source.hierarchy) &&
         (!ref.dimension || ref.dimension === this._source.dimension) &&
         (!ref.cube || ref.cube === this._source.cube) &&
-        (!ref.server || ref.server === this.cube.server);
+        (!ref.server || ref.server === this.cube.server)
+      );
     }
-    else if (Level.isLevel(ref)) {
+    if (Level.isLevel(ref)) {
       return this === ref || this.matches(ref.descriptor);
     }
     return false;

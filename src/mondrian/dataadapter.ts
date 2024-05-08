@@ -1,8 +1,26 @@
 import urljoin from "url-join";
-import { AggregatorType, DimensionType } from "../interfaces/enums";
-import { PlainCube, PlainDimension, PlainHierarchy, PlainLevel, PlainMeasure, PlainMember, PlainNamedSet, PlainProperty } from "../interfaces/plain";
-import { asArray } from "../toolbox/collection";
-import { MondrianCube, MondrianDimension, MondrianHierarchy, MondrianLevel, MondrianMeasure, MondrianMember, MondrianNamedSet, MondrianProperty } from "./schema";
+import {AggregatorType, DimensionType} from "../interfaces/enums";
+import type {
+  PlainCube,
+  PlainDimension,
+  PlainHierarchy,
+  PlainLevel,
+  PlainMeasure,
+  PlainMember,
+  PlainNamedSet,
+  PlainProperty,
+} from "../interfaces/plain";
+import {asArray} from "../toolbox/collection";
+import type {
+  MondrianCube,
+  MondrianDimension,
+  MondrianHierarchy,
+  MondrianLevel,
+  MondrianMeasure,
+  MondrianMember,
+  MondrianNamedSet,
+  MondrianProperty,
+} from "./schema";
 
 interface MondrianAdapterMeta {
   cube_name: string;
@@ -21,11 +39,11 @@ interface MondrianAdapterMeta {
 }
 
 export function cubeAdapterFactory(
-  meta: Pick<MondrianAdapterMeta, "server_uri">
+  meta: Pick<MondrianAdapterMeta, "server_uri">,
 ): (json: MondrianCube) => PlainCube {
   return (json: MondrianCube) => {
     const cube_uri = urljoin(meta.server_uri, "cubes", encodeURIComponent(json.name));
-    const contextMeta = { ...meta, cube_name: json.name, cube_uri };
+    const contextMeta = {...meta, cube_name: json.name, cube_uri};
     return {
       _type: "cube",
       annotations: json.annotations,
@@ -33,21 +51,21 @@ export function cubeAdapterFactory(
       measures: json.measures.map(measureAdapterFactory(contextMeta)),
       name: json.name,
       namedsets: json.named_sets.map(namedSetAdapterFactory(contextMeta)),
-      uri: cube_uri
+      uri: cube_uri,
     };
   };
 }
 
 function dimensionAdapterFactory(
-  meta: Pick<MondrianAdapterMeta, "cube_name" | "cube_uri">
+  meta: Pick<MondrianAdapterMeta, "cube_name" | "cube_uri">,
 ): (json: MondrianDimension) => PlainDimension {
   return (json: MondrianDimension) => {
     const dimension_uri = urljoin(
       meta.cube_uri,
       "dimensions",
-      encodeURIComponent(json.name)
+      encodeURIComponent(json.name),
     );
-    const contextMeta = { ...meta, dimension_name: json.name, dimension_uri };
+    const contextMeta = {...meta, dimension_name: json.name, dimension_uri};
     return {
       _type: "dimension",
       annotations: json.annotations,
@@ -56,21 +74,21 @@ function dimensionAdapterFactory(
       dimensionType: DimensionType[json.type as DimensionType] ?? DimensionType.Standard,
       hierarchies: json.hierarchies.map(hierarchyAdapterFactory(contextMeta)),
       name: json.name,
-      uri: dimension_uri
+      uri: dimension_uri,
     };
   };
 }
 
 function hierarchyAdapterFactory(
-  meta: Pick<MondrianAdapterMeta, "cube_name" | "dimension_name" | "dimension_uri">
+  meta: Pick<MondrianAdapterMeta, "cube_name" | "dimension_name" | "dimension_uri">,
 ): (json: MondrianHierarchy) => PlainHierarchy {
   return (json: MondrianHierarchy) => {
     const hierarchy_uri = urljoin(
       meta.dimension_uri,
       "hierarchies",
-      encodeURIComponent(json.name)
+      encodeURIComponent(json.name),
     );
-    const contextMeta = { ...meta, hierarchy_name: json.name, hierarchy_uri };
+    const contextMeta = {...meta, hierarchy_name: json.name, hierarchy_uri};
     const levels = json.has_all ? json.levels.slice(1) : json.levels;
     return {
       _type: "hierarchy",
@@ -80,7 +98,7 @@ function hierarchyAdapterFactory(
       dimension: meta.dimension_name,
       levels: levels.map(levelAdapterFactory(contextMeta)),
       name: json.name,
-      uri: hierarchy_uri
+      uri: hierarchy_uri,
     };
   };
 }
@@ -89,15 +107,15 @@ function levelAdapterFactory(
   meta: Pick<
     MondrianAdapterMeta,
     "cube_name" | "dimension_name" | "hierarchy_name" | "hierarchy_uri"
-  >
+  >,
 ): (json: MondrianLevel) => PlainLevel {
   return (json: MondrianLevel) => {
     const level_uri = urljoin(
       meta.hierarchy_uri,
       "levels",
-      encodeURIComponent(json.name)
+      encodeURIComponent(json.name),
     );
-    const contextMeta = { ...meta, level_name: json.name, level_uri };
+    const contextMeta = {...meta, level_name: json.name, level_uri};
     return {
       _type: "level",
       annotations: json.annotations,
@@ -109,13 +127,13 @@ function levelAdapterFactory(
       hierarchy: meta.hierarchy_name,
       name: json.name,
       properties: json.properties.map(propertyAdapterFactory(contextMeta)),
-      uri: level_uri
+      uri: level_uri,
     };
   };
 }
 
 function measureAdapterFactory(
-  meta: Pick<MondrianAdapterMeta, "cube_name" | "cube_uri">
+  meta: Pick<MondrianAdapterMeta, "cube_name" | "cube_uri">,
 ): (json: MondrianMeasure) => PlainMeasure {
   return (json: MondrianMeasure) => {
     return {
@@ -126,13 +144,13 @@ function measureAdapterFactory(
       cube: meta.cube_name,
       fullName: json.full_name,
       name: json.name,
-      uri: urljoin(meta.cube_uri, "measures", encodeURIComponent(json.name))
+      uri: urljoin(meta.cube_uri, "measures", encodeURIComponent(json.name)),
     };
   };
 }
 
 export function memberAdapterFactory(
-  meta: Pick<MondrianAdapterMeta, "level_uri">
+  meta: Pick<MondrianAdapterMeta, "level_uri">,
 ): (json: MondrianMember) => PlainMember {
   return (json: MondrianMember) => {
     return {
@@ -149,13 +167,13 @@ export function memberAdapterFactory(
       name: json.name,
       numChildren: json.num_children,
       parentName: json.parent_name,
-      uri: urljoin(meta.level_uri, "members", `${json.key}`)
+      uri: urljoin(meta.level_uri, "members", `${json.key}`),
     };
   };
 }
 
 function namedSetAdapterFactory(
-  meta: Pick<MondrianAdapterMeta, "cube_name" | "cube_uri">
+  meta: Pick<MondrianAdapterMeta, "cube_name" | "cube_uri">,
 ): (json: MondrianNamedSet) => PlainNamedSet {
   return (json: MondrianNamedSet) => {
     return {
@@ -166,7 +184,7 @@ function namedSetAdapterFactory(
       hierarchy: json.hierarchy,
       level: json.level,
       name: json.name,
-      uri: urljoin(meta.cube_uri, "namedsets", encodeURIComponent(json.name))
+      uri: urljoin(meta.cube_uri, "namedsets", encodeURIComponent(json.name)),
     };
   };
 }
@@ -175,7 +193,7 @@ function propertyAdapterFactory(
   meta: Pick<
     MondrianAdapterMeta,
     "cube_name" | "dimension_name" | "hierarchy_name" | "level_name" | "level_uri"
-  >
+  >,
 ): (name: MondrianProperty) => PlainProperty {
   return (name: MondrianProperty) => {
     return {
@@ -186,7 +204,7 @@ function propertyAdapterFactory(
       hierarchy: meta.hierarchy_name,
       level: meta.level_name,
       name,
-      uri: urljoin(meta.level_uri, "properties", encodeURIComponent(name))
+      uri: urljoin(meta.level_uri, "properties", encodeURIComponent(name)),
     };
   };
 }

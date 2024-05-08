@@ -1,7 +1,7 @@
-import { Cube } from "./cube";
-import { PlainMember } from "./interfaces/plain";
-import { Level } from "./level";
-import { applyMixins, FullNamed, Serializable } from "./toolbox/mixins";
+import type {Cube} from "./cube";
+import type {PlainMember} from "./interfaces/plain";
+import type {Level} from "./level";
+import {FullNamed, Serializable, applyMixins} from "./toolbox/mixins";
 
 export interface Member extends FullNamed, Serializable<PlainMember> {}
 
@@ -17,10 +17,10 @@ export class Member {
     this._source = source;
 
     this.ancestors = source.ancestors.map(
-      (member: PlainMember) => new Member(member, parent)
+      (member: PlainMember) => new Member(member, parent),
     );
     this.children = source.children.map(
-      (member: PlainMember) => new Member(member, parent)
+      (member: PlainMember) => new Member(member, parent),
     );
   }
 

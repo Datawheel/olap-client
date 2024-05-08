@@ -54,12 +54,11 @@ export function getLevel(
   levelRef: LevelReference,
   selectorFn?: (cubes: Cube[]) => Cube,
 ): Promise<Level> {
-  // prettier-ignore
   const cubeName = Level.isLevel(levelRef)
     ? levelRef.cube.name
     : Level.isLevelDescriptor(levelRef)
       ? levelRef.cube
-      : /* else */ undefined;
+      : undefined;
 
   if (cubeName) {
     return client.getCube(cubeName, selectorFn).then((cube) => cube.getLevel(levelRef));
@@ -79,10 +78,8 @@ export function getLevel(
 }
 
 export function inferDataSource(config: ServerConfig): Promise<IDataSource> {
-  if (typeof config === "string") {
-    config = {url: config};
-  }
-  const {url, ...reqConfig} = config;
+  const cfg = typeof config === "string" ? {url: config} : config;
+  const {url, ...reqConfig} = cfg;
 
   if (!url) {
     const reason = `DataSource can be built with a string URL or an object with the 'url' property.

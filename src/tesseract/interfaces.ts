@@ -4,7 +4,7 @@ export enum TesseractFilterOperator {
   gte = ">=",
   lt = "<",
   lte = "<=",
-  neq = "!="
+  neq = "!=",
 }
 
 export interface TesseractAggregateURLSearchParams {

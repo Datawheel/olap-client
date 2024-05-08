@@ -38,7 +38,13 @@ export class PyTesseractDataSource implements IDataSource {
   serverVersion: string;
 
   static endpoints = [PyTesseractEndpoint.logiclayer];
-  static formats = [Format.csv, Format.tsv, Format.jsonarrays, Format.jsonrecords, Format.xlsx];
+  static formats = [
+    Format.csv,
+    Format.tsv,
+    Format.jsonarrays,
+    Format.jsonrecords,
+    Format.xlsx,
+  ];
   static softwareName = softwareName;
 
   constructor(url: string) {

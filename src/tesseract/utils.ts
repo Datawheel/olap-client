@@ -24,14 +24,19 @@ export function parseCut(cut: string): {
   exclusive: boolean;
   forMatch: boolean;
 } {
-  const exclusive = cut[0] === "~";
-  cut = exclusive ? cut.slice(1) : cut;
-  const forMatch = cut[0] === "*";
-  cut = forMatch ? cut.slice(1) : cut;
+  let item = cut;
+
+  const exclusive = item[0] === "~";
+  item = exclusive ? item.slice(1) : item;
+
+  const forMatch = item[0] === "*";
+  item = forMatch ? item.slice(1) : item;
+
   const nameParts = splitFullName(cut);
   const memberList = nameParts.pop() || "";
   const drillable = joinFullName(nameParts);
   const members = memberList.split(",");
+
   return {drillable, members, exclusive, forMatch};
 }
 

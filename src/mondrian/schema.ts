@@ -1,4 +1,4 @@
-import { Annotations } from "../interfaces/plain";
+import type {Annotations} from "../interfaces/plain";
 
 export interface MondrianEndpointCubes {
   cubes: MondrianCube[];
