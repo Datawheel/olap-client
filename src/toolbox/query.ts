@@ -362,8 +362,8 @@ export function getSourceForQuery(query: Query): string {
   function callSource(fnName: string, ...fnArgs: any[]): string {
     const argParams: string[] = [];
     let n = fnArgs.length;
-    while (--n > 0) {
-      const token = fnArgs[n];
+    while (n > 0) {
+      const token = fnArgs[--n];
       if (argParams.length === 0 && (token == null || token === "")) continue;
       argParams.push(expressionFor(token));
     }
