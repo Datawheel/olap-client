@@ -178,7 +178,9 @@ describe("PyTesseractDataSource", function () {
       ["measures", "Measure"],
       ["properties", "ISO 3"],
       ["include", "Year:2020,2021"],
+      ["include", "Year:2019"],
       ["exclude", "Continent:af,as"],
+      ["exclude", "Continent:af,sa;Country:euspa"],
       ["filters", "Measure.lte.100000"],
       ["limit", "1,2"],
       ["sort", "ISO 3.asc"],
@@ -209,16 +211,22 @@ describe("PyTesseractDataSource", function () {
       assert.deepEqual(query.getParam("cuts"), [
         {
           drillable: cube.getLevel("Year"),
-          members: ["2020", "2021"],
+          members: ["2019", "2020", "2021"],
           isExclusive: false,
           isForMatch: undefined,
         },
         {
           drillable: cube.getLevel("Continent"),
-          members: ["af", "as"],
+          members: ["af", "as", "sa"],
           isExclusive: true,
           isForMatch: undefined,
         },
+        {
+          drillable: cube.getLevel("Country"),
+          members: ["euspa"],
+          isExclusive: true,
+          isForMatch: undefined,
+        }
       ]);
       assert.deepEqual(query.getParam("filters"), [
         {
@@ -255,7 +263,9 @@ describe("PyTesseractDataSource", function () {
         .addDrilldown("Country")
         .addProperty("Country.ISO 3")
         .addCut("Year", ["2020", "2021"], {exclusive: false})
+        .addCut("Country", ["euspa"], {exclusive: false})
         .addCut("Continent", ["af", "as"], {exclusive: true})
+        .addCut("Continent", ["af", "sa"], {exclusive: true})
         .addFilter("Measure", ["lte", 100000])
         .setPagination(1, 2)
         .setSorting("Country.ISO 3", "asc")
@@ -277,8 +287,8 @@ describe("PyTesseractDataSource", function () {
         drilldowns: "Year,Country",
         measures: "Measure",
         properties: "ISO 3",
-        include: "Year:2020,2021",
-        exclude: "Continent:af,as",
+        include: "Year:2020,2021;Country:euspa",
+        exclude: "Continent:af,as,sa",
         filters: "Measure.lte.100000",
         limit: "1,2",
         sort: "ISO 3.asc",

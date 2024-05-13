@@ -57,11 +57,11 @@ export function buildSearchParams(query: Query): TesseractDataRequest {
     exclude: filterMap(cuts, (item) => {
       if (!item.isExclusive) return null;
       return `${item.drillable.name}:${item.members.join(",")}`;
-    }).join(","),
+    }).join(";"),
     include: filterMap(cuts, (item) => {
       if (item.isExclusive) return null;
       return `${item.drillable.name}:${item.members.join(",")}`;
-    }).join(","),
+    }).join(";"),
     filters: query
       .getParam("filters")
       .map((item) => {
