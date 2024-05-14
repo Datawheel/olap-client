@@ -9,7 +9,7 @@ const {randomPick, randomLevel} = require("./utils");
 // Ensure online test runs before
 require("./online.spec");
 
-const {MONDRIAN_SERVER, TESSERACT_SERVER} = process.env;
+const {MONDRIAN_SERVER, TESSERACT_SERVER, PYTESSERACT_SERVER} = process.env;
 
 describe("MultiClient", () => {
   describe(".dataSourceFromURL()", () => {
@@ -87,13 +87,14 @@ describe("MultiClient", () => {
     this.timeout(10000);
 
     it("should pick the right Cube and execute a Query correctly", async () => {
-      const client = await MultiClient.fromURL(MONDRIAN_SERVER, TESSERACT_SERVER);
+      const client = await MultiClient.fromURL(MONDRIAN_SERVER, TESSERACT_SERVER, PYTESSERACT_SERVER);
       const cubes = await client.getCubes();
       const cube = randomPick(cubes);
 
       const query = cube.query
         .addMeasure(randomPick(cube.measures).name)
         .addDrilldown(randomLevel(cube).descriptor)
+        .setPagination(10, 0)
         .setOption("debug", false)
         .setOption("distinct", false)
         .setOption("nonempty", true);

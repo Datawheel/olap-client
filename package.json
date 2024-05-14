@@ -19,7 +19,7 @@
   "scripts": {
     "build": "tsup",
     "pretest": "tsup",
-    "test": "mocha --recursive tests",
+    "test": "mocha --recursive --parallel tests",
     "prepublishOnly": "tsup && mocha --bail --recursive tests"
   },
   "author": "Francisco Abarzua <francisco@datawheel.us>",
