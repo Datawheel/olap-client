@@ -9,7 +9,8 @@ export function splitTokens(
   value: undefined | null | string | string[],
   partition = ",",
 ): string[] {
-  return typeof value === "string" ? value.split(partition) : value || [];
+  if (value == null) return [];
+  return (Array.isArray(value) ? value.join(partition) : value).split(partition);
 }
 
 export function filterMap<T, U>(
@@ -45,20 +46,33 @@ export function forEach<T extends unknown[] | Record<string, unknown>>(
   }
 }
 
-export function groupBy<T>(
-  list: T[],
-  property: keyof T,
-  targetMap: Record<string, T[]> = {},
-) {
+export function groupBy<T>(list: Iterable<T>, property: keyof T) {
+  const acc = new Aggregator((): T[] => []);
   for (const item of list) {
-    const key = `${item[property]}`;
-    if (isIn(key, targetMap)) {
-      targetMap[key].push(item);
-    } else {
-      targetMap[key] = [item];
-    }
+    acc.get(`${item[property]}`).push(item);
   }
-  return targetMap;
+  return acc.aggregation;
+}
+
+class Aggregator<T> {
+  _accumulator: Record<string, T[]>;
+  _factory: () => T[];
+
+  constructor(factory: () => T[]) {
+    this._factory = factory;
+    this._accumulator = {};
+  }
+
+  get aggregation() {
+    return {...this._accumulator};
+  }
+
+  get(key: string): T[] {
+    if (!isIn(key, this._accumulator)) {
+      this._accumulator[key] = this._factory();
+    }
+    return this._accumulator[key];
+  }
 }
 
 export function pushUnique<T>(target: T[], item: T) {

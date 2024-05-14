@@ -211,7 +211,7 @@ describe("PyTesseractDataSource", function () {
       assert.deepEqual(query.getParam("cuts"), [
         {
           drillable: cube.getLevel("Year"),
-          members: ["2019", "2020", "2021"],
+          members: ["2020", "2021", "2019"],
           isExclusive: false,
           isForMatch: undefined,
         },

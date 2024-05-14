@@ -1,5 +1,4 @@
 import Axios, {type AxiosInstance, type AxiosRequestConfig} from "axios";
-import formUrlDecode from "form-urldecoded";
 import formUrlEncode from "form-urlencoded";
 import urljoin from "url-join";
 import type {Aggregation, IDataSource, ServerStatus} from "../interfaces/contracts";
@@ -7,12 +6,11 @@ import {Format} from "../interfaces/enums";
 import type {PlainCube, PlainMember} from "../interfaces/plain";
 import type {Level} from "../level";
 import type {Query} from "../query";
-import {type ParseURLOptions, applyParseUrlRules} from "../toolbox/client";
+import type {ParseURLOptions} from "../toolbox/client";
 import {
   buildSearchParams,
   cubeAdapter,
   hydrateQueryFromRequest,
-  isDataRequest,
   memberAdapter,
 } from "./adapter";
 import type {
@@ -145,24 +143,23 @@ export class PyTesseractDataSource implements IDataSource {
       .then((response) => response.data.members.map(memberAdapter, parent));
   }
 
-  parseQueryURL(query: Query, url: string, options: Partial<ParseURLOptions>): Query {
-    const searchIndex = url.indexOf("?");
-    const searchParams = searchIndex > -1 ? url.slice(searchIndex + 1) : url;
-    const request = formUrlDecode(searchParams);
+  parseQueryURL(
+    query: Query,
+    url: string,
+    options: Partial<ParseURLOptions> = {},
+  ): Query {
+    const request = url.startsWith("?")
+      ? new URLSearchParams(url)
+      : new URL(url).searchParams;
 
-    if (isDataRequest(request)) {
-      const filteredRequest = applyParseUrlRules(request, options);
-      hydrateQueryFromRequest(query, filteredRequest);
+    hydrateQueryFromRequest(query, request, options);
 
-      const formatMatch = url.match(/^.+\/data\.([a-z]+)\?.+$/);
-      if (formatMatch) {
-        query.setFormat(formatMatch[1] as Format);
-      }
-
-      return query;
+    const formatMatch = url.match(/^.+\/data\.([a-z]+)\?.+$/);
+    if (formatMatch) {
+      query.setFormat(formatMatch[1] as Format);
     }
 
-    throw new Error(`Provided URL is not a valid tesseract-olap REST query URL: ${url}`);
+    return query;
   }
 
   setRequestConfig(config: AxiosRequestConfig): void {

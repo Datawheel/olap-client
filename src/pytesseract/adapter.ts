@@ -18,6 +18,7 @@ import type {
 import type {Level} from "../level";
 import type {Query} from "../query";
 import {parseFilterConstraints} from "../tesseract/utils";
+import {type ParseURLOptions, applyParseUrlRules} from "../toolbox/client";
 import {filterMap, splitTokens} from "../toolbox/collection";
 import {hasProperty, isIn, isNumeric} from "../toolbox/validation";
 import type {
@@ -53,25 +54,33 @@ export function buildSearchParams(query: Query): TesseractDataRequest {
     locale: query.getParam("locale"),
     drilldowns: query.getParam("drilldowns").map(getName).join(","),
     measures: query.getParam("measures").map(getName).join(","),
-    properties: query.getParam("properties").map(getName).join(","),
-    exclude: filterMap(cuts, (item) => {
-      if (!item.isExclusive) return null;
-      return `${item.drillable.name}:${item.members.join(",")}`;
-    }).join(";"),
-    include: filterMap(cuts, (item) => {
-      if (item.isExclusive) return null;
-      return `${item.drillable.name}:${item.members.join(",")}`;
-    }).join(";"),
-    filters: query
-      .getParam("filters")
-      .map((item) => {
-        const measure =
-          typeof item.measure === "string" ? item.measure : item.measure.name;
-        const filter = `${measure}.${item.const1.join(".")}`;
-        return item.const2 ? `${filter}.${item.joint}.${item.const2.join(".")}` : filter;
-      })
-      .join(","),
-    limit: `${pagination.limit},${pagination.offset}`,
+    properties: query.getParam("properties").map(getName).join(",") || undefined,
+    exclude:
+      filterMap(cuts, (item) => {
+        if (!item.isExclusive) return null;
+        return `${item.drillable.name}:${item.members.join(",")}`;
+      }).join(";") || undefined,
+    include:
+      filterMap(cuts, (item) => {
+        if (item.isExclusive) return null;
+        return `${item.drillable.name}:${item.members.join(",")}`;
+      }).join(";") || undefined,
+    filters:
+      query
+        .getParam("filters")
+        .map((item) => {
+          const measure =
+            typeof item.measure === "string" ? item.measure : item.measure.name;
+          const filter = `${measure}.${item.const1.join(".")}`;
+          return item.const2
+            ? `${filter}.${item.joint}.${item.const2.join(".")}`
+            : filter;
+        })
+        .join(",") || undefined,
+    limit:
+      !pagination.limit && !pagination.offset
+        ? undefined
+        : `${pagination.limit},${pagination.offset}`,
     sort: !sorting.property
       ? undefined
       : typeof sorting.property === "string"
@@ -193,43 +202,38 @@ export function memberAdapter(this: Level, item: MemberRow): PlainMember {
 
 export function hydrateQueryFromRequest(
   query: Query,
-  request: Partial<TesseractDataRequest>,
+  request: URLSearchParams,
+  options: Partial<ParseURLOptions>,
 ): void {
-  const cutsInclude = splitTokens(request.include, ";").map((token) => {
+  const cutsInclude = splitTokens(request.getAll("include"), ";").map((token) => {
     const [level, members] = splitTokens(token, ":");
     return {level, members: members.split(","), exclusive: false};
   });
-  const cutsExclude = splitTokens(request.exclude, ";").map((token) => {
+  const cutsExclude = splitTokens(request.getAll("exclude"), ";").map((token) => {
     const [level, members] = splitTokens(token, ":");
     return {level, members: members.split(","), exclusive: true};
   });
 
-  const [pagiLimit = "0", pagiOffset = "0"] = splitTokens(request.limit);
-  const [sortProp, sortDir] = splitTokens(request.sort, ".");
-  const [timeScale, timeAge] = splitTokens(request.time, ".");
+  const [pagiLimit = "0", pagiOffset = "0"] = splitTokens(request.getAll("limit"));
+  const [sortProp, sortDir] = splitTokens(request.getAll("sort"), ".");
+  const [timeScale, timeAge] = splitTokens(request.getAll("time"), ".");
 
   const params: Partial<QueryDescriptor> = {
-    cube: request.cube,
-    locale: request.locale,
-    drilldowns: splitTokens(request.drilldowns).map((level) => ({
-      level,
-      toString: () => level,
-    })),
-    measures: splitTokens(request.measures),
-    properties: splitTokens(request.properties).map((property) => ({
-      property,
-      toString: () => property,
-    })),
+    cube: request.getAll("cube").filter(Boolean)[0],
+    locale: request.getAll("locale").filter(Boolean)[0],
+    drilldowns: splitTokens(request.getAll("drilldowns")).map((level) => ({level})),
+    measures: splitTokens(request.getAll("measures")),
+    properties: splitTokens(request.getAll("properties")).map((property) => ({property})),
     page_limit: Number.parseInt(pagiLimit),
     page_offset: Number.parseInt(pagiOffset),
     cuts: cutsInclude.concat(cutsExclude),
-    filters: splitTokens(request.filters).map((token) => {
+    filters: splitTokens(request.getAll("filters")).map((token) => {
       const [measure, ...conditions] = token.split(".");
       const {const1, const2, joint} = parseFilterConstraints(conditions.join("."));
       return {measure, constraint: const1, joint, constraint2: const2};
     }),
     options: {
-      parents: !!request.parents,
+      parents: yn(request.get("parents")),
     },
   };
 
@@ -246,7 +250,7 @@ export function hydrateQueryFromRequest(
     params.time = scale && age ? [scale, age] : undefined;
   }
 
-  query.fromJSON(params);
+  query.fromJSON(applyParseUrlRules(params, options));
 }
 
 export function isDataRequest(obj: unknown): obj is TesseractDataRequest {
@@ -256,4 +260,9 @@ export function isDataRequest(obj: unknown): obj is TesseractDataRequest {
     hasProperty(obj, "drilldowns") &&
     hasProperty(obj, "measures")
   );
+}
+
+function yn(value: string | null): boolean {
+  if (value == null) return false;
+  return /^(?:true|y|yes|on|1)$/i.test(value.trim());
 }
