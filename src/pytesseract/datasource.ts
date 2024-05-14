@@ -76,15 +76,17 @@ export class PyTesseractDataSource implements IDataSource {
   execQuery(query: Query): Promise<Aggregation> {
     const format = query.getParam("format");
     const url = this.stringifyQueryURL(query);
-    return this.axiosInstance.get<TesseractDataResponse>(url).then((response) => {
-      return {
-        data: format.startsWith("json") ? response.data.data : response.data,
-        headers: {...response.headers} as Record<string, string>,
-        query,
-        status: response.status,
-        url,
-      };
-    });
+    return this.axiosInstance
+      .get<TesseractDataResponse>(url, {baseURL: undefined})
+      .then((response) => {
+        return {
+          data: format.startsWith("json") ? response.data.data : response.data,
+          headers: {...response.headers} as Record<string, string>,
+          query,
+          status: response.status,
+          url,
+        };
+      });
   }
 
   fetchCube(cubeName: string): Promise<PlainCube> {
