@@ -39,7 +39,9 @@ describe("MondrianDataSource", function () {
     });
   });
 
-  describe("#checkStatus", () => {
+  const describeIfOnline = MONDRIAN_SERVER ? describe : describe.skip;
+
+  describeIfOnline("#checkStatus", () => {
     const ds = new MondrianDataSource(MONDRIAN_SERVER);
 
     it("should not reject", async () => {
@@ -56,7 +58,7 @@ describe("MondrianDataSource", function () {
     });
   });
 
-  describe("#execQuery", function () {
+  describeIfOnline("#execQuery", function () {
     const ds = new MondrianDataSource(MONDRIAN_SERVER);
     let query;
 
@@ -80,7 +82,7 @@ describe("MondrianDataSource", function () {
     });
   });
 
-  describe("#fetchCubes", () => {
+  describeIfOnline("#fetchCubes", () => {
     const ds = new MondrianDataSource(MONDRIAN_SERVER);
 
     it("should get a list of cubes from the server", async () => {
@@ -90,7 +92,7 @@ describe("MondrianDataSource", function () {
     });
   });
 
-  describe("#fetchCube", () => {
+  describeIfOnline("#fetchCube", () => {
     const ds = new MondrianDataSource(MONDRIAN_SERVER);
 
     it("should get a specific cube from the server", async () => {
@@ -99,7 +101,7 @@ describe("MondrianDataSource", function () {
     });
   });
 
-  describe("#fetchMembers", function () {
+  describeIfOnline("#fetchMembers", function () {
     const ds = new MondrianDataSource(MONDRIAN_SERVER);
     let level;
 
@@ -117,7 +119,7 @@ describe("MondrianDataSource", function () {
     });
   });
 
-  describe("#fetchMember", function () {
+  describeIfOnline("#fetchMember", function () {
     const ds = new MondrianDataSource(MONDRIAN_SERVER);
     let level;
 
@@ -161,7 +163,9 @@ describe("MondrianDataSource", function () {
     });
   });
 
-  describe("#parseQueryURL", () => {});
+  const describeIfOnlineStub = MONDRIAN_SERVER ? describe : describe.skip;
 
-  describe("#stringifyQueryURL", () => {});
+  describeIfOnlineStub("#parseQueryURL", () => {});
+
+  describeIfOnlineStub("#stringifyQueryURL", () => {});
 });

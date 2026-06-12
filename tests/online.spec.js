@@ -3,10 +3,14 @@ const {TesseractDataSource, MondrianDataSource, PyTesseractDataSource, Client} =
 
 const {MONDRIAN_SERVER, TESSERACT_SERVER, PYTESSERACT_SERVER} = process.env;
 
+const describeIfPyTesseract = PYTESSERACT_SERVER ? describe : describe.skip;
+const describeIfTesseract = TESSERACT_SERVER ? describe : describe.skip;
+const describeIfMondrian = MONDRIAN_SERVER ? describe : describe.skip;
+
 describe("Online remote servers", () => {
   "Ensures the servers we intend to use are online";
 
-  describe("PyTesseract", () => {
+  describeIfPyTesseract("PyTesseract", () => {
     let client;
 
     before(() => {
@@ -21,7 +25,7 @@ describe("Online remote servers", () => {
     });
   });
 
-  describe("Tesseract", () => {
+  describeIfTesseract("Tesseract", () => {
     let client;
 
     before(() => {
@@ -36,7 +40,7 @@ describe("Online remote servers", () => {
     });
   });
 
-  describe("Mondrian", () => {
+  describeIfMondrian("Mondrian", () => {
     let client;
 
     before(() => {

@@ -39,7 +39,9 @@ describe("PyTesseractDataSource", function () {
     });
   });
 
-  describe("#checkStatus", () => {
+  const describeIfOnline = PYTESSERACT_SERVER ? describe : describe.skip;
+
+  describeIfOnline("#checkStatus", () => {
     const ds = new PyTesseractDataSource(PYTESSERACT_SERVER);
 
     it("should not reject", async () => {
@@ -56,7 +58,7 @@ describe("PyTesseractDataSource", function () {
     });
   });
 
-  describe("#execQuery", function () {
+  describeIfOnline("#execQuery", function () {
     const ds = new PyTesseractDataSource(PYTESSERACT_SERVER);
     let query;
 
@@ -88,7 +90,7 @@ describe("PyTesseractDataSource", function () {
     });
   });
 
-  describe("#fetchCubes", () => {
+  describeIfOnline("#fetchCubes", () => {
     const ds = new PyTesseractDataSource(PYTESSERACT_SERVER);
 
     it("should get a list of cubes from the server", async () => {
@@ -98,7 +100,7 @@ describe("PyTesseractDataSource", function () {
     });
   });
 
-  describe("#fetchCube", () => {
+  describeIfOnline("#fetchCube", () => {
     const ds = new PyTesseractDataSource(PYTESSERACT_SERVER);
 
     it("should get a specific cube from the server", async () => {
@@ -107,7 +109,7 @@ describe("PyTesseractDataSource", function () {
     });
   });
 
-  describe("#fetchMembers", function () {
+  describeIfOnline("#fetchMembers", function () {
     const ds = new PyTesseractDataSource(PYTESSERACT_SERVER);
     let level;
 
@@ -125,7 +127,7 @@ describe("PyTesseractDataSource", function () {
     });
   });
 
-  describe("#fetchMember", function () {
+  describeIfOnline("#fetchMember", function () {
     const ds = new PyTesseractDataSource(PYTESSERACT_SERVER);
     let level;
 
@@ -169,7 +171,7 @@ describe("PyTesseractDataSource", function () {
     });
   });
 
-  describe("#parseQueryURL", () => {
+  describeIfOnline("#parseQueryURL", () => {
     const ds = new PyTesseractDataSource(PYTESSERACT_SERVER);
     const search = new URLSearchParams([
       ["cube", "indicators_i_wdi_a"],
@@ -246,7 +248,7 @@ describe("PyTesseractDataSource", function () {
     });
   });
 
-  describe("#stringifyQueryURL", () => {
+  describeIfOnline("#stringifyQueryURL", () => {
     const ds = new PyTesseractDataSource(PYTESSERACT_SERVER);
     let cube;
 

@@ -13,23 +13,27 @@ require("./online.spec");
 
 const {MONDRIAN_SERVER, TESSERACT_SERVER, PYTESSERACT_SERVER} = process.env;
 
+const itIfMondrian = MONDRIAN_SERVER ? it : it.skip;
+const itIfTesseract = TESSERACT_SERVER ? it : it.skip;
+const itIfPyTesseract = PYTESSERACT_SERVER ? it : it.skip;
+
 const ds = new TestDataSource();
 
 describe("Client", () => {
   describe(".dataSourceFromURL()", function () {
     this.timeout(5000);
 
-    it("should identify a mondrian server", async () => {
+    itIfMondrian("should identify a mondrian server", async () => {
       const ds = await Client.dataSourceFromURL(MONDRIAN_SERVER);
       assert.strictEqual(ds.serverSoftware, MondrianDataSource.softwareName);
     });
 
-    it("should identify a tesseract server", async () => {
+    itIfTesseract("should identify a tesseract server", async () => {
       const ds = await Client.dataSourceFromURL(TESSERACT_SERVER);
       assert.strictEqual(ds.serverSoftware, TesseractDataSource.softwareName);
     });
 
-    it("should identify a pytesseract server", async () => {
+    itIfPyTesseract("should identify a pytesseract server", async () => {
       const ds = await Client.dataSourceFromURL(PYTESSERACT_SERVER);
       assert.strictEqual(ds.serverSoftware, PyTesseractDataSource.softwareName);
     });

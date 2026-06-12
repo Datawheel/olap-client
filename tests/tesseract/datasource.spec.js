@@ -8,10 +8,13 @@ const {TESSERACT_SERVER} = process.env;
 
 describe("TesseractDataSource", function () {
   this.timeout(5000);
-  describe(".queryAggregate()", () => {});
-  describe(".queryLogicLayer()", () => {});
-  describe(".urlAggregate()", () => {});
-  describe(".urlLogicLayer()", () => {});
+
+  const describeIfOnline = TESSERACT_SERVER ? describe : describe.skip;
+
+  describeIfOnline(".queryAggregate()", () => {});
+  describeIfOnline(".queryLogicLayer()", () => {});
+  describeIfOnline(".urlAggregate()", () => {});
+  describeIfOnline(".urlLogicLayer()", () => {});
 
   describe("#constructor()", () => {
     it("should create a new instance from a string", () => {
@@ -45,7 +48,7 @@ describe("TesseractDataSource", function () {
     });
   });
 
-  describe("#checkStatus()", () => {
+  describeIfOnline("#checkStatus()", () => {
     const ds = new TesseractDataSource(TESSERACT_SERVER);
 
     it("should not reject", async () => {
@@ -62,7 +65,7 @@ describe("TesseractDataSource", function () {
     });
   });
 
-  describe("#execQuery()", function () {
+  describeIfOnline("#execQuery()", function () {
     const ds = new TesseractDataSource(TESSERACT_SERVER);
     let query;
 
@@ -92,7 +95,7 @@ describe("TesseractDataSource", function () {
     });
   });
 
-  describe("#fetchCubes()", () => {
+  describeIfOnline("#fetchCubes()", () => {
     const ds = new TesseractDataSource(TESSERACT_SERVER);
 
     it("should get a list of cubes from the server", async () => {
@@ -101,7 +104,7 @@ describe("TesseractDataSource", function () {
     });
   });
 
-  describe("#fetchCube()", () => {
+  describeIfOnline("#fetchCube()", () => {
     const ds = new TesseractDataSource(TESSERACT_SERVER);
 
     it("should get a specific cube from the server", async () => {
@@ -110,7 +113,7 @@ describe("TesseractDataSource", function () {
     });
   });
 
-  describe("#fetchMembers()", () => {
+  describeIfOnline("#fetchMembers()", () => {
     const ds = new TesseractDataSource(TESSERACT_SERVER);
     let level;
 
@@ -128,7 +131,7 @@ describe("TesseractDataSource", function () {
     });
   });
 
-  describe("#fetchMember()", () => {
+  describeIfOnline("#fetchMember()", () => {
     const ds = new TesseractDataSource(TESSERACT_SERVER);
     let level;
 
@@ -172,7 +175,7 @@ describe("TesseractDataSource", function () {
     });
   });
 
-  describe("#parseQueryURL()", () => {});
+  describeIfOnline("#parseQueryURL()", () => {});
 
-  describe("#stringifyQueryURL()", () => {});
+  describeIfOnline("#stringifyQueryURL()", () => {});
 });

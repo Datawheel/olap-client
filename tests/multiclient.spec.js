@@ -11,9 +11,13 @@ require("./online.spec");
 
 const {MONDRIAN_SERVER, TESSERACT_SERVER, PYTESSERACT_SERVER} = process.env;
 
+const itIfMondrian = MONDRIAN_SERVER ? it : it.skip;
+const itIfMondrianAndTesseract = (MONDRIAN_SERVER && TESSERACT_SERVER) ? it : it.skip;
+const itIfAll = (MONDRIAN_SERVER && TESSERACT_SERVER && PYTESSERACT_SERVER) ? it : it.skip;
+
 describe("MultiClient", () => {
   describe(".dataSourceFromURL()", () => {
-    it("should identify multiple servers", () => {
+    itIfMondrianAndTesseract("should identify multiple servers", () => {
       const promise = MultiClient.dataSourcesFromURL(
         MONDRIAN_SERVER,
         TESSERACT_SERVER,
@@ -41,7 +45,7 @@ describe("MultiClient", () => {
   });
 
   describe(".fromURL()", () => {
-    it("should deduplicate servers", async () => {
+    itIfMondrianAndTesseract("should deduplicate servers", async () => {
       const client = await MultiClient.fromURL(
         MONDRIAN_SERVER,
         `${MONDRIAN_SERVER}/`,
@@ -67,7 +71,7 @@ describe("MultiClient", () => {
       });
     });
 
-    it("should allow to add new datasources later", () => {
+    itIfMondrian("should allow to add new datasources later", () => {
       assert.doesNotThrow(() => {
         const client = new MultiClient();
         const datasource = new MondrianDataSource(MONDRIAN_SERVER);
@@ -86,7 +90,7 @@ describe("MultiClient", () => {
   describe("#execQuery()", function () {
     this.timeout(10000);
 
-    it("should pick the right Cube and execute a Query correctly", async () => {
+    itIfAll("should pick the right Cube and execute a Query correctly", async () => {
       const client = await MultiClient.fromURL(MONDRIAN_SERVER, TESSERACT_SERVER, PYTESSERACT_SERVER);
       const cubes = await client.getCubes();
       const cube = randomPick(cubes);
