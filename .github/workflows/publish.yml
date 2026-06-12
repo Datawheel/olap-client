@@ -3,24 +3,22 @@ name: Publish package
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
 jobs:
   publish-npm:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           registry-url: https://registry.npmjs.org/
       - run: npm ci
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
-          MONDRIAN_SERVER: https://arkansas-api.datausa.io/
-          TESSERACT_SERVER: https://api-zebra.oec.world/tesseract/
-          PYTESSERACT_SERVER: https://pytesseract-dev.oec.world/tesseract/
+          PYTESSERACT_SERVER: https://api-v2.oec.world/tesseract/
 
   # publish-gpr:
   #   runs-on: ubuntu-latest
