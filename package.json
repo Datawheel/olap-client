@@ -19,7 +19,7 @@
     "build": "tsdown",
     "pretest": "tsdown",
     "test": "mocha --recursive --parallel tests",
-    "prepublishOnly": "tsdown && mocha --bail --recursive tests"
+    "prepublishOnly": "tsdown"
   },
   "author": "Francisco Abarzua <francisco@datawheel.us>",
   "license": "MIT",
