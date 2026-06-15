@@ -1,10 +1,10 @@
 const assert = require("node:assert");
-const {TesseractDataSource, Cube} = require("../../dist/index.cjs");
+const {TesseractDataSource, Cube, Query, Level} = require("../..");
 
 // Ensure online test runs before
 require("../online.spec");
 
-const {TESSERACT_SERVER} = process.env;
+const {TESSERACT_SERVER = ""} = process.env;
 
 describe("TesseractDataSource", function () {
   this.timeout(5000);
@@ -25,15 +25,18 @@ describe("TesseractDataSource", function () {
 
     it("should throw if nothing is passed", () => {
       assert.throws(() => {
+        // @ts-expect-error
         new TesseractDataSource();
       });
     });
 
     it("should throw if something besides a string is passed", () => {
       assert.throws(() => {
+        // @ts-expect-error
         new TesseractDataSource({url: "/tesseract"});
       });
       assert.throws(() => {
+        // @ts-expect-error
         new TesseractDataSource(null);
       });
     });
@@ -48,8 +51,12 @@ describe("TesseractDataSource", function () {
     });
   });
 
-  describeIfOnline("#checkStatus()", () => {
-    const ds = new TesseractDataSource(TESSERACT_SERVER);
+  describeIfOnline("#checkStatus()", function () {
+    /** @type {TesseractDataSource} */ let ds;
+
+    this.beforeAll(() => {
+      ds = new TesseractDataSource(TESSERACT_SERVER);
+    });
 
     it("should not reject", async () => {
       const promise = ds.checkStatus();
@@ -66,10 +73,11 @@ describe("TesseractDataSource", function () {
   });
 
   describeIfOnline("#execQuery()", function () {
-    const ds = new TesseractDataSource(TESSERACT_SERVER);
-    let query;
+    /** @type {TesseractDataSource} */ let ds;
+    /** @type {Query} */ let query;
 
     this.beforeAll(async () => {
+      ds = new TesseractDataSource(TESSERACT_SERVER);
       query = await ds.fetchCube("indicators_i_wdi_a").then((plainCube) => {
         const cube = new Cube(plainCube, ds);
         return cube.query
@@ -82,6 +90,7 @@ describe("TesseractDataSource", function () {
 
     it("should query the server through the Aggregate endpoint", async () => {
       const res = await ds.execQuery(query, "aggregate");
+      // @ts-expect-error
       assert.match(res.url, /\/cubes\/indicators_i_wdi_a\/aggregate\.jsonrecords\?/);
       assert.strictEqual(res.status, 200);
       assert.strictEqual(res.data.length, 48);
@@ -89,14 +98,19 @@ describe("TesseractDataSource", function () {
 
     it("should query the server through the LogicLayer endpoint", async () => {
       const res = await ds.execQuery(query, "logiclayer");
+      // @ts-expect-error
       assert.match(res.url, /\/data\.jsonrecords\?/);
       assert.strictEqual(res.status, 200);
       assert.strictEqual(res.data.length, 48);
     });
   });
 
-  describeIfOnline("#fetchCubes()", () => {
-    const ds = new TesseractDataSource(TESSERACT_SERVER);
+  describeIfOnline("#fetchCubes()", function () {
+    /** @type {TesseractDataSource} */ let ds;
+
+    this.beforeAll(() => {
+      ds = new TesseractDataSource(TESSERACT_SERVER);
+    });
 
     it("should get a list of cubes from the server", async () => {
       const cubes = await ds.fetchCubes();
@@ -104,8 +118,12 @@ describe("TesseractDataSource", function () {
     });
   });
 
-  describeIfOnline("#fetchCube()", () => {
-    const ds = new TesseractDataSource(TESSERACT_SERVER);
+  describeIfOnline("#fetchCube()", function () {
+    /** @type {TesseractDataSource} */ let ds;
+
+    this.beforeAll(() => {
+      ds = new TesseractDataSource(TESSERACT_SERVER);
+    });
 
     it("should get a specific cube from the server", async () => {
       const cube = await ds.fetchCube("indicators_i_wdi_a");
@@ -113,11 +131,12 @@ describe("TesseractDataSource", function () {
     });
   });
 
-  describeIfOnline("#fetchMembers()", () => {
-    const ds = new TesseractDataSource(TESSERACT_SERVER);
-    let level;
+  describeIfOnline("#fetchMembers()", function () {
+    /** @type {TesseractDataSource} */ let ds;
+    /** @type {Level} */ let level;
 
     this.beforeAll(async () => {
+      ds = new TesseractDataSource(TESSERACT_SERVER);
       level = await ds.fetchCube("indicators_i_wdi_a").then((plainCube) => {
         const cube = new Cube(plainCube, ds);
         return cube.getLevel("Year");
@@ -131,11 +150,12 @@ describe("TesseractDataSource", function () {
     });
   });
 
-  describeIfOnline("#fetchMember()", () => {
-    const ds = new TesseractDataSource(TESSERACT_SERVER);
-    let level;
+  describeIfOnline("#fetchMember()", function () {
+    /** @type {TesseractDataSource} */ let ds;
+    /** @type {Level} */ let level;
 
     this.beforeAll(async () => {
+      ds = new TesseractDataSource(TESSERACT_SERVER);
       level = await ds.fetchCube("indicators_i_wdi_a").then((plainCube) => {
         const cube = new Cube(plainCube, ds);
         return cube.getLevel("Year");

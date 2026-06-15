@@ -1,5 +1,5 @@
-const assert = require("assert");
-const {Client, Comparison, Direction, Format, TimePrecision, TimeValue, TesseractDataSource} = require("../dist/index.cjs");
+const assert = require("node:assert");
+const {Client, Comparison, Direction, Format, TimePrecision, TimeValue} = require("..");
 const {TestDataSource} = require("./datasource");
 const {encode, randomLevel, randomPick, randomQuery} = require("./utils");
 
@@ -129,7 +129,8 @@ describe("Query", () => {
     });
 
     it("should not add multiple captions for the same level", () => {
-      const level = [...cube.levelIterator].find(lvl => lvl.properties.length > 1);
+      const level = [...cube.levelIterator].find((lvl) => lvl.properties.length > 1);
+      assert.ok(level);
       const property1 = randomPick(level.properties);
       const property2 = randomPick(level.properties, property1);
 
@@ -148,7 +149,7 @@ describe("Query", () => {
     it("should add a simple cut to the query", async () => {
       const level = randomLevel(cube);
       const memberList = await client.getMembers(level);
-      const members = memberList.slice(0, 2).map(m => `${m.key}`);
+      const members = memberList.slice(0, 2).map((m) => `${m.key}`);
 
       const query = cube.query.addCut(level.descriptor, members);
 
@@ -163,7 +164,7 @@ describe("Query", () => {
     it("should add an exclusive cut to the query", async () => {
       const level = randomLevel(cube);
       const memberList = await client.getMembers(level);
-      const members = memberList.slice(1, 3).map(m => `${m.key}`);
+      const members = memberList.slice(1, 3).map((m) => `${m.key}`);
 
       const query = cube.query.addCut(level.descriptor, members, {exclusive: true});
 
@@ -241,8 +242,10 @@ describe("Query", () => {
     it("should add a double filter to the query", () => {
       const measure = randomPick(cube.measures);
 
-      const query = cube.query
-        .addFilter(measure, [Comparison.GT, 0], "and", [Comparison.LTE, 100]);
+      const query = cube.query.addFilter(measure, [Comparison.GT, 0], "and", [
+        Comparison.LTE,
+        100,
+      ]);
 
       const filters = query.getParam("filters");
       assert.strictEqual(filters.length, 1);
@@ -258,15 +261,21 @@ describe("Query", () => {
 
     it("should throw if trying to filter on an invalid comparison operator", () => {
       const measure = randomPick(cube.measures);
+      // @ts-expect-error
       assert.throws(() => cube.query.addFilter(measure, [null, 0]));
+      // @ts-expect-error
       assert.throws(() => cube.query.addFilter(measure, [true, 0]));
+      // @ts-expect-error
       assert.throws(() => cube.query.addFilter(measure, [Number.POSITIVE_INFINITY, 0]));
     });
 
     it("should throw if trying to filter on an invalid amount", () => {
       const measure = randomPick(cube.measures);
       assert.throws(() => cube.query.addFilter(measure, [Comparison.GTE, Number.NaN]));
-      assert.throws(() => cube.query.addFilter(measure, [Comparison.LT, Number.POSITIVE_INFINITY]));
+      assert.throws(() =>
+        cube.query.addFilter(measure, [Comparison.LT, Number.POSITIVE_INFINITY]),
+      );
+      // @ts-expect-error
       assert.throws(() => cube.query.addFilter(measure, [Comparison.EQ, "red"]));
     });
   });
@@ -376,15 +385,17 @@ describe("Query", () => {
       const query = cube.query;
 
       const optionsBefore = query.getParam("options");
-      assert.ok(!optionsBefore.hasOwnProperty("debug"));
-      assert.ok(!optionsBefore.hasOwnProperty("distinct"));
+      assert.ok(!("debug" in optionsBefore));
+      assert.ok(!("distinct" in optionsBefore));
 
+      //@ts-expect-error
       query.setOption("debug", undefined);
+      //@ts-expect-error
       query.setOption("distinct", null);
 
       const optionsAfter = query.getParam("options");
-      assert.ok(!optionsAfter.hasOwnProperty("debug"));
-      assert.ok(!optionsAfter.hasOwnProperty("distinct"));
+      assert.ok(!("debug" in optionsAfter));
+      assert.ok(!("distinct" in optionsAfter));
     });
 
     it("should save boolean values", () => {
@@ -405,10 +416,15 @@ describe("Query", () => {
     it("should save non-boolean values as booleans", () => {
       const query = cube.query;
 
+      // @ts-expect-error
       query.setOption("debug", "");
+      // @ts-expect-error
       query.setOption("distinct", "0");
+      // @ts-expect-error
       query.setOption("nonempty", 0);
+      // @ts-expect-error
       query.setOption("parents", 1);
+      // @ts-expect-error
       query.setOption("sparse", Number.NaN);
 
       const options = query.getParam("options");
@@ -438,6 +454,7 @@ describe("Query", () => {
     });
 
     it("should clear both pagination options", () => {
+      // @ts-expect-error
       const query = cube.query.setPagination(undefined);
 
       const pagination = query.getParam("pagination");
@@ -543,10 +560,14 @@ describe("Query", () => {
   describe("#toSource()", () => {
     it("should convert the query into its javascript source", () => {
       const queryExpected = randomQuery(cube);
-      const queryEvaluator = new Function("query", "enums", `
+      const queryEvaluator = new Function(
+        "query",
+        "enums",
+        `
 const {Comparison, Direction, Format} = enums;
 return ${queryExpected.toSource()};
-`);
+`,
+      );
       const queryActual = queryEvaluator(cube.query, {Comparison, Direction, Format});
 
       assert.deepStrictEqual(queryActual.toJSON(), queryExpected.toJSON());
@@ -567,7 +588,6 @@ return ${queryExpected.toSource()};
         .addCalculation("rca", {category, location, value})
         .addCalculation("topk", {amount: 5, category: location, value, order: "asc"})
         .setFormat("csv")
-        .setOption("debug", undefined)
         .setOption("distinct", false)
         .setOption("parents", true)
         .setSorting(value, Direction.DESC);
@@ -576,18 +596,36 @@ return ${queryExpected.toSource()};
       assert.strictEqual(typeof qp, "string");
 
       assert.ok(qp.includes(`cube=${cube.name}`));
-      assert.strictEqual(qp.includes(`options%5Bdebug%5D=`), false);
-      assert.ok(qp.includes(`options%5Bdistinct%5D=false`));
+      assert.strictEqual(qp.includes("options%5Bdebug%5D="), false);
+      assert.ok(qp.includes("options%5Bdistinct%5D=false"));
       assert.ok(qp.includes(`drilldowns%5B%5D=${encode(category.fullName)}`));
       assert.ok(qp.includes(`drilldowns%5B%5D=${encode(location.fullName)}`));
-      assert.ok(qp.includes(`format=csv`));
-      assert.ok(qp.includes(`calculations%5B%5D=growth%3A${encode(category.fullName)}%2C${encode(value.name)}`));
-      assert.ok(qp.includes(`calculations%5B%5D=rca%3A${encode(category.fullName)}%2C${encode(location.fullName)}%2C${encode(value.name)}`));
-      assert.ok(qp.includes(`calculations%5B%5D=topk%3A${5}%2C${encode(location.fullName)}%2C${Direction.ASC}%2C${encode(value.name)}`));
+      assert.ok(qp.includes("format=csv"));
+      assert.ok(
+        qp.includes(
+          `calculations%5B%5D=growth%3A${encode(category.fullName)}%2C${encode(
+            value.name,
+          )}`,
+        ),
+      );
+      assert.ok(
+        qp.includes(
+          `calculations%5B%5D=rca%3A${encode(category.fullName)}%2C${encode(
+            location.fullName,
+          )}%2C${encode(value.name)}`,
+        ),
+      );
+      assert.ok(
+        qp.includes(
+          `calculations%5B%5D=topk%3A${5}%2C${encode(location.fullName)}%2C${
+            Direction.ASC
+          }%2C${encode(value.name)}`,
+        ),
+      );
       assert.ok(qp.includes(`measures%5B%5D=${encode(value.name)}`));
-      assert.ok(qp.includes(`options%5Bparents%5D=true`));
+      assert.ok(qp.includes("options%5Bparents%5D=true"));
       assert.ok(qp.includes(`server=${encode(cube.server)}`));
-      assert.ok(qp.includes(`sort_direction=desc`));
+      assert.ok(qp.includes("sort_direction=desc"));
       assert.ok(qp.includes(`sort_property=${encode(value.name)}`));
     });
   });

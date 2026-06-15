@@ -3,7 +3,7 @@ const {
   MultiClient,
   MondrianDataSource,
   TesseractDataSource,
-} = require("../dist/index.cjs");
+} = require("..");
 const {randomPick, randomLevel} = require("./utils");
 
 // Ensure online test runs before

@@ -1,4 +1,4 @@
-const {Query} = require("../../dist/index.cjs");
+const {Query} = require("../..");
 
 describe("pytesseract/adapter", () => {
   describe("buildSearchParams", () => {

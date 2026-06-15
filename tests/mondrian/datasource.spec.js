@@ -1,10 +1,10 @@
 const assert = require("node:assert");
-const {MondrianDataSource, Cube} = require("../../dist/index.cjs");
+const {MondrianDataSource, Cube, Query, Level} = require("../..");
 
 // Ensure online test runs before
 require("../online.spec");
 
-const {MONDRIAN_SERVER} = process.env;
+const {MONDRIAN_SERVER = ""} = process.env;
 
 describe("MondrianDataSource", function () {
   this.timeout(10000);
@@ -18,15 +18,18 @@ describe("MondrianDataSource", function () {
 
     it("should throw if nothing is passed", () => {
       assert.throws(() => {
+        // @ts-expect-error
         new MondrianDataSource();
       });
     });
 
     it("should throw if something besides a string is passed", () => {
       assert.throws(() => {
+        // @ts-expect-error
         new MondrianDataSource({url: "/mondrian-rest"});
       });
       assert.throws(() => {
+        // @ts-expect-error
         new MondrianDataSource(null);
       });
     });
@@ -41,8 +44,12 @@ describe("MondrianDataSource", function () {
 
   const describeIfOnline = MONDRIAN_SERVER ? describe : describe.skip;
 
-  describeIfOnline("#checkStatus", () => {
-    const ds = new MondrianDataSource(MONDRIAN_SERVER);
+  describeIfOnline("#checkStatus", function () {
+    /** @type {MondrianDataSource} */ let ds;
+
+    this.beforeAll(() => {
+      ds = new MondrianDataSource(MONDRIAN_SERVER);
+    });
 
     it("should not reject", async () => {
       const promise = ds.checkStatus();
@@ -59,10 +66,11 @@ describe("MondrianDataSource", function () {
   });
 
   describeIfOnline("#execQuery", function () {
-    const ds = new MondrianDataSource(MONDRIAN_SERVER);
-    let query;
+    /** @type {MondrianDataSource} */ let ds;
+    /** @type {Query} */ let query;
 
     this.beforeAll(async () => {
+      ds = new MondrianDataSource(MONDRIAN_SERVER);
       query = await ds.fetchCube("dot_faf").then((plainCube) => {
         const cube = new Cube(plainCube, ds);
         return cube.query
@@ -76,14 +84,19 @@ describe("MondrianDataSource", function () {
     it("should query the server", async () => {
       const res = await ds.execQuery(query);
 
+      // @ts-expect-error
       assert.match(res.url, /\/cubes\/dot_faf\/aggregate\.jsonrecords\?/);
       assert.strictEqual(res.status, 200);
       assert.strictEqual(res.data.length, 51);
     });
   });
 
-  describeIfOnline("#fetchCubes", () => {
-    const ds = new MondrianDataSource(MONDRIAN_SERVER);
+  describeIfOnline("#fetchCubes", function () {
+    /** @type {MondrianDataSource} */ let ds;
+
+    this.beforeAll(() => {
+      ds = new MondrianDataSource(MONDRIAN_SERVER);
+    });
 
     it("should get a list of cubes from the server", async () => {
       const cubes = await ds.fetchCubes();
@@ -92,8 +105,12 @@ describe("MondrianDataSource", function () {
     });
   });
 
-  describeIfOnline("#fetchCube", () => {
-    const ds = new MondrianDataSource(MONDRIAN_SERVER);
+  describeIfOnline("#fetchCube", function () {
+    /** @type {MondrianDataSource} */ let ds;
+
+    this.beforeAll(() => {
+      ds = new MondrianDataSource(MONDRIAN_SERVER);
+    });
 
     it("should get a specific cube from the server", async () => {
       const cube = await ds.fetchCube("dot_faf");
@@ -102,10 +119,11 @@ describe("MondrianDataSource", function () {
   });
 
   describeIfOnline("#fetchMembers", function () {
-    const ds = new MondrianDataSource(MONDRIAN_SERVER);
-    let level;
+    /** @type {MondrianDataSource} */ let ds;
+    /** @type {Level} */ let level;
 
     this.beforeAll(async () => {
+      ds = new MondrianDataSource(MONDRIAN_SERVER);
       level = await ds.fetchCube("dot_faf").then((plainCube) => {
         const cube = new Cube(plainCube, ds);
         return cube.getLevel("Year");
@@ -120,10 +138,11 @@ describe("MondrianDataSource", function () {
   });
 
   describeIfOnline("#fetchMember", function () {
-    const ds = new MondrianDataSource(MONDRIAN_SERVER);
-    let level;
+    /** @type {MondrianDataSource} */ let ds;
+    /** @type{Level} */ let level;
 
     this.beforeAll(async () => {
+      ds = new MondrianDataSource(MONDRIAN_SERVER);
       level = await ds.fetchCube("dot_faf").then((plainCube) => {
         const cube = new Cube(plainCube, ds);
         return cube.getLevel("Year");
@@ -163,9 +182,7 @@ describe("MondrianDataSource", function () {
     });
   });
 
-  const describeIfOnlineStub = MONDRIAN_SERVER ? describe : describe.skip;
+  describeIfOnline("#parseQueryURL", () => {});
 
-  describeIfOnlineStub("#parseQueryURL", () => {});
-
-  describeIfOnlineStub("#stringifyQueryURL", () => {});
+  describeIfOnline("#stringifyQueryURL", () => {});
 });

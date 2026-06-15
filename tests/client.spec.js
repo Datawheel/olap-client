@@ -4,14 +4,18 @@ const {
   TesseractDataSource,
   MondrianDataSource,
   PyTesseractDataSource,
-} = require("../dist/index.cjs");
+} = require("..");
 const {TestDataSource} = require("./datasource");
 const {randomPick, randomLevel, randomQuery} = require("./utils");
 
 // Ensure online test runs before
 require("./online.spec");
 
-const {MONDRIAN_SERVER, TESSERACT_SERVER, PYTESSERACT_SERVER} = process.env;
+const {
+  MONDRIAN_SERVER = "",
+  TESSERACT_SERVER = "",
+  PYTESSERACT_SERVER = "",
+} = process.env;
 
 const itIfMondrian = MONDRIAN_SERVER ? it : it.skip;
 const itIfTesseract = TESSERACT_SERVER ? it : it.skip;
@@ -47,7 +51,7 @@ describe("Client", () => {
   describe("#constructor()", () => {
     it("should construct an empty client instance if no parameters passed", () => {
       assert.doesNotThrow(() => {
-        const client = new Client();
+        new Client();
       });
     });
 

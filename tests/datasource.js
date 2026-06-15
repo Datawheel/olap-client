@@ -1,7 +1,8 @@
 // @ts-check
 const formUrlEncoded = require("form-urlencoded");
 const formUrlDecoded = require("form-urldecoded");
-const { dummyCubeBuilder, dummyMemberBuilder, dummyDatumFactory } = require("./dummy");
+const {dummyCubeBuilder, dummyMemberBuilder, dummyDatumFactory} = require("./dummy");
+const {default: Axios} = require("axios");
 
 const CUBE_NAMES = [
   "alfa",
@@ -47,6 +48,8 @@ class TestDataSource {
   serverUrl = "test://dummyolap";
   serverVersion = "0.0";
 
+  axiosInstance = Axios.create();
+
   checkStatus() {
     return Promise.resolve({
       online: this.serverOnline,
@@ -57,10 +60,10 @@ class TestDataSource {
   }
 
   execQuery(query) {
-    return new Promise(resolve => {
-      const amounts = query.getParam("drilldowns").map(dd => {
+    return new Promise((resolve) => {
+      const amounts = query.getParam("drilldowns").map((dd) => {
         const total = dd.name.split("").reduce((prod, ch) => ch.charCodeAt(0) * prod, 1);
-        return total % 255
+        return total % 255;
       });
       const dummyDatumBuilder = dummyDatumFactory(amounts);
       const total = amounts.reduce((prod, i) => prod * i, 1);
@@ -91,17 +94,19 @@ class TestDataSource {
   }
 
   fetchMember(parent, key, options) {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       const member = dummyMemberBuilder(parent, key % 255);
       resolve(member);
     });
   }
 
   fetchMembers(parent, options) {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       const {name} = parent;
       const total = name.split("").reduce((prod, ch) => ch.charCodeAt(0) * prod, 1);
-      const members = Array(total % 255).fill(parent).map(dummyMemberBuilder);
+      const members = Array(total % 255)
+        .fill(parent)
+        .map(dummyMemberBuilder);
       resolve(members);
     });
   }
@@ -116,7 +121,7 @@ class TestDataSource {
     throw new Error(`URL ${server} doesn't match server URL in Query object provided.`);
   }
 
-  setRequestConfig({ url, baseUrl, ...config }) {
+  setRequestConfig({url, baseUrl, ...config}) {
     this.config = {
       ...this.config,
       config,

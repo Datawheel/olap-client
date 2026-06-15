@@ -1,14 +1,270 @@
-// @ts-check
-const { AggregatorType, DimensionType } = require("..");
-const { randomPick, randomString, randomValue } = require("./utils");
+const {AggregatorType, DimensionType} = require("..");
+const {randomPick, randomString, randomValue} = require("./utils");
 
 module.exports = {
   dummyCubeBuilder,
   dummyMemberBuilder,
   dummyDatumFactory,
-}
+};
 
-const WORDLIST = ["aardvark", "absurd", "accrue", "acme", "adrift", "adult", "afflict", "ahead", "aimless", "algol", "allow", "alone", "ammo", "ancient", "apple", "artist", "assume", "athens", "atlas", "aztec", "baboon", "backfield", "backward", "banjo", "beaming", "bedlamp", "beehive", "beeswax", "befriend", "belfast", "berserk", "billiard", "bison", "blackjack", "blockade", "blowtorch", "bluebird", "bombast", "bookshelf", "brackish", "breadline", "breakup", "brickyard", "briefcase", "burbank", "button", "buzzard", "cement", "chairlift", "chatter", "checkup", "chisel", "choking", "chopper", "christmas", "clamshell", "classic", "classroom", "cleanup", "clockwork", "cobra", "commence", "concert", "cowbell", "crackdown", "cranky", "crowfoot", "crucial", "crumpled", "crusade", "cubic", "dashboard", "deadbolt", "deckhand", "dogsled", "dragnet", "drainage", "dreadful", "drifter", "dropper", "drumbeat", "drunken", "dupont", "dwelling", "eating", "edict", "egghead", "eightball", "endorse", "endow", "enlist", "erase", "escape", "exceed", "eyeglass", "eyetooth", "facial", "fallout", "flagpole", "flatfoot", "flytrap", "fracture", "framework", "freedom", "frighten", "gazelle", "geiger", "glitter", "glucose", "goggles", "goldfish", "gremlin", "guidance", "hamlet", "highchair", "hockey", "indoors", "indulge", "inverse", "involve", "island", "jawbone", "keyboard", "kickoff", "kiwi", "klaxon", "locale", "lockup", "merit", "minnow", "miser", "mohawk", "mural", "music", "necklace", "neptune", "newborn", "nightbird", "oakland", "obtuse", "offload", "optic", "orca", "payday", "peachy", "pheasant", "physique", "playhouse", "pluto", "preclude", "prefer", "preshrunk", "printer", "prowler", "pupil", "puppy", "python", "quadrant", "quiver", "quota", "ragtime", "ratchet", "rebirth", "reform", "regain", "reindeer", "rematch", "repay", "retouch", "revenge", "reward", "rhythm", "ribcage", "ringbolt", "robust", "rocker", "ruffled", "sailboat", "sawdust", "scallion", "scenic", "scorecard", "scotland", "seabird", "select", "sentence", "shadow", "shamrock", "showgirl", "skullcap", "skydive", "slingshot", "slowdown", "snapline", "snapshot", "snowcap", "snowslide", "solo", "southward", "soybean", "spaniel", "spearhead", "spellbind", "spheroid", "spigot", "spindle", "spyglass", "stagehand", "stagnate", "stairway", "standard", "stapler", "steamship", "sterling", "stockman", "stopwatch", "stormy", "sugar", "surmount", "suspense", "sweatband", "swelter", "tactics", "talon", "tapeworm", "tempest", "tiger", "tissue", "tonic", "topmost", "tracker", "transit", "trauma", "treadmill", "trojan", "trouble", "tumor", "tunnel", "tycoon", "uncut", "unearth", "unwind", "uproot", "upset", "upshot", "vapor", "village", "virus", "vulcan", "waffle", "wallet", "watchword", "wayside", "willow", "woodlark", "zulu"];
+const WORDLIST = [
+  "aardvark",
+  "absurd",
+  "accrue",
+  "acme",
+  "adrift",
+  "adult",
+  "afflict",
+  "ahead",
+  "aimless",
+  "algol",
+  "allow",
+  "alone",
+  "ammo",
+  "ancient",
+  "apple",
+  "artist",
+  "assume",
+  "athens",
+  "atlas",
+  "aztec",
+  "baboon",
+  "backfield",
+  "backward",
+  "banjo",
+  "beaming",
+  "bedlamp",
+  "beehive",
+  "beeswax",
+  "befriend",
+  "belfast",
+  "berserk",
+  "billiard",
+  "bison",
+  "blackjack",
+  "blockade",
+  "blowtorch",
+  "bluebird",
+  "bombast",
+  "bookshelf",
+  "brackish",
+  "breadline",
+  "breakup",
+  "brickyard",
+  "briefcase",
+  "burbank",
+  "button",
+  "buzzard",
+  "cement",
+  "chairlift",
+  "chatter",
+  "checkup",
+  "chisel",
+  "choking",
+  "chopper",
+  "christmas",
+  "clamshell",
+  "classic",
+  "classroom",
+  "cleanup",
+  "clockwork",
+  "cobra",
+  "commence",
+  "concert",
+  "cowbell",
+  "crackdown",
+  "cranky",
+  "crowfoot",
+  "crucial",
+  "crumpled",
+  "crusade",
+  "cubic",
+  "dashboard",
+  "deadbolt",
+  "deckhand",
+  "dogsled",
+  "dragnet",
+  "drainage",
+  "dreadful",
+  "drifter",
+  "dropper",
+  "drumbeat",
+  "drunken",
+  "dupont",
+  "dwelling",
+  "eating",
+  "edict",
+  "egghead",
+  "eightball",
+  "endorse",
+  "endow",
+  "enlist",
+  "erase",
+  "escape",
+  "exceed",
+  "eyeglass",
+  "eyetooth",
+  "facial",
+  "fallout",
+  "flagpole",
+  "flatfoot",
+  "flytrap",
+  "fracture",
+  "framework",
+  "freedom",
+  "frighten",
+  "gazelle",
+  "geiger",
+  "glitter",
+  "glucose",
+  "goggles",
+  "goldfish",
+  "gremlin",
+  "guidance",
+  "hamlet",
+  "highchair",
+  "hockey",
+  "indoors",
+  "indulge",
+  "inverse",
+  "involve",
+  "island",
+  "jawbone",
+  "keyboard",
+  "kickoff",
+  "kiwi",
+  "klaxon",
+  "locale",
+  "lockup",
+  "merit",
+  "minnow",
+  "miser",
+  "mohawk",
+  "mural",
+  "music",
+  "necklace",
+  "neptune",
+  "newborn",
+  "nightbird",
+  "oakland",
+  "obtuse",
+  "offload",
+  "optic",
+  "orca",
+  "payday",
+  "peachy",
+  "pheasant",
+  "physique",
+  "playhouse",
+  "pluto",
+  "preclude",
+  "prefer",
+  "preshrunk",
+  "printer",
+  "prowler",
+  "pupil",
+  "puppy",
+  "python",
+  "quadrant",
+  "quiver",
+  "quota",
+  "ragtime",
+  "ratchet",
+  "rebirth",
+  "reform",
+  "regain",
+  "reindeer",
+  "rematch",
+  "repay",
+  "retouch",
+  "revenge",
+  "reward",
+  "rhythm",
+  "ribcage",
+  "ringbolt",
+  "robust",
+  "rocker",
+  "ruffled",
+  "sailboat",
+  "sawdust",
+  "scallion",
+  "scenic",
+  "scorecard",
+  "scotland",
+  "seabird",
+  "select",
+  "sentence",
+  "shadow",
+  "shamrock",
+  "showgirl",
+  "skullcap",
+  "skydive",
+  "slingshot",
+  "slowdown",
+  "snapline",
+  "snapshot",
+  "snowcap",
+  "snowslide",
+  "solo",
+  "southward",
+  "soybean",
+  "spaniel",
+  "spearhead",
+  "spellbind",
+  "spheroid",
+  "spigot",
+  "spindle",
+  "spyglass",
+  "stagehand",
+  "stagnate",
+  "stairway",
+  "standard",
+  "stapler",
+  "steamship",
+  "sterling",
+  "stockman",
+  "stopwatch",
+  "stormy",
+  "sugar",
+  "surmount",
+  "suspense",
+  "sweatband",
+  "swelter",
+  "tactics",
+  "talon",
+  "tapeworm",
+  "tempest",
+  "tiger",
+  "tissue",
+  "tonic",
+  "topmost",
+  "tracker",
+  "transit",
+  "trauma",
+  "treadmill",
+  "trojan",
+  "trouble",
+  "tumor",
+  "tunnel",
+  "tycoon",
+  "uncut",
+  "unearth",
+  "unwind",
+  "uproot",
+  "upset",
+  "upshot",
+  "vapor",
+  "village",
+  "virus",
+  "vulcan",
+  "waffle",
+  "wallet",
+  "watchword",
+  "wayside",
+  "willow",
+  "woodlark",
+  "zulu",
+];
 
 /** @return {import("..").PlainCube} */
 function dummyCubeBuilder(cubeName = randomString()) {
@@ -17,30 +273,36 @@ function dummyCubeBuilder(cubeName = randomString()) {
   return {
     _type: "cube",
     annotations: {},
-    caption: "Cube: " + cubeName,
+    caption: `Cube: ${cubeName}`,
     dimensions: Array(cubeName.length).fill(uri).map(makeDummyDimension),
     measures: Array(2).fill(uri).map(makeDummyMeasure),
     name: cubeName,
     namedsets: [],
     uri,
-  }
+  };
 
-  /** @return {import("..").PlainMeasure} */
+  /**
+   * @param {string} parentUri
+   * @return {import("..").PlainMeasure}
+   */
   function makeDummyMeasure(parentUri) {
     const name = randomString();
     return {
       _type: "measure",
       aggregatorType: randomValue(AggregatorType),
       annotations: {},
-      caption: "Measure: " + name,
+      caption: `Measure: ${name}`,
       cube: cubeName,
       fullName: `/${cubeName}/MEA${name}`,
       name,
       uri: `${parentUri}/MEA${name}`,
-    }
+    };
   }
 
-  /** @return {import("..").PlainDimension} */
+  /**
+   * @param {string} parentUri
+   * @return {import("..").PlainDimension}
+   */
   function makeDummyDimension(parentUri) {
     const name = randomString();
     const uri = `${parentUri}/DIM${name}`;
@@ -54,12 +316,15 @@ function dummyCubeBuilder(cubeName = randomString()) {
       annotations: {},
       defaultHierarchy: randomPick(hierarchies).name,
       hierarchies,
-      caption: "Dimension: " + name,
+      caption: `Dimension: ${name}`,
       uri,
-    }
+    };
   }
 
-  /** @return {import("..").PlainHierarchy} */
+  /**
+   * @param {string} parentUri
+   * @return {import("..").PlainHierarchy}
+   */
   function makeDummyHierarchy(parentUri) {
     const name = randomString();
     const uri = `${parentUri}/HIE${name}`;
@@ -68,14 +333,14 @@ function dummyCubeBuilder(cubeName = randomString()) {
     return {
       _type: "hierarchy",
       annotations: {},
-      caption: "Hierarchy: " + name,
+      caption: `Hierarchy: ${name}`,
       cube: cubeName,
       dimension: dim.slice(3),
       fullName: `/${parentFullName}/HIE${name}`,
       levels: Array(4).fill(uri).map(makeDummyLevel),
       name,
       uri,
-    }
+    };
   }
 
   /**
@@ -91,7 +356,7 @@ function dummyCubeBuilder(cubeName = randomString()) {
     return {
       _type: "level",
       annotations: {},
-      caption: "Level: " + name,
+      caption: `Level: ${name}`,
       cube: cubeName,
       depth: index + 1,
       dimension: dim.slice(3),
@@ -101,7 +366,7 @@ function dummyCubeBuilder(cubeName = randomString()) {
       properties: Array(4).fill(uri).map(makeDummyProperty),
       uniqueName: `LVL${name}`,
       uri,
-    }
+    };
   }
 
   /**
@@ -117,7 +382,7 @@ function dummyCubeBuilder(cubeName = randomString()) {
       name,
       uniqueName: randomString(),
       uri: `${parentUri}/PROP${name}`,
-    }
+    };
   }
 }
 
@@ -134,13 +399,13 @@ function dummyMemberBuilder(level, index) {
     key: index,
     level: level.name,
     name: WORDLIST[index],
-    uri: level.toString() + "/" + index,
+    uri: `${level}/${index}`,
     caption: "",
     depth: level.depth,
-    fullName: level.fullName + "/" + index,
+    fullName: `${level.fullName}/${index}`,
     numChildren: 0,
-    parentName: ""
-  }
+    parentName: "",
+  };
 }
 
 /**
@@ -148,13 +413,13 @@ function dummyMemberBuilder(level, index) {
  * @returns {(q: import("..").Query, i: number) => Record<string, string | number>}
  */
 function dummyDatumFactory(amounts) {
-  const datumBase = {};
+  /** @type {Record<string, string | number>} */ const datumBase = {};
   return (query, index) => {
     const datum = {...datumBase};
     query.getParam("drilldowns").forEach((dd, i) => {
       datum[dd.name] = WORDLIST[index % amounts[i]];
     });
-    query.getParam("measures").forEach(ms => {
+    query.getParam("measures").forEach((ms) => {
       datum[ms.name] = Math.ceil(Math.random() * 2048 * ms.name.length);
     });
     // TODO: add properties

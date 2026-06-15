@@ -1,5 +1,5 @@
 const assert = require("node:assert");
-const {TesseractDataSource, MondrianDataSource, PyTesseractDataSource, Client} = require("../dist/index.cjs.js");
+const {TesseractDataSource, MondrianDataSource, PyTesseractDataSource, Client} = require("..");
 
 const {MONDRIAN_SERVER, TESSERACT_SERVER, PYTESSERACT_SERVER} = process.env;
 
