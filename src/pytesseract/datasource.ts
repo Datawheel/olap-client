@@ -75,7 +75,7 @@ export class PyTesseractDataSource implements IDataSource {
 
   execQuery(query: Query): Promise<Aggregation> {
     const format = query.getParam("format");
-    const url = this.stringifyQueryURL(query);
+    const url = encodeQueryURL(query);
     return this.axiosInstance
       .get<TesseractDataResponse>(url, {baseURL: undefined})
       .then((response) => {
@@ -169,15 +169,19 @@ export class PyTesseractDataSource implements IDataSource {
   }
 
   stringifyQueryURL(query: Query): string {
-    const format = query.getParam("format") || Format.jsonrecords;
-    const urlSearchParams = buildSearchParams(query);
-    const urlSearch = formUrlEncode(urlSearchParams, {
-      ignoreEmptyArray: true,
-      ignorenull: true,
-      skipBracket: true,
-      skipIndex: true,
-      sorted: true,
-    });
-    return urljoin(this.serverUrl, `data.${format}?${urlSearch}`);
+    return urljoin(this.serverUrl, encodeQueryURL(query));
   }
+}
+
+function encodeQueryURL(query: Query): string {
+  const format = query.getParam("format") || Format.jsonrecords;
+  const urlSearchParams = buildSearchParams(query);
+  const urlSearch = formUrlEncode(urlSearchParams, {
+    ignoreEmptyArray: true,
+    ignorenull: true,
+    skipBracket: true,
+    skipIndex: true,
+    sorted: true,
+  });
+  return `data.${format}?${urlSearch}`;
 }
