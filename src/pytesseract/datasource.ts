@@ -47,7 +47,7 @@ export class PyTesseractDataSource implements IDataSource {
 
   constructor(url: string) {
     if (!url || typeof url !== "string") {
-      throw new TypeError(`Invalid tesseract-olap server URL: ${url}`);
+      throw new TypeError(`Invalid pytesseract server URL: ${url}`);
     }
     this.serverUrl = urljoin(url, "/");
     this.axiosInstance = Axios.create({baseURL: this.serverUrl});
@@ -89,17 +89,17 @@ export class PyTesseractDataSource implements IDataSource {
       });
   }
 
-  fetchCube(cubeName: string): Promise<PlainCube> {
+  fetchCube(cubeName: string, params?: any): Promise<PlainCube> {
     const ctx = {uri: this.serverUrl};
     return this.axiosInstance
-      .get<TesseractCube>(`cubes/${encodeURIComponent(cubeName)}`)
+      .get<TesseractCube>(`cubes/${encodeURIComponent(cubeName)}`, {params})
       .then((response) => cubeAdapter.call(ctx, response.data));
   }
 
-  fetchCubes(): Promise<PlainCube[]> {
+  fetchCubes(params?: any): Promise<PlainCube[]> {
     const ctx = {uri: this.serverUrl};
     return this.axiosInstance
-      .get<TesseractSchema>("cubes")
+      .get<TesseractSchema>("cubes", {params})
       .then((response) => response.data.cubes.map(cubeAdapter, ctx));
   }
 

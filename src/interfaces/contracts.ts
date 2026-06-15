@@ -33,8 +33,8 @@ export interface IDataSource {
   axiosInstance: AxiosInstance;
   checkStatus(): Promise<ServerStatus>;
   execQuery(query: Query, endpoint?: string): Promise<Aggregation>;
-  fetchCube(cubeName: string): Promise<PlainCube>;
-  fetchCubes(): Promise<PlainCube[]>;
+  fetchCube(cubeName: string, params?: any): Promise<PlainCube>;
+  fetchCubes(params?: any): Promise<PlainCube[]>;
   fetchMember(parent: Level, key: string | number, options?: any): Promise<PlainMember>;
   fetchMembers(parent: Level, options?: any): Promise<PlainMember[]>;
   parseQueryURL(query: Query, url: string, options: Partial<ParseURLOptions>): Query;

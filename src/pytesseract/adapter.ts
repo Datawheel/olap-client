@@ -111,6 +111,7 @@ export function measureAdapter(this: ContextMeta, item: TesseractMeasure): Plain
     _type: "measure",
     aggregatorType: item.aggregator as AggregatorType,
     annotations: item.annotations,
+    caption: item.caption,
     cube: this.cube,
     name: item.name,
     uri: urljoin(this.uri, "msr", encodeURIComponent(item.name)),
@@ -180,6 +181,7 @@ export function propertyAdapter(
   return {
     _type: "property",
     annotations: item.annotations,
+    caption: item.caption,
     name: item.name,
     uniqueName: item.name,
     uri: urljoin(this.uri, encodeURIComponent(item.name)),

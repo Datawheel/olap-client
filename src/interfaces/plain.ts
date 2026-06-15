@@ -81,6 +81,7 @@ export interface PlainNamedSet extends IAnnotated, INamed, ISerializable {
 
 export interface PlainProperty extends IAnnotated, INamed, ISerializable {
   readonly _type: "property";
+  readonly caption?: string;
   readonly captionSet?: string;
   readonly uniqueName?: string;
 }
