@@ -1,6 +1,6 @@
 {
   "name": "@datawheel/olap-client",
-  "version": "2.1.5",
+  "version": "2.2.0",
   "description": "A multiclient library to handle requests with mondrian-rest and tesseract servers",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -14,7 +14,9 @@
       "default": "./dist/index.mjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsdown",
     "pretest": "tsdown",
