@@ -94,8 +94,8 @@ describe("PyTesseractDataSource", function () {
           .setLocale("en")
           .addMeasure("Measure")
           .addDrilldown("Year")
-          .addDrilldown("Country")
-          .addCut("Continent", ["na"])
+          .addDrilldown("Country Official")
+          .addCut("Continent Official", ["na"])
           .setFormat("jsonrecords");
       });
     });
@@ -107,12 +107,12 @@ describe("PyTesseractDataSource", function () {
       // @ts-expect-error
       assert.match(res.url, /\/data\.jsonrecords\?/);
       assert.strictEqual(res.status, 200);
-      assert.strictEqual(res.data.length, 2205);
+      assert.strictEqual(res.data.length, 2275);
 
       const columns = Object.keys(res.data[0]);
       assert.ok(columns.includes("Year"));
-      assert.ok(columns.includes("Country"));
-      assert.ok(columns.includes("Country ID"));
+      assert.ok(columns.includes("Country Official"));
+      assert.ok(columns.includes("Country Official ID"));
       assert.ok(columns.includes("Measure"));
     });
   });
@@ -236,16 +236,16 @@ describe("PyTesseractDataSource", function () {
     const search = new URLSearchParams([
       ["cube", "indicators_i_wdi_a"],
       ["locale", "es"],
-      ["drilldowns", "Year,Country"],
+      ["drilldowns", "Year,Country Official"],
       ["measures", "Measure"],
-      ["properties", "ISO 3"],
+      ["properties", "ISO2"],
       ["include", "Year:2020,2021"],
       ["include", "Year:2019"],
-      ["exclude", "Continent:af,as"],
-      ["exclude", "Continent:af,sa;Country:euspa"],
+      ["exclude", "Continent Official:af,as"],
+      ["exclude", "Continent Official:af,sa;Country Official:euspa"],
       ["filters", "Measure.lte.100000"],
       ["limit", "1,2"],
-      ["sort", "ISO 3.asc"],
+      ["sort", "ISO2.asc"],
       ["time", "year.latest"],
       ["parents", "false"],
     ]);
@@ -274,12 +274,12 @@ describe("PyTesseractDataSource", function () {
         // @ts-expect-error
         cube.getLevel("Year"),
         // @ts-expect-error
-        cube.getLevel("Country"),
+        cube.getLevel("Country Official"),
       ]);
       // @ts-expect-error
       assert.deepEqual(query.getParam("measures"), [cube.getMeasure("Measure")]);
       // @ts-expect-error
-      assert.deepEqual(query.getParam("properties"), [cube.getProperty("ISO 3")]);
+      assert.deepEqual(query.getParam("properties"), [cube.getProperty("ISO2")]);
       // @ts-expect-error
       assert.deepEqual(query.getParam("cuts"), [
         {
@@ -291,14 +291,14 @@ describe("PyTesseractDataSource", function () {
         },
         {
           // @ts-expect-error
-          drillable: cube.getLevel("Continent"),
+          drillable: cube.getLevel("Continent Official"),
           members: ["af", "as", "sa"],
           isExclusive: true,
           isForMatch: undefined,
         },
         {
           // @ts-expect-error
-          drillable: cube.getLevel("Country"),
+          drillable: cube.getLevel("Country Official"),
           members: ["euspa"],
           isExclusive: true,
           isForMatch: undefined,
@@ -319,7 +319,7 @@ describe("PyTesseractDataSource", function () {
       // @ts-expect-error
       assert.deepEqual(query.getParam("sorting"), {
         // @ts-expect-error
-        property: cube.getProperty("ISO 3"),
+        property: cube.getProperty("ISO2"),
         direction: "asc",
       });
       // @ts-expect-error
@@ -344,15 +344,15 @@ describe("PyTesseractDataSource", function () {
         .setLocale("es")
         .addMeasure("Measure")
         .addDrilldown("Year")
-        .addDrilldown("Country")
-        .addProperty("Country.ISO 3")
+        .addDrilldown("Country Official")
+        .addProperty("Country Official.ISO2")
         .addCut("Year", ["2020", "2021"], {exclusive: false})
-        .addCut("Country", ["euspa"], {exclusive: false})
-        .addCut("Continent", ["af", "as"], {exclusive: true})
-        .addCut("Continent", ["af", "sa"], {exclusive: true})
+        .addCut("Country Official", ["euspa"], {exclusive: false})
+        .addCut("Continent Official", ["af", "as"], {exclusive: true})
+        .addCut("Continent Official", ["af", "sa"], {exclusive: true})
         .addFilter("Measure", [Comparison.LTE, 100000])
         .setPagination(1, 2)
-        .setSorting("Country.ISO 3", "asc")
+        .setSorting("Country Official.ISO2", "asc")
         .setTime(TimePrecision.YEAR, TimeValue.LATEST)
         .setOption("parents", false);
 
@@ -368,14 +368,14 @@ describe("PyTesseractDataSource", function () {
       assert.deepEqual(parsedSearch, {
         cube: "indicators_i_wdi_a",
         locale: "es",
-        drilldowns: "Year,Country",
+        drilldowns: "Year,Country Official",
         measures: "Measure",
-        properties: "ISO 3",
-        include: "Year:2020,2021;Country:euspa",
-        exclude: "Continent:af,as,sa",
+        properties: "ISO2",
+        include: "Year:2020,2021;Country Official:euspa",
+        exclude: "Continent Official:af,as,sa",
         filters: "Measure.lte.100000",
         limit: "1,2",
-        sort: "ISO 3.asc",
+        sort: "ISO2.asc",
         time: "year.latest",
       });
     });
