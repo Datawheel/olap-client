@@ -34,7 +34,7 @@ export enum TesseractEndpoint {
 
 export class TesseractDataSource implements IDataSource {
   axiosInstance: AxiosInstance = Axios.create({});
-  serverOnline: boolean;
+  serverOnline = false;
   serverSoftware: string = softwareName;
   serverVersion = "";
   serverUrl = "/";

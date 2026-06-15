@@ -20,6 +20,7 @@ export function applyMixins(derivedCtor: any, baseCtors: any[]) {
 }
 
 export class Annotated {
+  // @ts-expect-error
   readonly _source: IAnnotated;
 
   get annotations(): Annotations {
@@ -46,6 +47,7 @@ export class Annotated {
 }
 
 export class FullNamed {
+  // @ts-expect-error
   readonly _source: IFullNamed;
 
   get caption(): string {
@@ -62,6 +64,7 @@ export class FullNamed {
 }
 
 export class Named {
+  // @ts-expect-error
   readonly _source: INamed;
 
   get name(): string {
@@ -70,6 +73,7 @@ export class Named {
 }
 
 export class Serializable<T extends ISerializable> {
+  // @ts-expect-error
   readonly _source: T;
 
   toJSON(): T {

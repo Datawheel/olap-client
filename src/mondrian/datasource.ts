@@ -28,7 +28,7 @@ export class MondrianDataSource implements IDataSource {
   serverOnline = false;
   serverSoftware = softwareName;
   serverUrl: string;
-  serverVersion: string;
+  serverVersion = "";
 
   static endpoints = [MondrianEndpoint.aggregate];
   static formats = [Format.csv, Format.json, Format.jsonrecords, Format.xls];

@@ -33,7 +33,7 @@ export class PyTesseractDataSource implements IDataSource {
   serverOnline = false;
   serverSoftware = softwareName;
   serverUrl: string;
-  serverVersion: string;
+  serverVersion = "";
 
   static endpoints = [PyTesseractEndpoint.logiclayer];
   static formats = [
@@ -90,7 +90,7 @@ export class PyTesseractDataSource implements IDataSource {
   }
 
   fetchCube(cubeName: string, params?: any): Promise<PlainCube> {
-    const ctx = {uri: this.serverUrl};
+    const ctx = {cube: cubeName, uri: this.serverUrl};
     return this.axiosInstance
       .get<TesseractCube>(`cubes/${encodeURIComponent(cubeName)}`, {params})
       .then((response) => cubeAdapter.call(ctx, response.data));

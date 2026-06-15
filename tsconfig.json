@@ -1,23 +1,21 @@
 {
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
     "checkJs": true,
     "declaration": true,
-    "downlevelIteration": true,
+    "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["ES6", "DOM", "ES2016", "ES2017", "ES2019.Object"],
-    "module": "ES2015",
-    "moduleResolution": "node",
-    "noImplicitAny": true,
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "noImplicitReturns": true,
-    "noImplicitThis": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "outDir": "dist",
     "removeComments": true,
+    "skipLibCheck": true,
     "sourceMap": true,
-    "strictNullChecks": true,
-    "target": "ES2018"
+    "strict": true,
+    "target": "ES2022"
   },
   "include": ["src", "tests"]
 }

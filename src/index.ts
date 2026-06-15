@@ -2,8 +2,13 @@ export {Client} from "./client";
 export {Cube} from "./cube";
 export {Dimension} from "./dimension";
 export {Hierarchy} from "./hierarchy";
-export {Aggregation, IClient, IDataSource, ServerStatus} from "./interfaces/contracts";
-export {
+export type {
+  Aggregation,
+  IClient,
+  IDataSource,
+  ServerStatus,
+} from "./interfaces/contracts";
+export type {
   CalculationDescriptor,
   CalculationGrowthDescriptor,
   CalculationRCADescriptor,
@@ -25,7 +30,7 @@ export {
   TimePrecision,
   TimeValue,
 } from "./interfaces/enums";
-export {
+export type {
   PlainCube,
   PlainDimension,
   PlainHierarchy,
@@ -43,10 +48,9 @@ export {MultiClient} from "./multiclient";
 export {NamedSet} from "./namedset";
 export {Property} from "./property";
 export {PyTesseractDataSource} from "./pytesseract/datasource";
-export {
+export type {
   Drillable,
   DrillableReference,
-  Query,
   QueryCalc,
   QueryCalcGrowth,
   QueryCalcRca,
@@ -58,5 +62,6 @@ export {
   QuerySorting,
   QueryTimeframe,
 } from "./query";
+export {Query} from "./query";
 export {TesseractDataSource} from "./tesseract/datasource";
-export {ServerConfig} from "./toolbox/client";
+export type {ServerConfig} from "./toolbox/client";

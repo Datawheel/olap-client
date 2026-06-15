@@ -1,10 +1,9 @@
-import { execSync } from 'child_process';
-import { defineConfig } from 'tsup';
-import pkg from "./package.json";
+import {execSync} from "node:child_process";
+import {defineConfig} from "tsdown";
+import pkg from "./package.json" with {type: "json"};
 
-const gitHash = execSync('git rev-parse --short HEAD');
-const LICENSE_HEADER =
-`/*!
+const gitHash = execSync("git rev-parse --short HEAD");
+const LICENSE_HEADER = `/*!
  * @module ${pkg.name}
  * @version ${pkg.version} (rev ${gitHash.toString().trim()})
  * @copyright Datawheel, LLC
@@ -15,14 +14,10 @@ const LICENSE_HEADER =
 export default defineConfig({
   entry: ["src/index.ts"],
   format: ["cjs", "esm"],
+  clean: true,
   dts: true,
   treeshake: true,
   banner: {
     js: LICENSE_HEADER,
   },
-  outExtension({ format }) {
-    return {
-      js: `.${format}.js`,
-    }
-  },
-})
+});

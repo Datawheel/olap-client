@@ -57,7 +57,7 @@ export function buildGrowthCalculation(
  * @param cube The cube where the information comes from
  * @param params The parameters required for the struct
  */
-export function buildRateCalculation(cube: Cube, params: any) {
+export function buildRateCalculation(_cube: Cube, _params: any) {
   throw new Error("Not implemented");
 }
 

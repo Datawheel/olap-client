@@ -2,24 +2,24 @@
   "name": "@datawheel/olap-client",
   "version": "2.1.5",
   "description": "A multiclient library to handle requests with mondrian-rest and tesseract servers",
-  "main": "./dist/index.cjs.js",
-  "module": "./dist/index.esm.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "readme": "README.md",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.cjs.js",
-      "import": "./dist/index.esm.js",
-      "default": "./dist/index.esm.js"
+      "types": "./dist/index.d.mts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
     }
   },
   "files": ["dist"],
   "scripts": {
-    "build": "tsup",
-    "pretest": "tsup",
+    "build": "tsdown",
+    "pretest": "tsdown",
     "test": "mocha --recursive --parallel tests",
-    "prepublishOnly": "tsup && mocha --bail --recursive tests"
+    "prepublishOnly": "tsdown && mocha --bail --recursive tests"
   },
   "author": "Francisco Abarzua <francisco@datawheel.us>",
   "license": "MIT",
@@ -52,7 +52,7 @@
     "@types/node": "^20.12.7",
     "@types/url-join": "^4.0.0",
     "mocha": "^11.0.0",
-    "tsup": "^8.0.0",
-    "typescript": "^5.4.0"
+    "tsdown": "^0.22.2",
+    "typescript": "^5.9.0"
   }
 }

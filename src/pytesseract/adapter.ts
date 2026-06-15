@@ -34,9 +34,6 @@ import type {
 
 interface ContextMeta {
   cube: string;
-  dimension: string;
-  hierarchy: string;
-  level: string;
   uri: string;
 }
 
@@ -139,7 +136,7 @@ export function dimensionAdapter(
 }
 
 export function hierarchyAdapter(
-  this: ContextMeta,
+  this: ContextMeta & {dimension: string},
   item: TesseractHierarchy,
 ): PlainHierarchy {
   const uri = urljoin(this.uri, encodeURIComponent(item.name));
@@ -156,7 +153,10 @@ export function hierarchyAdapter(
   };
 }
 
-export function levelAdapter(this: ContextMeta, item: TesseractLevel): PlainLevel {
+export function levelAdapter(
+  this: ContextMeta & {dimension: string; hierarchy: string},
+  item: TesseractLevel,
+): PlainLevel {
   const uri = urljoin(this.uri, encodeURIComponent(item.name));
   const ctx = {...this, uri, level: item.name};
   return {
